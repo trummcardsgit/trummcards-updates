@@ -1,6 +1,6 @@
 {
   "name": "trummcards-lagerverwaltung",
-  "version": "1.6.0",
+  "version": "1.6.1",
   "private": true,
   "description": "TrummCards Lagerverwaltung fuer Windows",
   "main": "main.js",
