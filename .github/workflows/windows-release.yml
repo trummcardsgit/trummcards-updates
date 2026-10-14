@@ -63,6 +63,15 @@ jobs:
         shell: pwsh
         run: npm install --no-audit --no-fund
 
+      - name: Programm-Icon fuer Windows vorbereiten
+        if: env.ALREADY_RELEASED != 'true'
+        shell: pwsh
+        run: |
+          python -m pip install --disable-pip-version-check pillow
+          if ($LASTEXITCODE -ne 0) { throw 'Pillow konnte nicht installiert werden.' }
+          python scripts/make-windows-icon.py
+          if ($LASTEXITCODE -ne 0) { throw 'Windows-Icon konnte nicht erstellt werden.' }
+
       - name: Windows-Installer erstellen
         if: env.ALREADY_RELEASED != 'true'
         shell: pwsh
