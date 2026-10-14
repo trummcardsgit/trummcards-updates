@@ -1,0 +1,94 @@
+name: TrummCards – Windows Auto-Release
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - package.json
+      - main.js
+      - preload.js
+      - index.html
+      - assets/**
+      - scripts/**
+      - .github/workflows/windows-release.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: trummcards-windows-release
+  cancel-in-progress: false
+
+jobs:
+  build-release:
+    runs-on: windows-latest
+    steps:
+      - name: Quellcode auschecken
+        uses: actions/checkout@v4
+
+      - name: Node.js einrichten
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Version aus package.json lesen
+        shell: pwsh
+        run: |
+          $version = node -p "require('./package.json').version"
+          if ($version -notmatch '^\d+\.\d+\.\d+$') { throw 'Ungültige Version in package.json' }
+          "APP_VERSION=$version" >> $env:GITHUB_ENV
+          "TAG=v$version" >> $env:GITHUB_ENV
+
+      - name: Prüfen, ob die Version schon veröffentlicht wurde
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release view "$env:TAG" --repo "$env:GITHUB_REPOSITORY" 2>$null
+          if ($LASTEXITCODE -eq 0) {
+            Write-Host "Version $env:TAG ist bereits veröffentlicht. Kein neuer Build nötig."
+            "ALREADY_RELEASED=true" >> $env:GITHUB_ENV
+          } else {
+            "ALREADY_RELEASED=false" >> $env:GITHUB_ENV
+          }
+
+      - name: Abhängigkeiten installieren
+        if: env.ALREADY_RELEASED != 'true'
+        shell: pwsh
+        run: npm install --no-audit --no-fund
+
+      - name: Windows-Installer erstellen
+        if: env.ALREADY_RELEASED != 'true'
+        shell: pwsh
+        run: npm run dist
+
+      - name: Update-Dateien vor Veröffentlichung prüfen
+        if: env.ALREADY_RELEASED != 'true'
+        shell: pwsh
+        run: |
+          $exe = "dist/TrummCards-Lagerverwaltung-Setup-$env:APP_VERSION.exe"
+          $blockmap = "$exe.blockmap"
+          $manifest = 'dist/latest.yml'
+          foreach ($f in @($exe, $blockmap, $manifest)) {
+            if (-not (Test-Path -LiteralPath $f)) { throw "Erforderliche Datei fehlt: $f" }
+          }
+          $yml = Get-Content -LiteralPath $manifest -Raw
+          $filename = Split-Path $exe -Leaf
+          if (-not $yml.Contains($filename)) { throw "latest.yml referenziert nicht die erwartete EXE: $filename" }
+          if (-not $yml.Contains("version: $env:APP_VERSION")) { throw 'Versionsnummer fehlt in latest.yml' }
+          $fileSize = (Get-Item -LiteralPath $exe).Length
+          if ($fileSize -lt 1000000) { throw 'Installer ist auffällig klein' }
+          Write-Host "Alle drei Update-Dateien vorhanden: $filename, .blockmap und latest.yml"
+
+      - name: Release inklusive der drei zusammengehörigen Dateien veröffentlichen
+        if: env.ALREADY_RELEASED != 'true'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $exe = "dist/TrummCards-Lagerverwaltung-Setup-$env:APP_VERSION.exe"
+          $files = @($exe, "$exe.blockmap", 'dist/latest.yml')
+          gh release create "$env:TAG" @files --repo "$env:GITHUB_REPOSITORY" --target "$env:GITHUB_SHA" --title "TrummCards Lagerverwaltung $env:APP_VERSION" --notes "Automatisch erstelltes TrummCards Windows-Update $env:APP_VERSION. Vor der Installation erstellt die Anwendung eine Datensicherung."
+          if ($LASTEXITCODE -ne 0) { throw 'GitHub Release konnte nicht veröffentlicht werden.' }
+          Write-Host "Veröffentlicht: $env:TAG"
