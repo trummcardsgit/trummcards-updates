@@ -1,24 +1,16 @@
-# TrummCards Lagerverwaltung
+# TrummCards Lagerverwaltung – Version 1.6.0
 
-Windows-App zur Verwaltung von Pokémon-Karteneinkäufen, Verkäufen und Lagerbeständen.
+## Neues in Version 1.6
+- Das Fußzeilen-Element **EST. 2026** bleibt bei wenig Inhalt am unteren Fensterrand.
+- Einkäufe/Artikel lassen sich im Lager und in der Buchungshistorie bearbeiten, ohne einen neuen Artikel anzulegen.
+- Artikelnummern/SKUs müssen eindeutig sein; doppelte Nummern werden beim manuellen Anlegen und im CSV-Import abgelehnt.
+- Einzelpreis und Gesamtpreis rechnen sich gegenseitig anhand der Stückzahl aus. Zusatzkosten werden zusätzlich in den Einstand pro Stück einbezogen.
+- Verkäufe können nachträglich unter „Buchungen“ geändert werden (Menge, Artikel, Preis, Versand, Gebühren, Datum, Plattform und Notiz). Lagerbestand, FIFO-Zuordnung und Gewinn werden aktualisiert.
+- Werden Einkaufspreise bereits verkaufter Artikel nachträglich geändert, weist das Programm vor einer Neuberechnung historischer Gewinne darauf hin.
+- Geldbeträge können mit Komma oder Punkt eingegeben werden.
 
-## Automatische Windows-Updates
-`package.json` enthält die Programmversion. Sobald eine neue Version auf `main`
-erscheint, baut GitHub Actions auf Windows die installierbare EXE, `latest.yml`
-und die zugehörige `.exe.blockmap` und veröffentlicht diese **gemeinsam** als
-GitHub Release `v<version>`. Bereits vorhandene Versionsnummern werden übersprungen.
+## Datensicherung
+Die bisherige lokale Datenbank bleibt erhalten (gleiche Schlüssel). Vor jedem Update empfehlen wir eine JSON-Sicherung inklusive Artikelbilder. Das Update-Modul erstellt vor dem Installieren automatisch eine Sicherung.
 
-### Neue Version veröffentlichen
-1. Änderungen im Quellcode vornehmen und testen.
-2. In `package.json` die Version erhöhen, beispielsweise `1.5.1` → `1.5.2`.
-3. Änderungen nach `main` übertragen.
-4. Unter **Actions → TrummCards – Windows Auto-Release** den Build prüfen.
-5. Die installierte App bietet die neue Version anschließend zum Update an.
-
-**Wichtig:** Versionsnummern müssen eindeutig und aufsteigend sein. Ein
-GitHub Release mit dieser Versionsnummer darf noch nicht existieren. Nur
-lauffähige, getestete App-Versionen auf `main` übertragen.
-
-Die App verwendet `electron-updater`. Das Programm speichert Daten lokal.
-Vor automatischer Installation wird eine JSON-Datensicherung mit Artikelbildern
-erstellt. Für produktive Windows-Sicherheit wird digitale Codesignierung empfohlen.
+## Auto-Updates
+Bei jedem Versionssprung im Repository erstellt GitHub Actions die Windows-Installationsdateien und lädt die EXE, `latest.yml` und die zugehörige `.blockmap` als GitHub Release hoch. Windows Smart App Control kann unsignierte Installer weiterhin blockieren.
