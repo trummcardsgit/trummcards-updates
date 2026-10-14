@@ -1,0 +1,26 @@
+name: TrummCards Cloud Phase 1 – Offline-Checks
+
+on:
+  pull_request:
+    paths:
+      - 'cloud/**'
+      - '.github/workflows/cloud-phase1-checks.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-import:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Offline-Importtests ohne Cloud-Zugriff
+        run: |
+          node --check cloud/scripts/prepare-legacy-import.mjs
+          node --check cloud/scripts/test-legacy-import.mjs
+          node cloud/scripts/test-legacy-import.mjs
+          node cloud/scripts/prepare-legacy-import.mjs cloud/examples/demo-backup.json

@@ -1,0 +1,38 @@
+import { strict as assert } from 'node:assert';
+import fs from 'node:fs';
+import { inspectLegacyBackup } from './prepare-legacy-import.mjs';
+
+const demo=JSON.parse(fs.readFileSync(new URL('../examples/demo-backup.json',import.meta.url),'utf8'));
+const dry=inspectLegacyBackup(demo);
+assert.equal(dry.status,'VALIDATED');
+assert.equal(dry.products,2);
+assert.equal(dry.purchase_lots,3);
+assert.equal(dry.sales,1);
+assert.equal(dry.available_pieces,3);
+assert.equal(dry.purchase_cost_eur,'539.90');
+assert.equal(dry.recorded_sale_cogs_eur,'310.00');
+assert.equal(dry.remaining_value_eur,'229.90');
+const plan=inspectLegacyBackup(demo,{hash:'test',withPlan:true});
+assert.equal(plan.purchase_lots[0].available_qty,0);
+assert.equal(plan.purchase_lots[1].available_qty,2);
+assert.equal(plan.sales[0].allocations.reduce((s,a)=>s+Number(a.cost_amount),0),310);
+assert.equal(plan.purchase_lots[0].allocated_cost,'200.00');
+assert.equal(plan.purchase_lots[1].allocated_cost,'110.00');
+assert.match(plan.products[0].id,/^[0-9a-f-]{36}$/);
+assert.deepEqual(plan,inspectLegacyBackup(demo,{hash:'test',withPlan:true}));
+
+const invalidDuplicate=structuredClone(demo);invalidDuplicate.lots[2].sku='delta-001';
+assert.throws(()=>inspectLegacyBackup(invalidDuplicate),/Artikelnummer bereits verwendet/);
+const oversold=structuredClone(demo);oversold.sales[0].allocations[1].qty=5;oversold.sales[0].qty=7;
+assert.throws(()=>inspectLegacyBackup(oversold),/Negativer Bestand/);
+const unknownLot=structuredClone(demo);unknownLot.sales[0].allocations[0].lotId='not-there';
+assert.throws(()=>inspectLegacyBackup(unknownLot),/Unbekannte Einkaufscharge/);
+const noImage=structuredClone(demo);noImage.images=[{lotId:'old-lot-3',data:'data:image/jpeg;base64,aGVsbG8='}];
+assert.equal(inspectLegacyBackup(noImage).pictures,1);
+const duplicateSale=structuredClone(demo);duplicateSale.sales.push(structuredClone(duplicateSale.sales[0]));
+assert.throws(()=>inspectLegacyBackup(duplicateSale),/Doppelte Verkaufs-ID/);
+const wrongDate=structuredClone(demo);wrongDate.lots[1].date='2026-02-30';
+assert.throws(()=>inspectLegacyBackup(wrongDate),/ungültiges Datum/);
+const tooMuchPrecision=structuredClone(demo);tooMuchPrecision.lots[1].total=330.123;
+assert.throws(()=>inspectLegacyBackup(tooMuchPrecision),/höchstens 2 Nachkommastellen/);
+console.log('8 Tests erfolgreich: FIFO-Bestände, Beträge, Produktgruppen, UUID-Stabilität, SKU-Konflikte, Overselling, Bilder und Eingabevalidierung.');
