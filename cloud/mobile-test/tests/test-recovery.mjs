@@ -8,35 +8,29 @@ const js=readFileSync(new URL('reset-password.js',base),'utf8');
 const app=readFileSync(new URL('app.js',base),'utf8');
 const home=readFileSync(new URL('index.html',base),'utf8');
 test('Recovery page contains email and two password inputs',()=>{
- assert.match(html,/id="requestForm"/);
- assert.match(html,/id="updateForm"/);
- assert.match(html,/id="newPassword"/);
- assert.match(html,/id="confirmPassword"/);
- assert.match(html,/id="successPanel"/);
- assert.match(html,/type="password"/);
+ for(const id of ['requestForm','updateForm','newPassword','confirmPassword','successPanel'])
+   assert.ok(html.includes('id="'+id+'"'),'Missing '+id);
+ assert.ok(html.includes('type="password"'));
 });
 test('Email recovery uses configured GitHub Pages target',()=>{
- assert.match(js,/auth\\/v1\\/recover\\?redirect_to/);
- assert.match(js,/github\\.io\\/trummcards-updates\\/reset-password\\.html/);
- assert.match(js,/type:'recovery'/);
+ assert.ok(js.includes('/auth/v1/recover?redirect_to='));
+ assert.ok(js.includes('trummcardsgit.github.io/trummcards-updates/reset-password.html'));
+ assert.ok(js.includes("type:'recovery'"));
 });
-test('Recovery token remains in memory and is scrubbed from browser URL',()=>{
- assert.match(js,/history\\.replaceState/);
- assert.match(js,/let accessToken=null/);
- assert.match(js,/auth\\/v1\\/verify/);
- assert.match(js,/auth\\/v1\\/user/);
- assert.match(js,/password:pw/);
- assert.doesNotMatch(js,/localStorage\\.setItem/);
- assert.doesNotMatch(js,/console\\.log/);
+test('Recovery token stays in memory and URL is scrubbed',()=>{
+ for(const s of ['history.replaceState','let accessToken=null','/auth/v1/verify','/auth/v1/user','password:pw'])
+   assert.ok(js.includes(s),'Missing '+s);
+ assert.ok(!js.includes('localStorage.setItem'));
+ assert.ok(!js.includes('console.log'));
 });
-test('Home redirects recovery fragments and offers forgot-password link',()=>{
- assert.match(home,/href="\\.\\/reset-password\\.html"/);
- assert.match(app,/fragment\\.get\\('type'\\)===\\'recovery\\'/);
- assert.match(app,/location\\.replace\\('\\.\\/reset-password\\.html'/);
+test('Home handles recovery fragments and offers forgot password',()=>{
+ assert.ok(home.includes('href="./reset-password.html"'));
+ assert.ok(app.includes("fragment.get('type')==='recovery'"));
+ assert.ok(app.includes("location.replace('./reset-password.html'"));
 });
-test('Recovery script syntax is valid and no private keys present',()=>{
- const f=new URL('reset-password.js',base);
- const r=spawnSync(process.execPath,['--check',f.pathname],{encoding:'utf8'});
+test('Recovery JS syntax valid, without private API keys',()=>{
+ const p=new URL('reset-password.js',base);
+ const r=spawnSync(process.execPath,['--check',p.pathname],{encoding:'utf8'});
  assert.equal(r.status,0,r.stderr);
- assert.doesNotMatch(js,/service_role|sb_secret_/);
+ assert.ok(!js.includes('sb_secret_')&&!js.includes('service_role'));
 });
