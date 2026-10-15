@@ -43,3 +43,17 @@ node --experimental-strip-types --test cloud/mobile-test/tests/test-routing.mjs
 ```
 
 The smoke tests are structural and verify redirect handler behavior. A real browser login and device-to-device sync must still be confirmed by the user.
+
+## Passwort vergessen / Recovery
+
+Eine Supabase-Auth-Recovery-Mail enthält einen einmaligen Login-Token. Unter der normalen Edge-Functions-Domain können keine HTML-Seiten für die Passwortänderung ausgeliefert werden. Stattdessen gibt es auf GitHub Pages die separate `reset-password.html` und `reset-password.js`.
+
+1. Supabase Dashboard **Authentication > URL Configuration** öffnen.
+2. **Site URL** auf `https://trummcardsgit.github.io/trummcards-updates/` stellen. Die Site URL wird als Default für Dashboard-Reset-Mails verwendet.
+3. In **Redirect URLs** zusätzlich `https://trummcardsgit.github.io/trummcards-updates/reset-password.html` eintragen.
+4. Unter **Authentication > Users** dem vorhandenen Konto **Send password recovery** senden – neu anfordern, bisherige Mails ggf. ungültig.
+5. Mail-Link anklicken: Falls die Mail zur Root Site URL umleitet, erkennt `app.js` das Fragment `type=recovery` und leitet mit Token zur Reset-Seite weiter. Die Reset-Seite entfernt URL-Tokens sofort aus dem Browserverlauf, prüft Auth und erlaubt die Passwortänderung über `PUT /auth/v1/user`.
+6. Alternativ auf der mobilen Anmeldeseite **Passwort vergessen?** öffnen; der dortige Flow sendet die Recovery-Mail mit `redirect_to=/reset-password.html`.
+7. Nach Passwortänderung neu anmelden. **Benutzer niemals löschen** und Passwörter / Reset-Links niemals in Issues, Chat oder GitHub teilen.
+
+**Sicherheit:** Kein Service-Role-Key, keine Passwortänderung durch die Assistenz; der Token wird nur im flüchtigen Browser-Speicher gehalten. Keine Lagerdaten werden bei dieser Funktion geändert. Neue Tests in `tests/test-recovery.mjs` prüfen die statischen Schutzmechanismen; der echte E-Mail-Ablauf muss mit dem Benutzer bestätigt werden.

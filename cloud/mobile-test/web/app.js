@@ -94,7 +94,15 @@ function bind(){
  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&session)refreshAll();});window.addEventListener('online',()=>{if(session)refreshAll({toast:true});});
  setInterval(()=>{if(session&&!busy)refreshAll();},12000);
 }
-async function start(){bind();showLogin();f($('purchaseForm'),'date').value=today();f($('saleForm'),'date').value=today();
+async function start(){
+ // Supabase's dashboard recovery link may redirect to the configured Site URL (root).
+ // Preserve the fragment only for same-origin handoff to the password-reset form.
+ const fragment=new URLSearchParams(location.hash.slice(1));
+ const query=new URLSearchParams(location.search);
+ if(fragment.get('type')==='recovery'||fragment.has('error_code')||fragment.has('error')||(query.get('type')==='recovery')){
+  location.replace('./reset-password.html'+location.search+location.hash);return;
+ }
+ bind();showLogin();f($('purchaseForm'),'date').value=today();f($('saleForm'),'date').value=today();
  try{const cfg={project_ref:PROJECT,url:'https://'+PROJECT+'.supabase.co',anon_key:"sb_publishable_oS2Ri8VlhEqv1XDBwkUahQ_zVEEtyHG"};if(cfg.project_ref!==PROJECT||!/^https:\/\/cpycfxolqpidfjbhhsmr\.supabase\.co$/.test(cfg.url)||!cfg.anon_key)throw Error('Unerwartete Supabase-Konfiguration.');ROOT=cfg.url;KEY=cfg.anon_key;restoreSession();if(session){const u=await checkAccount();$('accountEmail').textContent=u.email||'TrummCards-Konto';showApp();await refreshAll();navigate('home');}else showLogin();}catch(e){clearSession();showLogin();notice('Verbindung fehlgeschlagen: '+errorText(e),'error');}
  if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('./sw.js',{scope:'./'}).catch(e=>console.info('PWA Cache nicht aktiv:',e.message));
 }
