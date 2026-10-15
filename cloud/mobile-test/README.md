@@ -1,39 +1,45 @@
-# TrummCards Mobile Cloud TEST 0.1.0 (iPhone / Android / PC browser)
+# TrummCards Mobile Cloud TEST (iPhone / Android)
 
-A responsive installable PWA hosted via a Supabase Edge Function, connected to the same isolated TEST database as the separate Windows Cloud TEST 0.1.0. The **production Windows 1.6.1 is untouched**.
+**Live PWA (HTML hosting):** https://trummcardsgit.github.io/trummcards-updates/
 
-## Live deployment
+**Database:** isolated Supabase project TEST, project ref `cpycfxolqpidfjbhhsmr`.
+**Source branch:** `feature/cloud-phase-1-supabase`.
+**Published static branch:** `gh-pages` (repository root).
+**Existing Windows version 1.6.1:** unchanged, no release or auto-update.
 
-- Project: `cpycfxolqpidfjbhhsmr` (**TEST** only).
-- Endpoint: `https://cpycfxolqpidfjbhhsmr.supabase.co/functions/v1/trummcards-mobile-test/`
-- Open that HTTPS URL in Safari on iPhone, Chrome on Android or a desktop browser. Login with your existing authorized Supabase Authentication account.
-- Install iPhone: Share > Add to Home Screen. Android: Chrome menu > Install App / Add to Home Screen.
-- App asks for **no extra API key**. The hosted function returns the project's public anon key to the browser at `/api/config`. Auth tokens stay in the device's localStorage. Only the JWT and RLS policies provide data access. DO NOT use a secret/service role key.
+## Why we moved from Supabase Edge HTML hosting
 
-## Features
+Supabase's normal `*.supabase.co/functions/v1/...` endpoint does not serve HTML pages as HTML: its gateway rewrites HTML GET responses to `text/plain`. On iPhone Safari the old URL displayed HTML markup. This is documented in Supabase's Edge Function development tips and limits.
 
-- Single-user login (authorized via `tc_is_authorized`); secure session refresh and logout.
-- Inventory list, SKU/name search, item creation and editing with duplicate SKU rejection.
-- FIFO purchase lots with reciprocal unit/total price calculations, optional costs.
-- Sale entry with live FIFO profit preview, atomic server-side FIFO booking, double-booking guard and sale cancellation.
-- Card photo upload from camera/gallery, downscaled to JPEG and saved in private Storage; authenticated photo access.
-- Auto sync from Supabase about every 12 seconds while the app is open/in the foreground plus after app foreground/online event, preserving form values.
-- PWA manifest, touch-friendly bottom navigation, home screen icons, service worker caching **only the static app shell**.
+The mobile HTML, JavaScript, stylesheet, icons and service worker are now published as a static GitHub Pages site. The existing Supabase Edge Function `trummcards-mobile-test` now returns a 302 redirect to that site for GET requests. Do not deploy the original HTML-bundling Edge Function again.
 
-## Isolation and security
+## Security and sync
 
-- No migration of existing inventory, no destructive SQL, no production release or Windows auto-update.
-- Web shell is public; the Edge Function `/api/session` route validates JWT using Supabase Auth and checks the owner's whitelist. The function must be deployed with JWT gateway verification **disabled** to serve its public login shell, but its protected route performs custom authentication and the app never exposes private business APIs without Supabase JWT.
-- PostgreSQL RLS ensures business records cannot be accessed by other accounts; server-side purchasing and selling use existing prepared RPC functions.
-- Private image bucket `trummcards-lot-images` with storage RLS, 10MB maximum per picture.
-- User credential never enters GitHub or the app code; browser stores an authenticated session token in browser localStorage, **not the password**. localStorage is not encrypted at rest; take care on shared devices and always log out.
-- No offline writes. SW caches only HTML/JS/CSS/icons; no JWT, inventory, API or image responses are cached by this SW.
-- Legacy Windows 1.6.1 data are local-only and not synchronized by the mobile test.
-- Test app currently paginates a maximum of 1000 rows per table; revisit for larger datasets.
+- Public website code is accessible to anyone, but business data require Supabase Authentication with the **single whitelisted account** and PostgreSQL RLS.
+- The JavaScript bundles the Supabase **public publishable key** (not a secret) to work on a static host. Never use a `service_role`, `sb_secret_...`, JWT access token or personal password in source.
+- Database, FIFO purchase/sales RPCs, sale voids and private image storage remain in Supabase TEST.
+- Polling about every 12 seconds while the page is visible, plus on returning to the app. Online required for booking; the service worker caches only the static app shell.
+- This is a development/test app, not a production release. Do not import existing Windows data yet.
+- The site's source branch is public. Do not commit backups, inventory exports or credentials.
 
-## Source / build
+## Running it on mobile
 
-- Editable assets: `web/*`; Deno Edge Function bundle `edge/index.ts` generated by `node edge/build.mjs`.
-- Run: `node edge/build.mjs && node --test tests/test-mobile.mjs`.
-- To deploy: Supabase Edge Functions tool: name `trummcards-mobile-test`, entrypoint `index.ts`, body `edge/index.ts`, verify_jwt=false (custom auth route).
-- Deployment must be manual after review; GitHub branch must remain separate from `main` and no automatic production release.
+1. Open https://trummcardsgit.github.io/trummcards-updates/ in Safari or Chrome.
+2. Sign in using the same Supabase TEST user as the Windows Cloud TEST app.
+3. Look for an existing article, book a small test purchase or sale, then check the Windows Cloud TEST app.
+4. iPhone Safari: Share > Add to Home Screen. Android Chrome: menu > Install App / Add to Home Screen.
+
+## Publishing updates
+
+The deployable assets come from `cloud/mobile-test/web/`: `index.html`, `app.js`, `styles.css`, `sw.js`, `manifest.webmanifest`, `icon.svg` and icon PNGs. Publish **only** those files to the repository root of `gh-pages`; preserve the public-key configuration in `app.js`. GitHub Pages publishes every update to that branch. Do not merge or publish the desktop production app.
+
+The old Supabase test URL redirects using `edge/index.ts` generated with `node cloud/mobile-test/edge/build.mjs`.
+
+For CI checks:
+```sh
+node cloud/mobile-test/edge/build.mjs
+node --test cloud/mobile-test/tests/test-mobile.mjs
+node --experimental-strip-types --test cloud/mobile-test/tests/test-routing.mjs
+```
+
+The smoke tests are structural and verify redirect handler behavior. A real browser login and device-to-device sync must still be confirmed by the user.

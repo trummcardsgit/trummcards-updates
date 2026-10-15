@@ -1,52 +1,19 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-
 let handler;
-globalThis.Deno = {
-  serve(fn) { handler=fn; },
-  env: { get(key) { return key === 'SUPABASE_ANON_KEY' ? 'public-test-anon-key' : undefined; } },
-};
+globalThis.Deno={serve(fn){handler=fn;}};
 await import('../edge/index.ts');
-assert.equal(typeof handler,'function');
-
-const origin='https://cpycfxolqpidfjbhhsmr.supabase.co';
-const full='/functions/v1/trummcards-mobile-test/';
-
-for(const root of [full,'/trummcards-mobile-test/','/']){
-  test('HTML served under '+root,async()=>{
-    const res=await handler(new Request(origin+root));
-    assert.equal(res.status,200);
-    assert.match(res.headers.get('content-type'),/^text\/html/);
-    assert.match(await res.text(),/TrummCards/);
-  });
-  for(const [asset,mime] of [['app.js','text/javascript'],['styles.css','text/css'],['manifest.webmanifest','application/manifest+json'],['icon-192.png','image/png']]){
-    test('Asset '+root+asset,async()=>{
-      const res=await handler(new Request(origin+root+asset));
-      assert.equal(res.status,200);
-      assert.ok(res.headers.get('content-type')?.startsWith(mime));
-      assert.ok((await res.arrayBuffer()).byteLength>64);
-    });
-  }
-  test('Publishable config '+root,async()=>{
-    const res=await handler(new Request(origin+root+'api/config'));
-    assert.equal(res.status,200);
-    const cfg=await res.json();
-    assert.equal(cfg.url,origin);
-    assert.equal(cfg.anon_key,'public-test-anon-key');
-  });
-  test('Session requires authentication '+root,async()=>{
-    const res=await handler(new Request(origin+root+'api/session'));
-    assert.equal(res.status,401);
-  });
+const target='https://trummcardsgit.github.io/trummcards-updates/';
+const host='https://cpycfxolqpidfjbhhsmr.supabase.co';
+for(const path of ['/functions/v1/trummcards-mobile-test/','/','/trummcards-mobile-test/','/styles.css']){
+ test('old Supabase link redirects safely: '+path,async()=>{
+   const response=await handler(new Request(host+path));
+   assert.equal(response.status,302);
+   assert.equal(response.headers.get('location'),target);
+   assert.equal(response.headers.get('cache-control'),'no-store');
+ });
 }
-for(const root of [full.slice(0,-1),'/trummcards-mobile-test']){
-  test('Missing slash redirect '+root,async()=>{
-    const res=await handler(new Request(origin+root));
-    assert.equal(res.status,308);
-    assert.equal(res.headers.get('location'),origin+full);
-  });
-}
-test('Unknown files and POST rejected',async()=>{
-  assert.equal((await handler(new Request(origin+'/private.json'))).status,404);
-  assert.equal((await handler(new Request(origin+full,{method:'POST'}))).status,405);
+test('no unsafe or data-changing methods',async()=>{
+ const r=await handler(new Request(host+'/functions/v1/trummcards-mobile-test/',{method:'POST'}));
+ assert.equal(r.status,405);
 });

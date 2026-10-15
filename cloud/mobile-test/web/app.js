@@ -1,4 +1,4 @@
-/* TrummCards Mobile Cloud TEST v0.1.0 – no secret keys in this client.
+/* TrummCards Mobile Cloud TEST v0.1.1 – static GitHub Pages client; only a public key.
  * Data is readable/writeable only with a Supabase JWT and the database owner RLS guard.
  * Test data ONLY. A connection is required to write; no offline operation replay.
  */
@@ -95,7 +95,7 @@ function bind(){
  setInterval(()=>{if(session&&!busy)refreshAll();},12000);
 }
 async function start(){bind();showLogin();f($('purchaseForm'),'date').value=today();f($('saleForm'),'date').value=today();
- try{const cfg=await raw('./api/config',{cache:'no-store'});if(cfg.project_ref!==PROJECT||!/^https:\/\/cpycfxolqpidfjbhhsmr\.supabase\.co$/.test(cfg.url)||!cfg.anon_key)throw Error('Unerwartete Supabase-Konfiguration.');ROOT=cfg.url;KEY=cfg.anon_key;restoreSession();if(session){const u=await checkAccount();$('accountEmail').textContent=u.email||'TrummCards-Konto';showApp();await refreshAll();navigate('home');}else showLogin();}catch(e){clearSession();showLogin();notice('Verbindung fehlgeschlagen: '+errorText(e),'error');}
+ try{const cfg={project_ref:PROJECT,url:'https://'+PROJECT+'.supabase.co',anon_key:"sb_publishable_oS2Ri8VlhEqv1XDBwkUahQ_zVEEtyHG"};if(cfg.project_ref!==PROJECT||!/^https:\/\/cpycfxolqpidfjbhhsmr\.supabase\.co$/.test(cfg.url)||!cfg.anon_key)throw Error('Unerwartete Supabase-Konfiguration.');ROOT=cfg.url;KEY=cfg.anon_key;restoreSession();if(session){const u=await checkAccount();$('accountEmail').textContent=u.email||'TrummCards-Konto';showApp();await refreshAll();navigate('home');}else showLogin();}catch(e){clearSession();showLogin();notice('Verbindung fehlgeschlagen: '+errorText(e),'error');}
  if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('./sw.js',{scope:'./'}).catch(e=>console.info('PWA Cache nicht aktiv:',e.message));
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start);else start();
