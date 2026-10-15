@@ -31,10 +31,18 @@ function answer(body:string | Uint8Array,contentType:string,additional:Record<st
 function errJson(error:string,status=401){return new Response(JSON.stringify({error}),{status,headers:{...headers,'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store'}});}
 Deno.serve(async (req:Request)=>{
  const url=new URL(req.url);
- // Serve only URLs under the function's fixed root; no dynamic file paths.
- if(req.method!=='GET' || !url.pathname.startsWith('/functions/v1/'+slug)) return errJson('Not found',404);
- if(url.pathname==='/functions/v1/'+slug) return Response.redirect(url.origin+basePath,308);
- const target=url.pathname.slice(basePath.length);
+ // Supabase gateways can forward either the complete external path, the
+ // function slug prefix, or only the subpath (e.g. "/" or "/styles.css").
+ // The previous implementation accepted only the full external prefix and
+ // returned a 404 for valid requests after the gateway stripped that prefix.
+ if(req.method!=='GET')return errJson('Method not allowed',405);
+ if(url.pathname===basePath.slice(0,-1)||url.pathname==='/'+slug){
+   return Response.redirect(origin+basePath,308);
+ }
+ const prefixes=[basePath,'/'+slug+'/'];
+ const prefix=prefixes.find(p=>url.pathname.startsWith(p));
+ const target=prefix?url.pathname.slice(prefix.length):url.pathname.startsWith('/')?url.pathname.slice(1):null;
+ if(target===null)return errJson('Not found',404);
  if(target==='api/config'){
   const anon=Deno.env.get('SUPABASE_ANON_KEY');
   if(!anon)return errJson('Supabase publishable configuration unavailable',503);

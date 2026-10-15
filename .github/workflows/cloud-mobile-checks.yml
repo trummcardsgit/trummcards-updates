@@ -19,5 +19,6 @@ jobs:
         run: |
           node cloud/mobile-test/edge/build.mjs
           node --test cloud/mobile-test/tests/test-mobile.mjs
+          node --experimental-strip-types --test cloud/mobile-test/tests/test-routing.mjs
       - name: Confirm no Windows or production deployment
         run: echo 'Mobile PWA static checks only. No deployment or Windows release.'
