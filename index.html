@@ -1,338 +1,140 @@
-<!DOCTYPE html>
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#101828">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="TrummCards TEST">
+<meta name="description" content="TrummCards Cloud TEST – synchronisierte Pokémon-Karten-Lagerverwaltung auf Windows, iPhone und Android.">
+<title>TrummCards · Cloud TEST</title>
+<link rel="icon" type="image/svg+xml" href="./icon.svg">
+<link rel="apple-touch-icon" href="./icon-180.png">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="stylesheet" href="./styles.css">
+<script src="./app.js" defer></script>
+</head>
+<body>
+<div id="shell">
+  <header class="topbar">
+    <div class="brand"><div class="monogram">TC</div><div class="wordmark"><b>TrummCards</b><small>CLOUD <span>TEST</span> · EST. 2026</small></div></div>
+    <div class="connection"><span id="connDot" class="dot idle"></span><span id="connLabel">Verbinde …</span></div>
+  </header>
+  <main>
+    <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+    <section id="loginScreen" class="login-screen" hidden>
+      <div class="login-art"><span>✦</span><strong>Dein Lager.<br>Überall.</strong><p>Ein Bestand für PC, iPhone und Android.</p></div>
+      <div class="panel auth-panel">
+        <div class="micro-label">TRUMMCARDS CLOUD</div>
+        <h1>Willkommen zurück</h1>
+        <p class="subtle">Melde dich mit deinem Supabase-Testkonto an. Deine Verkäufe und Einkäufe werden mit deinem Windows-Testprogramm synchronisiert.</p>
+        <form id="loginForm" autocomplete="on">
+          <label for="email">E-Mail-Adresse</label><input type="email" id="email" name="email" autocomplete="username" inputmode="email" required placeholder="name@beispiel.at">
+          <label for="password">Passwort</label><input type="password" id="password" name="password" autocomplete="current-password" required placeholder="Dein Supabase-Passwort">
+          <button class="primary full" type="submit" id="signInBtn">Sicher anmelden <span>→</span></button>
+        </form>
+        <p class="tiny">Nur das für TrummCards freigeschaltete Konto erhält Zugriff. Keine Registrierung in dieser Test-App.</p>
+      </div>
+    </section>
+    <div id="appScreen" hidden>
+      <div class="test-note"><span>TESTUMGEBUNG</span> Artikel und Verkäufe gehen direkt in dein Supabase-Projekt <b>TEST</b> – nicht in dein bisheriges lokales Windows-Lager.</div>
+      <div class="topactions"><div><span class="eyebrow" id="welcomeText">DEINE SAMMLUNG</span><h1 id="screenTitle">Übersicht</h1></div><button class="icon-btn" id="refreshBtn" aria-label="Jetzt synchronisieren" title="Synchronisieren">↻</button></div>
+      <div id="pendingBanner" class="pending" hidden></div>
 
-<html lang="de"><head><meta charset="utf-8"/><meta content="width=device-width,initial-scale=1" name="viewport"/><title>TrummCards 1.6.1 | Lager &amp; Verkäufe</title><style>
-:root{font-family:Segoe UI,Arial,sans-serif;color:#e9eef8;background:#0d1422}*{box-sizing:border-box}html{height:100%}body{margin:0;min-height:100vh;display:flex;flex-direction:column}main{flex:1 0 auto;width:100%}footer{margin-top:auto;flex-shrink:0}header{background:#151f31;border-bottom:1px solid #2b3850;padding:22px max(22px,calc((100vw - 1180px)/2))}h1{margin:0;font-size:25px;color:#f5ca67}header p{margin:5px 0;color:#a9b6cc}main{max-width:1180px;margin:auto;padding:22px}nav{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px}button,.btn{border:1px solid #41526e;background:#223149;color:#f2f5fc;border-radius:9px;padding:10px 15px;cursor:pointer;font-weight:600}button:hover{background:#304561}button.active,.primary{background:#d6a94f;color:#121a29;border-color:#d6a94f}.danger{color:#ffb5b5;border-color:#8b4444}.panel{background:#151f31;border:1px solid #2c3b55;border-radius:15px;padding:20px;margin-bottom:16px}.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(175px,1fr));gap:12px;margin-bottom:20px}.metric{background:#18253a;border:1px solid #34435b;border-radius:13px;padding:17px}.metric small{color:#a9b6cc;display:block;margin-bottom:9px}.metric strong{font-size:25px;color:#f6d48b}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:13px}label{display:block;font-size:13px;color:#b5c4d8;margin-bottom:5px}input,select{width:100%;background:#0e1828;color:#fff;border:1px solid #40506a;border-radius:8px;padding:11px;font:inherit}input:focus,select:focus{outline:2px solid #d6a94f}form .actions{margin-top:16px}h2{margin:0 0 15px;font-size:19px}h3{font-size:16px}.muted{color:#a9b6cc}.tablewrap{overflow-x:auto}table{border-collapse:collapse;width:100%;font-size:14px}th,td{padding:11px 9px;text-align:left;border-bottom:1px solid #304059;white-space:nowrap}th{color:#b7c5db;font-weight:600}td small{display:block;color:#a9b6cc}.positive{color:#72e5ad}.negative{color:#ff9696}.hide{display:none!important}.toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between;margin-bottom:13px}.toolbar input{max-width:320px}.notice{border-left:3px solid #d6a94f;padding:12px 14px;background:#222b39;color:#d5deeb;border-radius:6px;margin:12px 0}.rowbuttons{display:flex;gap:5px}td button{font-size:12px;padding:6px 8px}.empty{padding:24px;color:#9fb0c8;text-align:center}footer{padding:18px 22px;text-align:left;color:#9aacc5;font-size:12px;display:flex;justify-content:space-between;align-items:center;border-top:1px solid #2b3850;background:#111a2a}.est{font-weight:700;letter-spacing:.08em;color:#d6a94f}.versiontag{color:#7f92af}.brand{display:flex;align-items:center;gap:14px}.brand img{width:56px;height:56px;object-fit:contain;filter:drop-shadow(0 0 8px rgba(214,169,79,.25))}.brandtext h1{margin:0;font-size:25px;color:#f5ca67}.brandtext p{margin:5px 0 0;color:#a9b6cc}.sortbtn{all:unset;cursor:pointer;color:#b7c5db;font-weight:600}.sortbtn:hover{color:#f6d48b}.sortbtn .arrow{opacity:.8;margin-left:4px}.panelhead{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}.helper{font-size:12px;color:#91a5c4}.actions.inline{display:flex;gap:10px;flex-wrap:wrap}.actions.inline .secondary{background:#1a263b}.edit-badge{display:inline-block;background:#2b3850;color:#f6d48b;border:1px solid #4f6586;padding:2px 8px;border-radius:999px;font-size:12px;margin-left:8px}@media(max-width:650px){main{padding:12px}header{padding:16px 13px}.panel{padding:14px}th,td{padding:9px 6px}.brand img{width:44px;height:44px}.brandtext h1{font-size:22px}}
+      <section id="page-home" class="page">
+        <div class="stats-grid">
+          <div class="stat"><span>Artikel</span><strong id="statProducts">0</strong><small>erfasst</small></div>
+          <div class="stat"><span>Lagerbestand</span><strong id="statPieces">0</strong><small>Stück verfügbar</small></div>
+          <div class="stat"><span>Lagerwert</span><strong id="statValue">0,00 €</strong><small>FIFO-Restwert</small></div>
+          <div class="stat"><span>Gewinn</span><strong id="statProfit">0,00 €</strong><small>gebuchte Verkäufe</small></div>
+        </div>
+        <div class="sectionhead"><h2>Dein Lager</h2><button class="text-button" data-go="article">+ Artikel</button></div>
+        <label class="searchbox"><span>⌕</span><input id="search" aria-label="Artikel suchen" placeholder="Artikel oder SKU suchen …" autocomplete="off" type="search"></label>
+        <div id="productsList" class="stack"></div>
+      </section>
 
-.photo-upload{background:#102037;border:1px dashed #526987;border-radius:12px;padding:13px;margin-top:16px;display:flex;gap:17px;align-items:center;flex-wrap:wrap}
-.photo-upload label{margin:0 0 6px}.photo-upload input{max-width:370px}.photo-help{font-size:12px;color:#a9b6cc;max-width:570px}
-.preview-image{width:105px;height:125px;object-fit:contain;border-radius:9px;background:#0b1423;border:1px solid #3a526e}
-.photo-thumb{height:61px;width:51px;min-width:51px;display:inline-grid;place-items:center;border:1px solid #40506a;background:#0f1a2a;border-radius:8px;padding:2px;overflow:hidden;font-size:22px;color:#b5c4d8}
-.photo-thumb:hover{border-color:#e7be6d;background:#20334b}.photo-thumb img{width:100%;height:100%;object-fit:contain}
-.item-with-photo{display:flex;align-items:center;gap:10px}.item-with-photo .text{min-width:0}
-.small-actions{display:flex;gap:6px;flex-wrap:wrap;align-items:center}.small-actions button{font-size:12px;padding:6px 8px}
-#salePhotoPreview{display:inline-flex;align-items:center;gap:10px;margin:8px 0}
-#photoDialog{border:1px solid #536881;border-radius:16px;background:#152236;color:#fff;padding:15px;max-width:min(90vw,820px)}#photoDialog::backdrop{background:#000b}#photoDialog img{display:block;max-width:82vw;max-height:75vh;object-fit:contain;margin:auto}#photoDialog .toolbar{margin:8px 0 0}
+      <section id="page-article" class="page" hidden>
+        <div class="panel"><div class="micro-label">KARTENVERWALTUNG</div><h2 id="articleTitle">Artikel anlegen</h2>
+          <form id="articleForm"><input type="hidden" name="id">
+            <div class="field"><label>Artikelname *</label><input name="name" required maxlength="300" placeholder="z. B. Delta Herrschaft"></div>
+            <div class="two-fields"><div class="field"><label>Artikelnummer / SKU</label><input name="sku" maxlength="120" placeholder="z. B. PKM-001"></div><div class="field"><label>Set</label><input name="set_name" maxlength="150" placeholder="z. B. Promokarte"></div></div>
+            <div class="two-fields"><div class="field"><label>Sprache</label><select name="language"><option>Deutsch</option><option>Englisch</option><option>Japanisch</option><option>Italienisch</option><option>Andere</option></select></div><div class="field"><label>Zustand</label><select name="card_condition"><option value="">Bitte wählen</option><option>Near Mint</option><option>Excellent</option><option>Good</option><option>Played</option><option>Poor</option><option>Sealed</option></select></div></div>
+            <div class="field"><label>Notiz</label><textarea name="note" rows="2" maxlength="2000" placeholder="Optional"></textarea></div>
+            <button type="submit" class="primary full" id="articleSubmit">Artikel speichern</button>
+            <button type="button" class="secondary full" data-go="home">Zurück zum Lager</button>
+          </form>
+        </div>
+      </section>
 
-/* Version 1.6.1: robuste, bewusst immer bearbeitbare Verkaufsmaske */
-#saleForm input:not([type="hidden"]),#saleForm select{pointer-events:auto!important;user-select:text!important;-webkit-user-select:text!important;opacity:1;min-width:0}
-#saleForm input:not([type="hidden"]):focus-visible,#saleForm select:focus-visible{outline:2px solid #d6a94f;outline-offset:1px}
-.sale-live{margin-top:15px;padding:13px 15px;background:#0d1c30;border:1px solid #40506a;border-radius:10px;color:#e8f0ff;line-height:1.7}
-.sale-live .helper{color:#abbcce}
-</style></head><body><header><div class="brand"><img alt="TrummCards Logo" src="assets/trummcards-logo.webp"/><div class="brandtext"><h1>TrummCards</h1><p>Lagerverwaltung · Einkäufe · Verkäufe · Gewinnübersicht</p></div></div></header><main><nav><button class="active" data-tab="dashboard">Übersicht</button><button data-tab="purchase">Einkauf erfassen</button><button data-tab="sale">Verkauf erfassen</button><button data-tab="inventory">Lagerbestand</button><button data-tab="history">Buchungen</button><button data-tab="csvimport">CSV-Einkäufe importieren</button><button data-tab="backup">Datensicherung</button><button data-tab="updates">Programm-Updates</button></nav>
-<section class="page" id="dashboard"><div class="metrics" id="metrics"></div><div class="panel"><h2>So funktioniert die Lagerlogik</h2><p>Jeder Einkauf erzeugt eine eigene Lagercharge mit einem Stück-Einkaufspreis. Verkäufe werden automatisch den ältesten verfügbaren Chargen desselben Artikels zugeordnet (<b>FIFO</b>). Damit stimmt der Gewinn auch dann, wenn du dieselbe Karte später teurer oder günstiger nachkaufst.</p><div class="notice">Der Gewinn berücksichtigt Einkaufskosten, Verkaufsgebühren, tatsächlich bezahlten Versand und weitere Verkaufskosten. Der Lagerwert basiert auf Einkaufskosten, nicht auf geschätzten Marktpreisen. Alle Angaben vor Steuern.</div></div><div class="panel"><h2>Letzte Verkäufe</h2><div class="tablewrap" id="recent"></div></div></section>
-<section class="page hide" id="purchase"><div class="panel"><div class="panelhead"><h2 id="purchaseTitle">Neuen Einkauf erfassen</h2><span class="edit-badge hide" id="editBadge">Bearbeitungsmodus</span></div><form id="purchaseForm"><input name="editLotId" type="hidden"/><div class="grid"><div><label>Artikelname *</label><input name="name" placeholder="z. B. Mewtwo GX 31/68" required=""/></div><div><label>Set / Edition</label><input name="set" placeholder="Hidden Fates"/></div><div><label>Sprache</label><select name="language"><option>Deutsch</option><option>Englisch</option><option>Japanisch</option><option>Koreanisch</option><option>Sonstige</option></select></div><div><label>Zustand / Grading</label><input name="condition" placeholder="Near Mint / PSA 10"/></div><div><label>Artikelnummer / SKU (optional, eindeutig)</label><input name="sku" placeholder="Eigene eindeutige Kennung"/></div><div><label>Einkaufsdatum *</label><input name="date" required="" type="date"/></div><div><label>Stückzahl *</label><input min="1" name="qty" required="" step="1" type="number" value="1"/></div><div><label>Einzelpreis (€) *</label><input autocomplete="off" inputmode="decimal" name="unit" placeholder="z. B. 100,00" required="" type="text"/></div><div><label>Einkaufspreis gesamt (€) *</label><input autocomplete="off" inputmode="decimal" name="total" placeholder="Automatisch bei Stückzahl × Einzelpreis" required="" type="text"/></div><div><label>Zusätzliche Einkaufskosten gesamt (€)</label><input autocomplete="off" inputmode="decimal" name="extra" type="text" value="0"/></div><div><label>Bezugsquelle</label><input name="source" placeholder="Vinted, eBay, Händler ..."/></div><div><label>Notiz</label><input name="note" placeholder="Bestellnummer, Besonderheiten ..."/></div></div><div class="notice" id="purchasePriceHint">Einzelpreis und Gesamtpreis werden automatisch miteinander berechnet. Zusatzkosten kommen erst beim Einstand dazu.</div><div class="photo-upload"><img alt="Bildvorschau" class="preview-image hide" id="purchasePhotoPreview"/><div><label for="purchasePhoto">Artikelbild (optional)</label><input accept="image/png,image/jpeg,image/webp,image/gif" id="purchasePhoto" name="photo" type="file"/><p class="photo-help">PNG, JPG, WEBP oder GIF bis 10 MB. Das Bild wird automatisch verkleinert. Du kannst es später im Lager ändern oder ergänzen. Beim CSV-Import Bilder anschließend hinzufügen.</p></div></div><div class="actions inline"><button class="primary" id="purchaseSubmitBtn" type="submit">Einkauf speichern</button><button class="btn secondary hide" id="purchaseCancelEdit" type="button">Bearbeiten abbrechen</button></div></form></div></section>
-<section class="page hide" id="sale"><div class="panel">
-<div class="panelhead"><h2 id="saleTitle">Verkauf erfassen</h2><span class="edit-badge hide" id="saleEditBadge">Bearbeitungsmodus</span></div>
-<p class="muted">Wähle den Artikel und trage danach Stückzahl, Verkaufspreis und Kosten direkt in die Felder ein. Euro-Beträge mit Komma oder Punkt werden unterstützt.</p>
-<form id="saleForm" autocomplete="off"><input type="hidden" name="editSaleId">
-<div class="grid">
-<div><label for="saleItem">Artikel aus dem Lager *</label><select id="saleItem" required></select></div>
-<div><label for="saleDate">Verkaufsdatum *</label><input id="saleDate" name="date" type="date" required></div>
-<div><label for="saleQty">Stückzahl *</label><input id="saleQty" name="qty" type="text" inputmode="numeric" autocomplete="off" pattern="[0-9]+" value="1" required placeholder="z. B. 2"></div>
-<div><label for="salePrice">Verkaufspreis gesamt (€) *</label><input id="salePrice" name="price" type="text" inputmode="decimal" autocomplete="off" required placeholder="z. B. 49,90"></div>
-<div><label for="saleShippingIncome">Versand vom Käufer bezahlt (€)</label><input id="saleShippingIncome" name="shippingIncome" type="text" inputmode="decimal" autocomplete="off" value="0"></div>
-<div><label for="saleShippingCost">Tatsächliche Versandkosten (€)</label><input id="saleShippingCost" name="shippingCost" type="text" inputmode="decimal" autocomplete="off" value="0"></div>
-<div><label for="saleFees">Plattformgebühren (€)</label><input id="saleFees" name="fees" type="text" inputmode="decimal" autocomplete="off" value="0"></div>
-<div><label for="saleOther">Weitere Kosten (€), z. B. Verpackung</label><input id="saleOther" name="other" type="text" inputmode="decimal" autocomplete="off" value="0"></div>
-<div><label for="salePlatform">Verkaufsplattform</label><select id="salePlatform" name="platform"><option>eBay</option><option>Vinted</option><option>Whatnot</option><option>Willhaben</option><option>Privat</option><option>Sonstige</option></select></div>
-<div><label for="saleNote">Bestellnummer / Notiz</label><input id="saleNote" name="note" autocomplete="off" placeholder="Optional"></div>
+      <section id="page-purchase" class="page" hidden>
+        <div class="panel"><div class="micro-label">EINGANG</div><h2>Einkauf erfassen</h2><p class="subtle">Einzelpreis und Gesamtpreis werden automatisch verknüpft. Die tatsächlichen Einstandskosten werden im Cloud-Lager gespeichert.</p>
+          <form id="purchaseForm"><div class="field"><label>Artikel *</label><select name="product" required><option value="">Artikel wählen</option></select></div>
+            <div class="two-fields"><div class="field"><label>Datum *</label><input name="date" type="date" required></div><div class="field"><label>Stückzahl *</label><input name="qty" inputmode="numeric" type="number" step="1" min="1" max="1000000" required value="1"></div></div>
+            <div class="two-fields"><div class="field"><label>Einzelpreis € *</label><input name="unit" type="text" inputmode="decimal" value="0,00" required></div><div class="field"><label>Gesamtpreis € *</label><input name="total" type="text" inputmode="decimal" value="0,00" required></div></div>
+            <div class="field"><label>Zusatzkosten gesamt €</label><input name="extra" type="text" inputmode="decimal" value="0,00"></div>
+            <div class="field"><label>Bezugsquelle</label><input name="source" placeholder="z. B. Cardmarket, eBay"></div>
+            <div class="field"><label>Notiz</label><input name="note" placeholder="Optional"></div>
+            <div id="purchasePreview" class="preview">Stückzahl und Preise eingeben.</div>
+            <button class="primary full" type="submit">Einkauf buchen <span>→</span></button>
+          </form>
+        </div>
+      </section>
+
+      <section id="page-sale" class="page" hidden>
+        <div class="panel"><div class="micro-label">VERKAUF</div><h2>Verkauf erfassen</h2><p class="subtle">Lagerbestand und Einstand werden nach FIFO vom Supabase-Server gebucht.</p>
+          <form id="saleForm">
+            <div class="field"><label>Artikel mit Bestand *</label><select name="product" required><option value="">Artikel wählen</option></select></div>
+            <div class="two-fields"><div class="field"><label>Datum *</label><input name="date" type="date" required></div><div class="field"><label>Stückzahl *</label><input name="qty" type="number" step="1" min="1" max="1000000" inputmode="numeric" required value="1"></div></div>
+            <div class="field"><label>Verkaufspreis gesamt € *</label><input name="price" type="text" inputmode="decimal" value="0,00" required></div>
+            <div class="two-fields"><div class="field"><label>Versand-Einnahmen €</label><input name="shippingIncome" type="text" inputmode="decimal" value="0,00"></div><div class="field"><label>Versandkosten €</label><input name="shippingCost" type="text" inputmode="decimal" value="0,00"></div></div>
+            <div class="two-fields"><div class="field"><label>Plattform-Gebühren €</label><input name="fees" type="text" inputmode="decimal" value="0,00"></div><div class="field"><label>Weitere Kosten €</label><input name="other" type="text" inputmode="decimal" value="0,00"></div></div>
+            <div class="field"><label>Plattform</label><select name="platform"><option>eBay</option><option>Cardmarket</option><option>Vinted</option><option>Whatnot</option><option>Privat</option><option>Sonstige</option></select></div>
+            <div class="field"><label>Notiz</label><input name="note" placeholder="Optional"></div>
+            <div class="preview" id="salePreview">Artikel, Stückzahl und Preis wählen.</div>
+            <button class="primary full" type="submit">Verkauf buchen <span>→</span></button>
+          </form>
+        </div>
+      </section>
+
+      <section id="page-sales" class="page" hidden>
+        <div class="sectionhead"><h2>Verkäufe & Einkäufe</h2></div>
+        <div id="salesList" class="stack"></div>
+        <h2 class="subheading">Einkaufschargen</h2><div id="lotsList" class="stack"></div>
+      </section>
+
+      <section id="page-photos" class="page" hidden>
+        <div class="panel"><div class="micro-label">FOTOS</div><h2>Artikelbilder</h2><p class="subtle">Mache ein Foto mit deinem Handy oder wähle ein Bild. Bilder sind ausschließlich in deinem privaten Cloud-Speicher zugänglich.</p>
+          <form id="photoForm"><div class="field"><label>Einkaufslos *</label><select name="lot" required><option value="">Einkauf wählen</option></select></div>
+            <div class="two-fields photo-buttons"><label class="file-button">📷 Foto aufnehmen<input type="file" name="camera" accept="image/*" capture="environment"></label><label class="file-button">▧ Bild auswählen<input type="file" name="gallery" accept="image/*"></label></div>
+            <div id="photoSelection" class="image-selection">Noch kein Bild ausgewählt.</div>
+            <button class="primary full" type="submit">Bild sicher hochladen</button>
+          </form>
+        </div>
+        <div class="sectionhead"><h2>Gespeicherte Bilder</h2></div><div id="photosList" class="photo-grid"></div>
+      </section>
+
+      <section id="page-more" class="page" hidden>
+        <div class="panel"><div class="micro-label">KONTO & SYNCHRONISIERUNG</div><h2>Cloud TEST</h2>
+          <div class="setting-row"><span>Angemeldet als</span><b id="accountEmail">–</b></div>
+          <div class="setting-row"><span>Datenbank</span><b>Supabase TEST</b></div>
+          <div class="setting-row"><span>Letzte Aktualisierung</span><b id="lastUpdated">–</b></div>
+          <p class="subtle">Die App aktualisiert den Bestand etwa alle 12 Sekunden, sobald sie im Vordergrund ist. Beim Zurückkehren wird zusätzlich synchronisiert. Für Buchungen wird Internet benötigt.</p>
+          <button class="secondary full" type="button" id="moreRefresh">Jetzt synchronisieren</button>
+          <button class="danger full" type="button" id="signOutBtn">Abmelden</button>
+        </div>
+        <div class="panel"><h2>Zum Home-Bildschirm</h2><p class="subtle"><b>iPhone:</b> In Safari auf „Teilen“ tippen und „Zum Home-Bildschirm“ wählen.<br><b>Android:</b> In Chrome im Menü auf „App installieren“ oder „Zum Startbildschirm hinzufügen“ tippen.</p></div>
+      </section>
+    </div>
+  </main>
+  <nav id="bottomNav" class="bottom-nav" aria-label="Navigation" hidden>
+    <button data-go="home" class="active" type="button"><span>▦</span>Lager</button>
+    <button data-go="purchase" type="button"><span>⊕</span>Einkauf</button>
+    <button data-go="sale" type="button"><span>↗</span>Verkauf</button>
+    <button data-go="photos" type="button"><span>▧</span>Bilder</button>
+    <button data-go="more" type="button"><span>☰</span>Mehr</button>
+  </nav>
+  <footer>TRUMMCARDS · EST. 2026 <span>CLOUD TEST · KEINE PRODUKTIVDATEN</span></footer>
 </div>
-<div class="sale-live" aria-live="polite"><strong id="saleLiveStatus">Artikel auswählen und Werte eingeben.</strong><div class="helper" id="saleHint">Wähle einen Artikel aus deinem Lagerbestand.</div></div>
-<div id="salePhotoPreview"></div>
-<div class="actions inline"><button type="submit" id="saleSubmitBtn" class="primary">Verkauf buchen &amp; Bestand reduzieren</button><button type="button" id="saleCancelEdit" class="btn secondary hide">Bearbeiten abbrechen</button></div>
-</form></div></section>
-<section class="page hide" id="inventory"><div class="panel"><div class="toolbar"><div><h2>Lagerbestand</h2><div class="helper">Suche nach Name, Set, Sprache, Zustand oder Artikelnummer / SKU</div></div><input id="inventorySearch" placeholder="Nach Name oder Artikelnummer suchen"/></div><div class="tablewrap" id="inventoryTable"></div></div><div class="panel"><h2>Einzelne Einkaufschargen</h2><p class="muted">Bilder lassen sich pro Einkauf nachträglich ergänzen, austauschen oder entfernen – auch bei CSV-Importen und bereits verkauften Karten.</p><div class="tablewrap" id="lotsTable"></div></div></section>
-<section class="page hide" id="history"><div class="panel"><h2>Verkäufe &amp; Gewinn je Position</h2><div class="tablewrap" id="salesTable"></div></div><div class="panel"><h2>Einkaufshistorie</h2><div class="tablewrap" id="purchasesTable"></div></div></section>
-<section class="page hide" id="csvimport"><div class="panel"><h2>Einkäufe aus Excel-CSV ins Lager buchen</h2><p>Eine Zeile entspricht einer Einkaufsposition. Jede Zeile erzeugt eine neue Lagercharge; vorhandene Einkäufe bleiben bestehen. Bereits vorhandene Artikelnummern / SKUs werden beim Import abgewiesen. Beim Verkauf wird weiterhin FIFO verwendet. <b>Bilder werden nicht über CSV übertragen:</b> Danach kannst du sie im Reiter „Lagerbestand“ bei jeder Charge hochladen.</p><div class="toolbar" style="justify-content:flex-start"><button class="primary" id="templateCsv">CSV-Vorlage herunterladen</button><button id="templateXlsxInfo" type="button">Excel-Hinweis anzeigen</button></div><div class="notice">Pflichtspalten: <b>Artikelname, Einkaufsdatum, Menge, EinkaufspreisGesamt</b>. Datum: <b>JJJJ-MM-TT</b> oder <b>TT.MM.JJJJ</b>. Geldbeträge z. B. <b>12,50</b>. Excel: „CSV UTF-8 (durch Trennzeichen getrennt)“ speichern. Semikolon und Komma als Trennzeichen werden unterstützt. Die Vorlage verwendet Semikolon.</div><label for="purchaseCsvFile">CSV-Datei auswählen</label><input accept=".csv,text/csv,text/plain" id="purchaseCsvFile" type="file"/><p class="muted">Vor dem Buchen werden alle Zeilen geprüft und als Vorschau angezeigt. Fehlerhafte Dateien werden nicht importiert. Eine bereits importierte Datei nicht erneut importieren, sonst entstehen doppelte Einkäufe.</p><div aria-live="polite" id="csvImportStatus"></div><div class="tablewrap" id="csvPreview"></div><div class="actions" style="margin-top:14px"><button class="primary hide" id="confirmCsvImport">Geprüfte Einkäufe jetzt ins Lager buchen</button><button class="hide" id="cancelCsvImport">Vorschau verwerfen</button></div></div></section>
-<section class="page hide" id="backup"><div class="panel"><h2>Datensicherung</h2><p>Einkäufe und Verkäufe werden lokal gespeichert; Artikelbilder liegen zusätzlich in der lokalen Bilddatenbank dieses Programms. <b>Die JSON-Sicherung enthält ab Version 1.3 auch deine Artikelbilder.</b> Exportiere regelmäßig ein Backup und verwahre es an einem anderen Ort.</p><div class="toolbar" style="justify-content:flex-start"><button class="primary" id="exportJson">JSON-Sicherung herunterladen</button><button id="exportCsv">CSV-Verkäufe herunterladen</button><button id="exportInventory">CSV-Lager herunterladen</button></div><hr style="border:0;border-top:1px solid #34435b;margin:22px 0"/><label>Gesicherte JSON-Datei wiederherstellen</label><input accept=".json,application/json" id="importJson" type="file"/><p class="muted">Beim Import werden die vorhandenen Daten einschließlich der Bilder durch die Sicherung ersetzt. Alte Sicherungen ohne Bilder bleiben kompatibel. Bitte vorher eine aktuelle Sicherung herunterladen.</p><hr style="border:0;border-top:1px solid #34435b;margin:22px 0"/><button class="danger" id="reset">Alle Daten löschen</button></div></section>
-<section class="page hide" id="updates"><div class="panel"><h2>Programm-Updates</h2><p>TrummCards prueft beim Start und anschliessend alle 12 Stunden automatisch auf neue Versionen. Neue Versionen werden aus GitHub Releases geladen.</p><div class="notice"><strong>Installierte Version: <span id="appVersion">wird geladen ...</span></strong><p id="updateStatus" style="margin:7px 0 0">Updatefunktion wird geladen ...</p><progress class="hide" id="updateProgress" max="100" style="width:100%;margin-top:10px" value="0"></progress></div><div class="toolbar" style="justify-content:flex-start"><button class="primary" id="checkForUpdates" type="button">Jetzt nach Updates suchen</button><button class="hide" id="installUpdate" type="button">Update installieren (mit automatischem Backup)</button><button id="openUpdateBackups" type="button">Automatische Backups oeffnen</button></div><p class="muted">Vor jedem automatischen Programm-Update wird eine JSON-Sicherung deiner Einkaeufe, Verkaeufe und Artikelbilder in deinem Windows-Benutzerprofil abgelegt. Die Backup-Dateien bleiben auch nach dem Update erhalten. Fuer die Updatepruefung wird eine Internetverbindung benoetigt.</p><p class="muted">Achtung: Nicht signierte Windows-Installer koennen von Smart App Control blockiert werden. Updates werden nur angeboten, wenn du eine neuere Version in deinem hinterlegten GitHub-Repository veroeffentlichst.</p></div></section>
-<input accept="image/png,image/jpeg,image/webp,image/gif" class="hide" id="editPhotoInput" type="file"/><dialog id="photoDialog"><div class="muted" id="photoDialogLabel"></div><img alt="Artikelbild in Großansicht" id="photoDialogImage"/><div class="toolbar"><button id="photoDialogClose" type="button">Schließen</button></div></dialog></main><footer><div class="est">EST. 2026</div><div>TrummCards · Offline-Anwendung · Alle Beträge in EUR · Keine automatische Synchronisierung <span class="versiontag">· Version 1.6.1</span></div></footer><script>
-(()=>{'use strict';const KEY='trummcards_inventory_v1';let db;try{db=JSON.parse(localStorage.getItem(KEY))||{lots:[],sales:[]}}catch{db={lots:[],sales:[]}}if(!Array.isArray(db.lots)||!Array.isArray(db.sales))db={lots:[],sales:[]};const IMAGE_DB='trummcards_photos_v1',IMAGE_STORE='photos';const photoUrls=new Map();
-const imageDbReady=new Promise((resolve,reject)=>{if(!('indexedDB' in window)){reject(Error('Dein Browser unterstützt die lokale Bilddatenbank nicht.'));return}const req=indexedDB.open(IMAGE_DB,1);req.onupgradeneeded=()=>{if(!req.result.objectStoreNames.contains(IMAGE_STORE))req.result.createObjectStore(IMAGE_STORE,{keyPath:'id'})};req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error||Error('Bilddatenbank konnte nicht geöffnet werden'))});
-async function imageRecords(){const d=await imageDbReady;return new Promise((ok,bad)=>{const tx=d.transaction(IMAGE_STORE,'readonly'),rq=tx.objectStore(IMAGE_STORE).getAll();rq.onsuccess=()=>ok(rq.result);rq.onerror=()=>bad(rq.error)})}
-function refreshPhotoCache(entries){for(const url of photoUrls.values())URL.revokeObjectURL(url);photoUrls.clear();for(const r of entries)if(r.blob instanceof Blob)photoUrls.set(r.id,URL.createObjectURL(r.blob));render()}
-async function storePhoto(id,blob,draw=true){const d=await imageDbReady;await new Promise((ok,bad)=>{const tx=d.transaction(IMAGE_STORE,'readwrite');tx.objectStore(IMAGE_STORE).put({id,blob});tx.oncomplete=()=>ok();tx.onerror=()=>bad(tx.error);tx.onabort=()=>bad(tx.error)});const prev=photoUrls.get(id);if(prev)URL.revokeObjectURL(prev);photoUrls.set(id,URL.createObjectURL(blob));if(draw)render()}
-async function removePhoto(id,draw=true){const d=await imageDbReady;await new Promise((ok,bad)=>{const tx=d.transaction(IMAGE_STORE,'readwrite');tx.objectStore(IMAGE_STORE).delete(id);tx.oncomplete=()=>ok();tx.onerror=()=>bad(tx.error);tx.onabort=()=>bad(tx.error)});const prev=photoUrls.get(id);if(prev)URL.revokeObjectURL(prev);photoUrls.delete(id);if(draw)render()}
-async function restorePhotos(records){const d=await imageDbReady;await new Promise((ok,bad)=>{const tx=d.transaction(IMAGE_STORE,'readwrite'),store=tx.objectStore(IMAGE_STORE);store.clear();for(const entry of records)store.put(entry);tx.oncomplete=()=>ok();tx.onerror=()=>bad(tx.error);tx.onabort=()=>bad(tx.error)});refreshPhotoCache(records)}
-async function imageToBlob(file){if(!file)return null;if(file.size>10*1024*1024)throw Error('Bilddatei ist größer als 10 MB.');if(!/^image\/(png|jpeg|webp|gif)$/.test(file.type))throw Error('Nur JPG, PNG, WEBP und GIF sind erlaubt.');const bmp=await createImageBitmap(file);try{const ratio=Math.min(1,1200/Math.max(bmp.width,bmp.height)),w=Math.max(1,Math.round(bmp.width*ratio)),h=Math.max(1,Math.round(bmp.height*ratio)),c=document.createElement('canvas');c.width=w;c.height=h;const ctx=c.getContext('2d');ctx.fillStyle='white';ctx.fillRect(0,0,w,h);ctx.drawImage(bmp,0,0,w,h);const blob=await new Promise(ok=>c.toBlob(ok,'image/jpeg',.82));if(!blob)throw Error('Bild konnte nicht verarbeitet werden.');return blob}finally{bmp.close()}}
-function imageToDataURL(blob){return new Promise((ok,bad)=>{const r=new FileReader();r.onload=()=>ok(r.result);r.onerror=()=>bad(r.error);r.readAsDataURL(blob)})}
-function dataURLToBlob(s){if(typeof s!=='string'||!/^data:image\/(jpeg|png|webp);base64,[a-zA-Z0-9+/=]+$/.test(s)||s.length>5*1024*1024)throw Error('Ungültiges oder zu großes Backup-Bild');const [meta,b64]=s.split(',');const bin=atob(b64),u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);return new Blob([u],{type:meta.slice(5,-7)})}
-function lotPhotoId(l){return l&&photoUrls.has(l.id)?l.id:null}
-function groupPhotoId(g){if(!g)return null;const ls=db.lots.filter(l=>key(l)===g.key);return (ls.find(l=>photoUrls.has(l.id)&&remaining(l)>0)||ls.find(l=>photoUrls.has(l.id))||ls.find(l=>remaining(l)>0)||ls[0]||{}).id||null}
-function photoButton(id){return `<button type="button" class="photo-thumb" title="${id&&photoUrls.has(id)?'Bild groß ansehen':'Bild hinzufügen'}" data-photo-lot="${esc(id||'')}" data-view-lot="${esc(id||'')}">＋</button>`}
-function photoCell(id){return `<div class="item-with-photo">${photoButton(id)}<div class="text">`}
-function renderPhotoCells(){for(const b of document.querySelectorAll('[data-photo-lot]')){const url=photoUrls.get(b.dataset.photoLot);b.replaceChildren();if(url){const im=document.createElement('img');im.alt='Artikelbild';im.src=url;b.appendChild(im)}else b.textContent='＋'}}
-function salePhotoId(s){return (s.allocations||[]).map(a=>a.lotId).find(id=>photoUrls.has(id))||groupPhotoId({key:s.itemKey})}
-const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];const euro=n=>Number(n||0).toLocaleString('de-AT',{style:'currency',currency:'EUR'});const fmt=n=>Number(n||0).toLocaleString('de-AT',{maximumFractionDigits:2});const money=n=>Math.round((Number(n)+Number.EPSILON)*100)/100;const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,10);const today=()=>new Date().toLocaleDateString('en-CA');const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(db))}catch(e){alert('Speichern fehlgeschlagen: '+e.message);throw e}render()};const key=l=>[l.name.trim().toLowerCase(),(l.set||'').trim().toLowerCase(),(l.language||'').trim().toLowerCase(),(l.condition||'').trim().toLowerCase(),(l.sku||'').trim().toLowerCase()].join('|');const soldByLot=()=>{const used={};for(const s of db.sales)for(const a of s.allocations)used[a.lotId]=(used[a.lotId]||0)+a.qty;return used};const remaining=l=>l.qty-(soldByLot()[l.id]||0);const groups=()=>{const m=new Map;for(const l of db.lots){const k=key(l);if(!m.has(k))m.set(k,{key:k,name:l.name,set:l.set,language:l.language,condition:l.condition,sku:l.sku,qty:0,value:0});const g=m.get(k),r=remaining(l);g.qty+=r;g.value+=r*l.unitCost}return [...m.values()].sort((a,b)=>a.name.localeCompare(b.name,'de'))};const profit=s=>money(s.price+s.shippingIncome-s.shippingCost-s.fees-s.other-s.cost);const formNum=(f,n)=>Number(String(f.elements[n].value||0).replace(',','.'));const intField=(f,n)=>{const v=String(f.elements[n].value||'').trim().replace(',','.');return /^\d+$/.test(v)?Number(v):NaN};const valid=n=>Number.isFinite(n)&&n>=0;const dateSort=(a,b)=>a.date.localeCompare(b.date)||a.id.localeCompare(b.id);
-// Version 1.6: eindeutige Felder, saubere Euro-Eingaben und verkaufsfeste Lagerlogik.
-const fld=(form,name)=>form.elements.namedItem(name);
-function parseEuro(value){
-  let t=String(value??'').trim().replace(/[\s\u00a0€]/g,'');
-  if(!t)return NaN;
-  if(t.includes(',')&&t.includes('.')) {
-    if(t.lastIndexOf(',')>t.lastIndexOf('.'))t=t.replaceAll('.','').replace(',','.');
-    else t=t.replaceAll(',','');
-  }else if(t.includes(','))t=t.replace(',','.');
-  if(!/^\d+(?:\.\d{1,4})?$/.test(t))return NaN;
-  return Number(t);
-}
-const euroInput=(n,precision=2)=>Number(n).toFixed(precision).replace('.',',');
-const priceInt=(s)=>{const t=String(s??'').trim();return /^\d+$/.test(t)?Number(t):NaN};
-const normalizeSku=(s)=>String(s||'').trim().toLocaleLowerCase('de');
-function skuTaken(sku,exceptId,others=[]){
-  const k=normalizeSku(sku);
-  return !!k&&(db.lots.some(l=>l.id!==exceptId&&normalizeSku(l.sku)===k)||others.some(v=>normalizeSku(v)===k));
-}
-function soldByLotExcluding(saleId){
-  const used={};
-  for(const s of db.sales)if(s.id!==saleId)for(const a of s.allocations)used[a.lotId]=(used[a.lotId]||0)+a.qty;
-  return used;
-}
-function groupsForSale(saleId){
-  const used=soldByLotExcluding(saleId),m=new Map();
-  for(const l of db.lots){
-    const k=key(l);
-    if(!m.has(k))m.set(k,{key:k,name:l.name,set:l.set,language:l.language,condition:l.condition,sku:l.sku,qty:0,value:0});
-    const g=m.get(k),r=Math.max(0,l.qty-(used[l.id]||0));
-    g.qty+=r;g.value+=r*l.unitCost;
-  }
-  return [...m.values()].sort((a,b)=>a.name.localeCompare(b.name,'de'));
-}
-function priceSummary(){
-  const f=$('#purchaseForm'),qty=priceInt(fld(f,'qty').value),total=parseEuro(fld(f,'total').value),extra=parseEuro(fld(f,'extra').value||'0');
-  $('#purchasePriceHint').textContent=qty>0&&Number.isFinite(total)&&Number.isFinite(extra)
-    ?`Warenwert: ${euro(total)} für ${qty} Stück. Zusatzkosten: ${euro(extra)}. Einstand inkl. Zusatzkosten pro Stück: ${euro((total+extra)/qty)}.`
-    :'Einzelpreis und Gesamtpreis berechnen sich gegenseitig. Zusatzkosten werden auf die Stückzahl verteilt.';
-}
-let lastPurchasePriceField='unit';
-function synchronizePurchasePrice(changed){
-  const f=$('#purchaseForm'),qty=priceInt(fld(f,'qty').value);
-  if(!Number.isInteger(qty)||qty<1)return priceSummary();
-  if(changed==='unit'){
-    const n=parseEuro(fld(f,'unit').value);
-    if(Number.isFinite(n))fld(f,'total').value=euroInput(money(n*qty));
-    else fld(f,'total').value='';
-  }else{
-    const n=parseEuro(fld(f,'total').value);
-    if(Number.isFinite(n))fld(f,'unit').value=euroInput(n/qty,4).replace(/0+$/,'').replace(/,$/,'');
-    else fld(f,'unit').value='';
-  }
-  priceSummary();
-}
-function resetSaleForm(){
-  const f=$('#saleForm');editingSaleId=null;f.reset();fld(f,'editSaleId').value='';fld(f,'date').value=today();
-  fld(f,'qty').value='1';for(const n of ['shippingIncome','shippingCost','fees','other'])fld(f,n).value='0';
-  $('#saleTitle').textContent='Verkauf erfassen';$('#saleSubmitBtn').textContent='Verkauf buchen & Bestand reduzieren';
-  $('#saleEditBadge').classList.add('hide');$('#saleCancelEdit').classList.add('hide');render();
-}
-let editingSaleId=null;
-function beginEditSale(id){
-  const s=db.sales.find(x=>x.id===id);if(!s)return;
-  editingSaleId=id;
-  const f=$('#saleForm');fld(f,'editSaleId').value=id;
-  fld(f,'date').value=s.date||today();fld(f,'qty').value=String(s.qty);
-  for(const n of ['price','shippingIncome','shippingCost','fees','other'])fld(f,n).value=euroInput(s[n]||0);
-  fld(f,'platform').value=s.platform||'Sonstige';fld(f,'note').value=s.note||'';
-  $('#saleTitle').textContent='Verkauf bearbeiten';$('#saleSubmitBtn').textContent='Änderungen am Verkauf speichern';
-  $('#saleEditBadge').classList.remove('hide');$('#saleCancelEdit').classList.remove('hide');
-  showTab('sale');
-  const l=db.lots.find(l=>s.allocations.some(a=>a.lotId===l.id));
-  const itemKey=l?key(l):s.itemKey;
-  if([...$('#saleItem').options].some(o=>o.value===itemKey))$('#saleItem').value=itemKey;
-  updateHint();
-  window.scrollTo({top:0,behavior:'smooth'});
-}
-let inventorySort={field:'name',dir:'asc'};const sortArrow=f=>inventorySort.field!==f?'':(inventorySort.dir==='asc'?' ▲':' ▼');const sortHead=(f,l)=>`<button type="button" class="sortbtn" data-sort="${f}">${l}<span class="arrow">${sortArrow(f)}</span></button>`;function sortInventory(list){const dir=inventorySort.dir==='asc'?1:-1;return [...list].sort((a,b)=>{let av,bv;switch(inventorySort.field){case 'sku': av=(a.sku||'').toLowerCase(); bv=(b.sku||'').toLowerCase(); break;case 'qty': av=a.qty; bv=b.qty; break;case 'price': av=a.qty?a.value/a.qty:0; bv=b.qty?b.value/b.qty:0; break;case 'value': av=a.value; bv=b.value; break;case 'set': av=(a.set||'').toLowerCase(); bv=(b.set||'').toLowerCase(); break;case 'language': av=((a.language||'')+' '+(a.condition||'')).toLowerCase(); bv=((b.language||'')+' '+(b.condition||'')).toLowerCase(); break;default: av=(a.name||'').toLowerCase(); bv=(b.name||'').toLowerCase();} if(typeof av==='string'||typeof bv==='string') return av.localeCompare(bv,'de')*dir || (a.name||'').localeCompare(b.name||'de')*dir; return (av-bv)*dir || (a.name||'').localeCompare(b.name||'de');});}function showTab(id){document.querySelectorAll('nav button').forEach(x=>x.classList.toggle('active',x.dataset.tab===id));document.querySelectorAll('.page').forEach(x=>x.classList.toggle('hide',x.id!==id));render();}let purchasePreviewUrl=null,editingLotId=null;function clearPurchasePreview(){if(purchasePreviewUrl)URL.revokeObjectURL(purchasePreviewUrl);purchasePreviewUrl=null;const im=$('#purchasePhotoPreview');im.classList.add('hide');im.removeAttribute('src');$('#purchasePhoto').value='';}function resetPurchaseForm(){
-  const f=$('#purchaseForm');editingLotId=null;f.reset();
-  fld(f,'editLotId').value='';fld(f,'date').value=today();fld(f,'language').value='Deutsch';
-  fld(f,'qty').value='1';fld(f,'extra').value='0';fld(f,'unit').value='';fld(f,'total').value='';
-  lastPurchasePriceField='unit';
-  $('#purchaseTitle').textContent='Neuen Einkauf erfassen';$('#purchaseSubmitBtn').textContent='Einkauf speichern';
-  $('#purchaseCancelEdit').classList.add('hide');$('#editBadge').classList.add('hide');
-  clearPurchasePreview();priceSummary();
-}
-function beginEditLot(id){
-  const l=db.lots.find(x=>x.id===id);if(!l)return;
-  const f=$('#purchaseForm');editingLotId=id;fld(f,'editLotId').value=id;
-  for(const n of ['name','set','language','condition','sku','date','qty','source','note'])fld(f,n).value=l[n]??'';
-  const qty=Number(l.qty)||1;
-  fld(f,'unit').value=euroInput((Number(l.total)||0)/qty,4).replace(/0+$/,'').replace(/,$/,'');
-  fld(f,'total').value=euroInput(Number(l.total)||0);
-  fld(f,'extra').value=euroInput(Number(l.extra)||0);
-  lastPurchasePriceField='total';
-  $('#purchaseTitle').textContent='Artikel bearbeiten';$('#purchaseSubmitBtn').textContent='Änderungen speichern';
-  $('#purchaseCancelEdit').classList.remove('hide');$('#editBadge').classList.remove('hide');
-  clearPurchasePreview();
-  const url=photoUrls.get(id),im=$('#purchasePhotoPreview');
-  if(url){im.src=url;im.classList.remove('hide');}
-  priceSummary();showTab('purchase');window.scrollTo({top:0,behavior:'smooth'});
-}
-$$('nav button').forEach(b=>b.addEventListener('click',()=>{$$('nav button').forEach(x=>x.classList.toggle('active',x===b));$$('.page').forEach(x=>x.classList.toggle('hide',x.id!==b.dataset.tab));render()}));$$('input[type=date]').forEach(i=>i.value=today());
-$('#purchaseCancelEdit').onclick=()=>resetPurchaseForm();$('#purchasePhoto').addEventListener('change',e=>{if(purchasePreviewUrl)URL.revokeObjectURL(purchasePreviewUrl);const f=e.target.files[0],im=$('#purchasePhotoPreview');if(!f){im.classList.add('hide');im.removeAttribute('src');return}purchasePreviewUrl=URL.createObjectURL(f);im.src=purchasePreviewUrl;im.classList.remove('hide')});
-for(const name of ['qty','unit','total']){
-  fld($('#purchaseForm'),name).addEventListener('input',()=>{
-    if(name!=='qty')lastPurchasePriceField=name;
-    synchronizePurchasePrice(lastPurchasePriceField);
-  });
-}
-fld($('#purchaseForm'),'extra').addEventListener('input',priceSummary);
-$('#saleCancelEdit').addEventListener('click',resetSaleForm);
-$('#purchaseForm').addEventListener('submit',async e=>{
-  e.preventDefault();
-  const f=e.currentTarget,btn=$('#purchaseSubmitBtn');
-  const qty=priceInt(fld(f,'qty').value),total=parseEuro(fld(f,'total').value),extra=parseEuro(fld(f,'extra').value||'0'),unit=parseEuro(fld(f,'unit').value);
-  if(!Number.isInteger(qty)||qty<1||qty>1000000||![total,extra,unit].every(n=>Number.isFinite(n)&&n>=0))return alert('Bitte eine gültige Stückzahl sowie Einzel-, Gesamtpreis und Zusatzkosten eingeben.');
-  if(total>1e8||extra>1e8)return alert('Preis oder Zusatzkosten sind zu hoch.');
-  if(Math.abs(money(qty*unit)-total)>0.01)return alert('Einzelpreis und Gesamtpreis stimmen nicht überein. Bitte korrigieren.');
-  const base={name:fld(f,'name').value.trim(),set:fld(f,'set').value.trim(),language:fld(f,'language').value,
-    condition:fld(f,'condition').value.trim(),sku:fld(f,'sku').value.trim(),date:fld(f,'date').value,qty,
-    total:money(total),extra:money(extra),unitCost:(money(total)+money(extra))/qty,
-    source:fld(f,'source').value.trim(),note:fld(f,'note').value.trim()};
-  if(!base.name||!base.date)return alert('Artikelname und Datum sind Pflichtfelder.');
-  if(skuTaken(base.sku,editingLotId))return alert('Artikelnummer bereits verwendet bitte andere wählen.');
-  const oldLot=editingLotId?db.lots.find(l=>l.id===editingLotId):null;
-  if(editingLotId&&!oldLot)return alert('Der zu bearbeitende Artikel wurde nicht gefunden.');
-  if(oldLot){
-    const used=oldLot.qty-remaining(oldLot);
-    if(qty<used)return alert(`Von diesem Artikel wurden bereits ${used} Stück verkauft. Die neue Menge darf nicht kleiner sein.`);
-    if(db.sales.some(s=>s.allocations.some(a=>a.lotId===oldLot.id))&&
-       (money(oldLot.total+oldLot.extra)!==money(base.total+base.extra)||key(oldLot)!==key(base))&&
-       !confirm('Dieser Einkauf wurde bereits teilweise oder vollständig verkauft. Änderungen an Einkaufskosten korrigieren auch die bisher berechneten Gewinne. Trotzdem speichern?'))return;
-  }
-  btn.disabled=true;
-  let savedPhoto=false;
-  try{
-    const selectedPhoto=$('#purchasePhoto').files[0];
-    const photoBlob=selectedPhoto?await imageToBlob(selectedPhoto):null;
-    if(oldLot){
-      const index=db.lots.findIndex(l=>l.id===oldLot.id);
-      const originalSales=db.sales;
-      db.lots[index]={...oldLot,...base};
-      const newKey=key(db.lots[index]);
-      db.sales=db.sales.map(s=>{
-        if(!s.allocations.some(a=>a.lotId===oldLot.id))return s;
-        const allocations=s.allocations.map(a=>a.lotId===oldLot.id?{...a,unitCost:base.unitCost}:a);
-        const cost=money(allocations.reduce((sum,a)=>sum+a.qty*a.unitCost,0));
-        const allSameGroup=allocations.every(a=>{const lot=db.lots.find(l=>l.id===a.lotId);return lot&&key(lot)===newKey;});
-        const metadata=allSameGroup?{itemKey:newKey,itemName:base.name,set:base.set,language:base.language,condition:base.condition,sku:base.sku}:{};
-        return {...s,...metadata,allocations,cost};
-      });
-      try{save();}catch(err){db.lots[index]=oldLot;db.sales=originalSales;throw err;}
-      if(photoBlob){await storePhoto(oldLot.id,photoBlob);savedPhoto=true;}
-      resetPurchaseForm();alert('Artikel geändert. Es wurde kein neuer Artikel angelegt.');
-    }else{
-      const lot={id:uid(),...base};
-      db.lots.push(lot);
-      try{save();}catch(err){db.lots.pop();throw err;}
-      if(photoBlob){await storePhoto(lot.id,photoBlob);savedPhoto=true;}
-      resetPurchaseForm();alert('Einkauf gespeichert. Lagerbestand wurde erhöht.');
-    }
-  }catch(err){alert((savedPhoto?'Artikel gespeichert, aber Bildproblem: ':'Speichern fehlgeschlagen: ')+(err.message||String(err)));}
-  finally{btn.disabled=false;}
-});
-$('#saleForm').addEventListener('submit',e=>{
-  e.preventDefault();
-  const f=e.currentTarget,k=$('#saleItem').value,qty=priceInt(fld(f,'qty').value);
-  const g=groupsForSale(editingSaleId).find(x=>x.key===k);
-  if(!g||!Number.isInteger(qty)||qty<1||qty>g.qty)return alert('Nicht genügend Bestand oder ungültige Verkaufsmenge.');
-  const fields=['price','shippingIncome','shippingCost','fees','other'];
-  const nums=Object.fromEntries(fields.map(x=>[x,parseEuro(fld(f,x).value||'0')]));
-  if(!Object.values(nums).every(n=>Number.isFinite(n)&&n>=0&&n<=100000000))return alert('Bitte gültige Verkaufsbeträge eingeben.');
-  if(!fld(f,'date').value)return alert('Verkaufsdatum fehlt.');
-  const used=soldByLotExcluding(editingSaleId);
-  const lots=db.lots.filter(l=>key(l)===k&&l.qty>(used[l.id]||0)).sort(dateSort);
-  let need=qty,cost=0,allocations=[];
-  for(const l of lots){
-    const n=Math.min(need,l.qty-(used[l.id]||0));
-    if(n>0){allocations.push({lotId:l.id,qty:n,unitCost:l.unitCost});cost+=n*l.unitCost;need-=n;}
-    if(!need)break;
-  }
-  if(need)return alert('Der Bestand konnte nicht vollständig zugeordnet werden.');
-  const existing=editingSaleId?db.sales.find(s=>s.id===editingSaleId):null;
-  if(editingSaleId&&!existing)return alert('Verkauf wurde nicht gefunden.');
-  const record={id:existing?.id||uid(),date:fld(f,'date').value,itemKey:k,itemName:g.name,set:g.set,language:g.language,condition:g.condition,sku:g.sku,
-    qty,...nums,platform:fld(f,'platform').value,note:fld(f,'note').value.trim(),cost:money(cost),allocations};
-  if(existing){
-    const index=db.sales.findIndex(s=>s.id===existing.id);
-    db.sales[index]=record;
-    try{save();}catch(err){db.sales[index]=existing;return;}
-    resetSaleForm();alert('Verkauf erfolgreich geändert. Lagerbestand und Gewinn wurden aktualisiert.');
-  }else{
-    db.sales.push(record);
-    try{save();}catch(err){db.sales.pop();return;}
-    resetSaleForm();alert('Verkauf gespeichert. Gewinn und Lagerbestand aktualisiert.');
-  }
-});
-function render(){const gs=groups(),sales=[...db.sales].sort((a,b)=>b.date.localeCompare(a.date)||b.id.localeCompare(a.id)),revenue=db.sales.reduce((a,s)=>a+s.price+s.shippingIncome,0),earned=db.sales.reduce((a,s)=>a+profit(s),0),inventory=gs.reduce((a,g)=>a+g.value,0),count=gs.reduce((a,g)=>a+g.qty,0);$('#metrics').innerHTML=[['Verkaufserlöse inkl. Versand',euro(revenue)],['Realisierter Gewinn',euro(earned)],['Lagerwert (Einstand)',euro(inventory)],['Artikel auf Lager',fmt(count)],['Verkaufte Stück',fmt(db.sales.reduce((a,s)=>a+s.qty,0))]].map(([a,b])=>`<div class="metric"><small>${a}</small><strong>${b}</strong></div>`).join('');const opts=groupsForSale(editingSaleId).filter(g=>g.qty>0);const selected=$('#saleItem').value;$('#saleItem').innerHTML='<option value="">Artikel auswählen …</option>'+opts.map(g=>`<option value="${esc(g.key)}">${esc(g.name)} · ${esc(g.set)} · ${esc(g.language)} · ${esc(g.condition)} (${g.qty} verfügbar)</option>`).join('');if(opts.some(g=>g.key===selected))$('#saleItem').value=selected;updateHint();const salesRows=sales.map(s=>`<tr><td>${esc(s.date)}</td><td>${photoCell(salePhotoId(s))}${esc(s.itemName)}<small>${esc(s.set)} · ${esc(s.language)}</small></div></div></td><td>${s.qty}</td><td>${esc(s.platform)}</td><td>${euro(s.price+s.shippingIncome)}</td><td>${euro(s.cost)}</td><td>${euro(s.fees+s.shippingCost+s.other)}</td><td class="${profit(s)>=0?'positive':'negative'}">${euro(profit(s))}</td><td><div class="small-actions"><button data-edit-sale="${s.id}">Bearbeiten</button><button class="danger" data-delete-sale="${s.id}">Stornieren</button></div></td></tr>`).join('');const saleHead='<tr><th>Datum</th><th>Artikel</th><th>Menge</th><th>Plattform</th><th>Erlös</th><th>Einstand</th><th>Gebühren + Kosten</th><th>Gewinn</th><th></th></tr>';$('#salesTable').innerHTML=sales.length?`<table><thead>${saleHead}</thead><tbody>${salesRows}</tbody></table>`:'<div class="empty">Noch keine Verkäufe erfasst.</div>';$('#recent').innerHTML=sales.length?`<table><thead>${saleHead}</thead><tbody>${salesRows.slice(0,5)}</tbody></table>`:'<div class="empty">Noch keine Verkäufe erfasst.</div>';const term=$('#inventorySearch').value.trim().toLowerCase();const filtered=sortInventory(gs.filter(g=>[g.name,g.set,g.sku,g.language,g.condition].join(' ').toLowerCase().includes(term)));$('#inventoryTable').innerHTML=filtered.length?`<table><thead><tr><th>${sortHead('name','Name')}</th><th>${sortHead('set','Set')}</th><th>${sortHead('language','Sprache / Zustand')}</th><th>${sortHead('sku','Artikelnummer')}</th><th>${sortHead('qty','Stückzahl')}</th><th>${sortHead('price','Ø Preis')}</th><th>${sortHead('value','Lagerwert')}</th><th>Aktion</th></tr></thead><tbody>${filtered.map(g=>`<tr><td>${photoCell(groupPhotoId(g))}${esc(g.name)}</div></div></td><td>${esc(g.set)}</td><td>${esc(g.language)}<small>${esc(g.condition)}</small></td><td>${esc(g.sku)}</td><td><b>${g.qty}</b></td><td>${euro(g.qty?g.value/g.qty:0)}</td><td>${euro(g.value)}</td><td><button data-edit-lot="${esc((db.lots.find(l=>key(l)===g.key&&remaining(l)>0)||db.lots.find(l=>key(l)===g.key)||{}).id||'')}">Bearbeiten</button></td></tr>`).join('')}</tbody></table>`:'<div class="empty">Keine Artikel gefunden.</div>';$('#lotsTable').innerHTML=db.lots.length?`<table><thead><tr><th>Einkauf</th><th>Artikel</th><th>Gekauft</th><th>Rest</th><th>Stückkosten</th><th>Restwert</th><th>Aktionen</th></tr></thead><tbody>${[...db.lots].sort((a,b)=>b.date.localeCompare(a.date)).map(l=>`<tr><td>${esc(l.date)}</td><td>${photoCell(l.id)}${esc(l.name)}<small>${esc(l.source)}</small></div></div></td><td>${l.qty}</td><td>${remaining(l)}</td><td>${euro(l.unitCost)}</td><td>${euro(remaining(l)*l.unitCost)}</td><td><div class="small-actions"><button data-edit-lot="${esc(l.id)}">Bearbeiten</button><button data-edit-photo="${esc(l.id)}">${photoUrls.has(l.id)?'Bild ändern':'Bild hinzufügen'}</button>${photoUrls.has(l.id)?`<button class="danger" data-remove-photo="${esc(l.id)}">Entfernen</button>`:''}</div></td></tr>`).join('')}</tbody></table>`:'<div class="empty">Noch keine Einkäufe.</div>';$('#purchasesTable').innerHTML=db.lots.length?`<table><thead><tr><th>Datum</th><th>Artikel</th><th>Menge</th><th>Gesamtkosten</th><th>Quelle</th><th></th></tr></thead><tbody>${[...db.lots].sort((a,b)=>b.date.localeCompare(a.date)).map(l=>`<tr><td>${esc(l.date)}</td><td>${photoCell(l.id)}${esc(l.name)}<small>${esc(l.set)} · ${esc(l.language)} · ${esc(l.condition)}</small></div></div></td><td>${l.qty}</td><td>${euro(l.total+l.extra)}</td><td>${esc(l.source)}</td><td><div class="small-actions"><button data-edit-lot="${esc(l.id)}">Bearbeiten</button><button data-edit-photo="${esc(l.id)}">Bild</button><button class="danger" data-delete-lot="${l.id}" ${remaining(l)!==l.qty?'disabled title="Bereits verkaufte Charge"':''}>Löschen</button></div></td></tr>`).join('')}</tbody></table>`:'<div class="empty">Noch keine Einkäufe.</div>';renderPhotoCells()}
-
-function updateSaleLiveStatus(){
-  const f=$('#saleForm'),area=$('#saleLiveStatus');
-  if(!area||!f)return;
-  const k=$('#saleItem').value;
-  const g=groupsForSale(editingSaleId).find(g=>g.key===k);
-  if(!g){area.textContent='Bitte zuerst einen Artikel aus dem Lager auswählen.';return;}
-  const qty=priceInt(fld(f,'qty').value),price=parseEuro(fld(f,'price').value);
-  if(!Number.isInteger(qty)||qty<1){area.textContent='Bitte eine gültige Stückzahl eingeben.';return;}
-  if(qty>g.qty){area.textContent=`Nur ${g.qty} Stück verfügbar. Bitte Menge reduzieren.`;return;}
-  if(!Number.isFinite(price)){area.textContent='Verkaufspreis eingeben (z. B. 49,90 €).';return;}
-  let extra=0;
-  for(const name of ['shippingIncome','shippingCost','fees','other']){
-    const v=String(fld(f,name).value).trim();
-    const n=v===''?0:parseEuro(v);
-    if(!Number.isFinite(n)){area.textContent='Bitte die Versand- und Gebührenfelder prüfen.';return;}
-    extra+=(name==='shippingIncome'?n:-n);
-  }
-  const used=soldByLotExcluding(editingSaleId);
-  let remain=qty,cost=0;
-  for(const lot of db.lots.filter(l=>key(l)===k).sort(dateSort)){
-    const possible=Math.max(0,lot.qty-(used[lot.id]||0));
-    const take=Math.min(remain,possible);
-    cost+=take*lot.unitCost;remain-=take;
-    if(remain<=0)break;
-  }
-  area.textContent=`Voraussichtlicher Gewinn: ${euro(money(price+extra-cost))} · ${qty} Stück · Einstand ${euro(money(cost))}`;
-}
-$('#saleForm').addEventListener('input',event=>{
-  // Niemals das Formular neu rendern oder Felder während der Eingabe überschreiben.
-  if(event.target.matches('input,select'))updateSaleLiveStatus();
-});
-$('#saleItem').addEventListener('change',()=>{updateHint();updateSaleLiveStatus();});function updateHint(){const g=groupsForSale(editingSaleId).find(x=>x.key===$('#saleItem').value);$('#saleHint').textContent=g?`Verfügbar: ${g.qty} Stück · aktueller durchschnittlicher Einstand: ${euro(g.qty?g.value/g.qty:0)} pro Stück. Gewinnberechnung nach FIFO.`:'Wähle einen Artikel aus deinem Lagerbestand.';$('#salePhotoPreview').innerHTML=g?photoButton(groupPhotoId(g))+'<span class="muted">Artikelbild</span>':'';renderPhotoCells();updateSaleLiveStatus()}$('#inventorySearch').addEventListener('input',render);
-let editPhotoLotId=null;
-$('#photoDialogClose').onclick=()=>$('#photoDialog').close();
-$('#editPhotoInput').addEventListener('change',async e=>{const f=e.target.files[0],id=editPhotoLotId;e.target.value='';if(!f||!id||!db.lots.some(l=>l.id===id))return;try{const blob=await imageToBlob(f);await storePhoto(id,blob);alert('Artikelbild gespeichert.')}catch(err){alert('Bild konnte nicht gespeichert werden: '+err.message)}});
-document.addEventListener('click',async e=>{const sort=e.target.closest('[data-sort]');if(sort){const field=sort.dataset.sort;inventorySort=inventorySort.field===field?{field,dir:inventorySort.dir==='asc'?'desc':'asc'}:{field,dir:field==='name'||field==='set'||field==='sku'?'asc':'desc'};render();return}const editSale=e.target.closest('[data-edit-sale]');if(editSale){beginEditSale(editSale.dataset.editSale);return}const editLot=e.target.closest('[data-edit-lot]');if(editLot){beginEditLot(editLot.dataset.editLot);return}const edit=e.target.closest('[data-edit-photo]');if(edit){editPhotoLotId=edit.dataset.editPhoto;$('#editPhotoInput').click();return}const remove=e.target.closest('[data-remove-photo]');if(remove){const id=remove.dataset.removePhoto;if(confirm('Artikelbild wirklich entfernen?'))try{await removePhoto(id)}catch(err){alert(err.message)}return}const view=e.target.closest('[data-view-lot]');if(view){const id=view.dataset.viewLot,url=photoUrls.get(id);if(url){const lot=db.lots.find(l=>l.id===id);$('#photoDialogLabel').textContent=lot?lot.name+' · '+(lot.set||''):'Artikelbild';$('#photoDialogImage').src=url;$('#photoDialog').showModal()}else if(id){editPhotoLotId=id;$('#editPhotoInput').click()}return}const sale=e.target.closest('[data-delete-sale]');if(sale){const s=db.sales.find(x=>x.id===sale.dataset.deleteSale);if(s&&confirm(`Verkauf von ${s.qty} × ${s.itemName} stornieren? Die Ware wird wieder dem Lager gutgeschrieben.`)){db.sales=db.sales.filter(x=>x.id!==s.id);if(editingSaleId===s.id)editingSaleId=null;save()}return}const lot=e.target.closest('[data-delete-lot]');if(lot){const l=db.lots.find(x=>x.id===lot.dataset.deleteLot);if(l&&remaining(l)===l.qty&&confirm(`Einkauf ${l.name} vollständig löschen?`)){db.lots=db.lots.filter(x=>x.id!==l.id);save();await removePhoto(l.id).catch(err=>alert('Bild konnte nicht gelöscht werden: '+err.message))}}});
-function download(name,content,type){const a=document.createElement('a'),url=URL.createObjectURL(new Blob([content],{type}));a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000)}const stamp=()=>today();window.createTrummcardsUpdateBackup=async()=>{const lotIds=new Set(db.lots.map(l=>l.id));const records=(await imageRecords()).filter(r=>lotIds.has(r.id));const images=await Promise.all(records.map(async r=>({lotId:r.id,data:await imageToDataURL(r.blob)})));return JSON.stringify({version:2,exportedAt:new Date().toISOString(),...db,images})};$('#exportJson').onclick=async()=>{const button=$('#exportJson');button.disabled=true;try{const lots=new Set(db.lots.map(l=>l.id));const records=(await imageRecords()).filter(r=>lots.has(r.id));const images=await Promise.all(records.map(async r=>({lotId:r.id,data:await imageToDataURL(r.blob)})));download(`TrummCards_Backup_${stamp()}.json`,JSON.stringify({version:2,exportedAt:new Date().toISOString(),...db,images},null,2),'application/json');alert('JSON-Sicherung inklusive '+images.length+' Artikelbilder(n) erstellt. Bitte sicher aufbewahren.')}catch(err){alert('Sicherung fehlgeschlagen: '+err.message)}finally{button.disabled=false}};function csv(rows){return '\ufeff'+rows.map(row=>row.map(v=>'"'+String(v??'').replaceAll('"','""')+'"').join(';')).join('\r\n')}$('#exportCsv').onclick=()=>download(`TrummCards_Verkaeufe_${stamp()}.csv`,csv([['Datum','Artikel','Set','Sprache','Menge','Plattform','Verkaufspreis','Versand Einnahmen','Einstandskosten','Gebuehren','Versandkosten','Weitere Kosten','Gewinn','Notiz'],...db.sales.map(s=>[s.date,s.itemName,s.set,s.language,s.qty,s.platform,s.price,s.shippingIncome,s.cost,s.fees,s.shippingCost,s.other,profit(s),s.note])]),'text/csv;charset=utf-8');$('#exportInventory').onclick=()=>download(`TrummCards_Lager_${stamp()}.csv`,csv([['Artikel','Set','Sprache','Zustand','SKU','Bestand','Lagerwert'],...groups().map(g=>[g.name,g.set,g.language,g.condition,g.sku,g.qty,money(g.value)])]),'text/csv;charset=utf-8');const IMPORT_HEADERS=['Artikelname','Set','Sprache','Zustand','SKU','Einkaufsdatum','Menge','EinkaufspreisGesamt','Zusatzkosten','Bezugsquelle','Notiz'];let stagedCsv=null;
-$('#templateCsv').onclick=()=>download('TrummCards_Einkauf_Import_Vorlage.csv',csv([IMPORT_HEADERS,['Mewtwo GX 31/68','Hidden Fates','Englisch','Near Mint','MEW-001','2026-10-14','2','24,00','3,50','eBay','Beispiel - vor Import ersetzen'],['Stahlos AR 073/063','Mega Brave M1L','Japanisch','Near Mint','STA-001','14.10.2026','1','9,90','0','Vinted','Beispiel - vor Import ersetzen']]),'text/csv;charset=utf-8');
-$('#templateXlsxInfo').onclick=()=>alert('In Excel: Vorlage öffnen, Beispielzeilen ersetzen, Datei > Speichern unter > CSV UTF-8 (*.csv). Die Datei dann hier auswählen. Eine .xlsx-Datei kann nicht direkt eingelesen werden.');
-function parseCSV(text,delimiter){let rows=[],row=[],cell='',quoted=false;for(let i=0;i<text.length;i++){const c=text[i];if(quoted){if(c==='"'&&text[i+1]==='"'){cell+='"';i++}else if(c==='"')quoted=false;else cell+=c}else if(c==='"'){if(cell.trim())throw Error('Ungültige Anführungszeichen');quoted=true}else if(c===delimiter){row.push(cell.trim());cell=''}else if(c==='\n'||c==='\r'){if(c==='\r'&&text[i+1]==='\n')i++;row.push(cell.trim());if(row.some(v=>v!==''))rows.push(row);row=[];cell=''}else cell+=c}if(quoted)throw Error('Nicht geschlossenes Anführungszeichen');row.push(cell.trim());if(row.some(v=>v!==''))rows.push(row);return rows}
-function csvNumber(s){let v=String(s??'').trim().replace(/\s/g,'');if(!v)return 0;if(v.includes(',')&&v.includes('.')){if(v.lastIndexOf(',')>v.lastIndexOf('.'))v=v.replaceAll('.','').replace(',','.');else v=v.replaceAll(',','')}else if(v.includes(','))v=v.replace(',','.');if(!/^(?:\d+)(?:\.\d+)?$/.test(v))return NaN;return Number(v)}
-function csvDate(s){let x=String(s??'').trim(),m;if((m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(x))){}else if((m=/^(\d{2})\.(\d{2})\.(\d{4})$/.exec(x)))m=[x,m[3],m[2],m[1]];else return null;let y=+m[1],mo=+m[2],d=+m[3],dt=new Date(Date.UTC(y,mo-1,d));return dt.getUTCFullYear()===y&&dt.getUTCMonth()+1===mo&&dt.getUTCDate()===d?`${m[1]}-${m[2]}-${m[3]}`:null}
-function clearCsvPreview(){stagedCsv=null;$('#csvPreview').innerHTML='';$('#confirmCsvImport').classList.add('hide');$('#cancelCsvImport').classList.add('hide')}
-$('#cancelCsvImport').onclick=()=>{clearCsvPreview();$('#purchaseCsvFile').value='';$('#csvImportStatus').textContent='Vorschau verworfen.'};
-$('#purchaseCsvFile').onchange=async e=>{clearCsvPreview();let f=e.target.files[0];if(!f)return;try{if(f.size>5*1024*1024)throw Error('CSV-Datei zu groß (max. 5 MB).');let content=(await f.text()).replace(/^\ufeff/,'');const headerLine=content.split(/\r?\n/,1)[0];let delim=(headerLine.match(/;/g)||[]).length>=(headerLine.match(/,/g)||[]).length?';':',';let rows=parseCSV(content,delim);if(rows.length<2)throw Error('Keine Datenzeilen gefunden.');if(rows.length>5001)throw Error('Maximal 5.000 Positionen je Import.');const headers=rows.shift().map(v=>v.trim().toLowerCase().replace(/\s+/g,''));if(new Set(headers).size!==headers.length)throw Error('Doppelte Spaltenüberschriften.');const index=Object.fromEntries(headers.map((h,i)=>[h,i]));for(const h of ['Artikelname','Einkaufsdatum','Menge','EinkaufspreisGesamt'])if(index[h.toLowerCase()]===undefined)throw Error('Pflichtspalte fehlt: '+h);const get=(r,h)=>r[index[h.toLowerCase()]]??'';let entries=[],errors=[],newSkus=[];rows.forEach((r,i)=>{let line=i+2;if(r.length!==headers.length){errors.push(`Zeile ${line}: Spaltenanzahl stimmt nicht`);return}let name=get(r,'Artikelname').trim(),date=csvDate(get(r,'Einkaufsdatum')),qty=csvNumber(get(r,'Menge')),total=csvNumber(get(r,'EinkaufspreisGesamt')),extra=csvNumber(get(r,'Zusatzkosten')),sku=get(r,'SKU').trim();if(skuTaken(sku,null,newSkus))errors.push(`Zeile ${line}: Artikelnummer bereits verwendet bitte andere wählen (${sku})`);if(sku)newSkus.push(sku);if(!name||name.length>300)errors.push(`Zeile ${line}: Artikelname fehlt oder ist zu lang`);if(!date)errors.push(`Zeile ${line}: ungültiges Datum`);if(!Number.isInteger(qty)||qty<1||qty>1000000)errors.push(`Zeile ${line}: ungültige Menge`);if(![total,extra].every(v=>Number.isFinite(v)&&v>=0&&v<=100000000))errors.push(`Zeile ${line}: ungültige Kosten`);if(name&&date&&Number.isInteger(qty)&&qty>0&&[total,extra].every(v=>Number.isFinite(v)&&v>=0)){entries.push({name,set:get(r,'Set'),language:get(r,'Sprache')||'Deutsch',condition:get(r,'Zustand'),sku:get(r,'SKU'),date,qty,total:money(total),extra:money(extra),unitCost:(total+extra)/qty,source:get(r,'Bezugsquelle'),note:get(r,'Notiz')})}});if(errors.length)throw Error(errors.slice(0,12).join(' | ')+(errors.length>12?` | und ${errors.length-12} weitere Fehler`:''));stagedCsv=entries;$('#csvImportStatus').innerHTML=`<div class="notice"><b>${entries.length} Einkaufspositionen geprüft</b> · ${entries.reduce((a,x)=>a+x.qty,0)} Stück · Gesamteinstand ${euro(entries.reduce((a,x)=>a+x.total+x.extra,0))}. Noch nichts gebucht.</div>`;$('#csvPreview').innerHTML='<table><thead><tr><th>Datum</th><th>Artikel</th><th>Set</th><th>Menge</th><th>Gesamtkosten</th></tr></thead><tbody>'+entries.slice(0,30).map(l=>`<tr><td>${esc(l.date)}</td><td>${esc(l.name)}</td><td>${esc(l.set)}</td><td>${l.qty}</td><td>${euro(l.total+l.extra)}</td></tr>`).join('')+'</tbody></table>'+(entries.length>30?`<p class="muted">Vorschau zeigt die ersten 30 von ${entries.length} Positionen.</p>`:'');$('#confirmCsvImport').classList.remove('hide');$('#cancelCsvImport').classList.remove('hide')}catch(err){$('#csvImportStatus').innerHTML='<div class="notice" style="border-color:#e77">Importprüfung fehlgeschlagen: '+esc(err.message)+'</div>'}};
-$('#confirmCsvImport').onclick=()=>{if(!stagedCsv||!stagedCsv.length)return;const entries=stagedCsv;if(!confirm(`${entries.length} Einkaufspositionen mit insgesamt ${entries.reduce((a,x)=>a+x.qty,0)} Stück dauerhaft ins Lager buchen?`))return;db.lots.push(...entries.map(l=>({id:uid(),...l})));try{save()}catch{db.lots.splice(-entries.length);return}clearCsvPreview();$('#purchaseCsvFile').value='';$('#csvImportStatus').innerHTML='<div class="notice">Import erfolgreich: '+entries.length+' Positionen ins Lager gebucht.</div>'};
-$('#importJson').onchange=async e=>{const file=e.target.files[0];if(!file)return;const previous=db;try{if(file.size>150*1024*1024)throw Error('Sicherung ist zu groß (max. 150 MB)');const x=JSON.parse(await file.text());if(!Array.isArray(x.lots)||!Array.isArray(x.sales)||!x.lots.every(l=>l.id&&l.name&&Number.isInteger(l.qty)&&l.qty>0&&Number.isFinite(l.unitCost))||!x.sales.every(s=>s.id&&Array.isArray(s.allocations)))throw Error('Ungültiges Sicherungsformat');const ids=new Set(x.lots.map(l=>l.id));if(x.sales.some(s=>s.allocations.some(a=>!ids.has(a.lotId)||!Number.isInteger(a.qty)||a.qty<=0)))throw Error('Unstimmige Bestandszuordnung');const used={};for(const s of x.sales)for(const a of s.allocations)used[a.lotId]=(used[a.lotId]||0)+a.qty;if(x.lots.some(l=>(used[l.id]||0)>l.qty))throw Error('Mehr Verkäufe als Lagerbestand');const pictures=[];const imageIds=new Set();if(x.images!==undefined){if(!Array.isArray(x.images)||x.images.length>10000)throw Error('Ungültige Bilddaten');for(const img of x.images){if(!ids.has(img.lotId)||imageIds.has(img.lotId))throw Error('Ungültige Bildzuordnung');imageIds.add(img.lotId);pictures.push({id:img.lotId,blob:dataURLToBlob(img.data)})}}if(confirm('Alle aktuellen Einkäufe, Verkäufe und Bilder durch diese Sicherung ersetzen?')){db={lots:x.lots,sales:x.sales};try{localStorage.setItem(KEY,JSON.stringify(db));await restorePhotos(pictures);render();alert('Sicherung importiert: '+pictures.length+' Artikelbilder enthalten.')}catch(err){db=previous;localStorage.setItem(KEY,JSON.stringify(db));render();throw err}}}catch(err){alert('Import fehlgeschlagen: '+err.message)}e.target.value=''};$('#reset').onclick=()=>{if(confirm('Wirklich ALLE Einkäufe und Verkäufe löschen? Vorher unbedingt eine Sicherung herunterladen.')&&confirm('Letzte Bestätigung: Alle lokalen Daten werden gelöscht.')){db={lots:[],sales:[]};save();restorePhotos([]).catch(err=>alert('Löschen der Bilder fehlgeschlagen: '+err.message))}};imageRecords().then(refreshPhotoCache).catch(err=>console.error('Artikelbilder nicht geladen:',err));resetPurchaseForm();resetSaleForm();render();})();
-</script><script>
-(()=>{'use strict';
-const api=window.trummcardsUpdates;
-const status=document.getElementById('updateStatus');
-const version=document.getElementById('appVersion');
-const progress=document.getElementById('updateProgress');
-const check=document.getElementById('checkForUpdates');
-const install=document.getElementById('installUpdate');
-const backups=document.getElementById('openUpdateBackups');
-if(!api){version.textContent='1.5 HTML-Vorschau';status.textContent='Automatische Updates sind nur in der installierten Windows-Version verfuegbar.';check.disabled=true;backups.disabled=true;return;}
-function show(s){
- status.textContent=s.message||'Noch keine Informationen';
- if(Number.isFinite(s.percent)){progress.value=s.percent;progress.classList.remove('hide')}
- else progress.classList.add('hide');
- install.classList.toggle('hide',s.phase!=='ready');
- check.disabled=['checking','downloading','backup','installing'].includes(s.phase);
-}
-api.onStatus(show);
-api.getInfo().then(info=>{version.textContent=info.version+(info.packaged?'':' (Entwicklungsmodus)');show(info.state)}).catch(err=>status.textContent=err.message);
-check.onclick=()=>api.check();
-install.onclick=async()=>{if(confirm('Update installieren? TrummCards erstellt zuvor automatisch eine Sicherung inklusive Artikelbilder und startet danach neu.')){install.disabled=true;try{const result=await api.install();if(!result.ok)alert(result.message)}finally{install.disabled=false}}};
-backups.onclick=async()=>{const result=await api.openBackups();if(!result.ok)alert('Backup-Ordner konnte nicht geoeffnet werden: '+result.message)};
-})();
-</script></body></html>
+</body>
+</html>
