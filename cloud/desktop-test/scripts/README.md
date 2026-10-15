@@ -1,0 +1,1 @@
+The renderer bundle is created locally with esbuild from vendor-entry.js. The compiled JS bundle is intentionally not checked into Git. The Windows CI downloads dependencies and creates the installer as an artifact, never as a release.
