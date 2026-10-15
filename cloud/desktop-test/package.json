@@ -8,7 +8,7 @@
     "start": "npm run bundle && electron .",
     "bundle": "node scripts/bundle.mjs",
     "check": "node --check main.cjs && node --check src/app.js && node --check src/logic.js && node --test tests/*.test.cjs",
-    "dist": "npm run bundle && npm run check && electron-builder --win nsis --publish never"
+    "dist": "npm run bundle && npm run check && python scripts/make-icon.py && electron-builder --win nsis --publish never"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.57.0"
@@ -21,7 +21,9 @@
   "build": {
     "appId": "at.trummcards.cloudtest",
     "productName": "TrummCards Cloud TEST",
-    "directories": { "output": "dist" },
+    "directories": {
+      "output": "dist"
+    },
     "files": [
       "main.cjs",
       "src/index.html",
@@ -33,7 +35,12 @@
       "assets/**/*",
       "package.json"
     ],
-    "win": { "target": ["nsis"], "icon": "assets/cloud-test.ico" },
+    "win": {
+      "target": [
+        "nsis"
+      ],
+      "icon": "assets/cloud-test.ico"
+    },
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,

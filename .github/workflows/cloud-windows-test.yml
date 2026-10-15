@@ -5,6 +5,7 @@ on:
     paths:
       - 'cloud/desktop-test/**'
       - 'cloud/supabase/migrations/20261015000200_cloud_test_session.sql'
+      - 'cloud/supabase/migrations/20261015000300_product_images.sql'
       - '.github/workflows/cloud-windows-test.yml'
   workflow_dispatch:
 
@@ -48,20 +49,24 @@ jobs:
       - name: Abhaengigkeiten installieren
         shell: pwsh
         run: npm install --no-audit --no-fund
+      - name: Pillow fuer das originale TrummCards-Logo installieren
+        shell: pwsh
+        run: python -m pip install --disable-pip-version-check pillow
       - name: Windows TEST Installer bauen - ohne GitHub Release
         shell: pwsh
         run: npm run dist
       - name: Installer-Datei pruefen
         shell: pwsh
         run: |
-          $exe = 'dist/TrummCards-Cloud-TEST-0.1.0-Setup.exe'
+          $version = node -p "require('./package.json').version"
+          $exe = "dist/TrummCards-Cloud-TEST-$version-Setup.exe"
           if (-not (Test-Path $exe)) { throw 'Cloud TEST Installer fehlt.' }
           if ((Get-Item $exe).Length -lt 10000000) { throw 'Cloud TEST Installer ist ungewoehnlich klein.' }
           Write-Host "Cloud TEST Installer erstellt. KEIN Release, KEIN Produktions-Update."
       - name: TEST Installer als Actions Artifact bereitstellen
         uses: actions/upload-artifact@v4
         with:
-          name: TrummCards-Cloud-TEST-Windows-0.1.0
-          path: cloud/desktop-test/dist/TrummCards-Cloud-TEST-0.1.0-Setup.exe
+          name: TrummCards-Cloud-TEST-Windows-0.2.0
+          path: cloud/desktop-test/dist/TrummCards-Cloud-TEST-0.2.0-Setup.exe
           if-no-files-found: error
           retention-days: 14
