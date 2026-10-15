@@ -57,3 +57,11 @@ Eine Supabase-Auth-Recovery-Mail enthält einen einmaligen Login-Token. Unter de
 7. Nach Passwortänderung neu anmelden. **Benutzer niemals löschen** und Passwörter / Reset-Links niemals in Issues, Chat oder GitHub teilen.
 
 **Sicherheit:** Kein Service-Role-Key, keine Passwortänderung durch die Assistenz; der Token wird nur im flüchtigen Browser-Speicher gehalten. Keine Lagerdaten werden bei dieser Funktion geändert. Neue Tests in `tests/test-recovery.mjs` prüfen die statischen Schutzmechanismen; der echte E-Mail-Ablauf muss mit dem Benutzer bestätigt werden.
+
+## TEST v0.2.0: Artikelbilder direkt bei Artikelanlage
+
+Die mobile PWA legt neue Artikel wie die Windows-Version an. Optional wird im selben Formular ein Kamerafoto aufgenommen oder ein vorhandenes Bild gewaehlt. Der Artikel wird zuerst erstellt, anschliessend wird das Bild privat in Supabase gespeichert und in `public.tc_product_images` mit `product_id` verknuepft. Bei Uploadproblemen bleibt der Artikel erhalten und kann nachbearbeitet werden. Bereits vorhandene Bilder aus `tc_lot_images` werden als Vorschaubild angezeigt, wenn noch kein Artikelbild vorliegt.
+
+Lagerlisten zeigen kleine Bilder und bieten eine Grossansicht. Die Verkaufs-Stueckzahl nutzt einen sichtbar breiteren Stepper mit +/- fuer kleine Displays. Logo im Header stammt aus dem bisherigen `assets/trummcards-logo.webp` (dem vom Benutzer gelieferten TrummCards-Logo). Die PWA wird unabhaengig von Windows im Branch `gh-pages` veroeffentlicht; SW-Cache Version v3.
+
+`tc_product_images` wird durch `cloud/supabase/migrations/20261015000300_product_images.sql` aktiviert (RLS, FK und owner guard). Bitte keine geheimen Schluessel veroeffentlichen. Die Nutzer muessen Foto-/Kamerazugriff genehmigen.

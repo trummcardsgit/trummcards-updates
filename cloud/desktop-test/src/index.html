@@ -13,7 +13,7 @@
 <body>
 <div id="shell">
 <header>
-  <div class="brand"><div class="logo">TC</div><div><h1>TrummCards <span>Cloud</span></h1><p>Eigene Windows-Testanwendung &middot; EST. 2026</p></div></div>
+  <div class="brand"><img class="brand-image" src="logo.webp" width="74" height="74" alt="TrummCards Logo"><div><h1>TrummCards <span>Cloud</span></h1><p>Eigene Windows-Testanwendung &middot; EST. 2026</p></div></div>
   <div class="headright"><span class="test-pill">TESTUMGEBUNG</span><span id="syncBadge" class="sync">Nicht verbunden</span></div>
 </header>
 <main>
@@ -68,9 +68,20 @@
             <label>Sprache <select name="language"><option>Deutsch</option><option>Englisch</option><option>Japanisch</option><option>Italienisch</option><option>Andere</option></select></label>
             <label>Zustand <select name="card_condition"><option value="">Bitte waehlen</option><option>Near Mint</option><option>Excellent</option><option>Good</option><option>Played</option><option>Poor</option><option>Sealed</option></select></label>
             <label>Notiz <input name="note" maxlength="2000"></label>
-          </div><div class="actions"><button class="primary" id="productSubmit" type="submit">Artikel speichern</button><button id="productCancel" type="button" hidden>Bearbeitung abbrechen</button></div>
+          </div>
+          <div class="article-photo-panel">
+            <h3>Artikelbild direkt hinzufügen (optional)</h3>
+            <p class="muted small">Wähle eine Datei oder mache ein Bild mit einer angeschlossenen Kamera. Das Bild wird zusammen mit diesem Artikel privat in Supabase gespeichert, auch ohne Einkaufslos.</p>
+            <div class="grid">
+              <label>Bild auswählen <input name="productPicture" type="file" accept="image/jpeg,image/png,image/webp" id="productPicture"></label>
+              <div><span class="small muted">Kamera (sofern am PC vorhanden)</span><div class="actions camera-actions"><button type="button" id="cameraStart">Kamera starten</button><button type="button" id="cameraShot" hidden>Foto aufnehmen</button><button type="button" id="cameraStop" hidden>Kamera schließen</button></div></div>
+            </div>
+            <video id="productCameraVideo" autoplay muted playsinline hidden></video>
+            <div class="product-preview"><img id="productImagePreview" alt="Artikelbild-Vorschau" hidden><span id="productImageSelection">Noch kein neues Bild ausgewählt.</span></div>
+          </div>
+          <div class="actions"><button class="primary" id="productSubmit" type="submit">Artikel und Bild speichern</button><button id="productCancel" type="button" hidden>Bearbeitung abbrechen</button></div>
         </form></div>
-      <div class="panel"><h2>Lagerbestand</h2><div class="table-wrap"><table><thead><tr><th>Artikel</th><th>SKU</th><th>Set</th><th>Zustand</th><th>Bestand</th><th>Lagerwert</th><th>Aktion</th></tr></thead><tbody id="inventoryRows"></tbody></table></div></div>
+      <div class="panel"><h2>Lagerbestand</h2><div class="table-wrap"><table><thead><tr><th>Bild</th><th>Artikel</th><th>SKU</th><th>Set</th><th>Zustand</th><th>Bestand</th><th>Lagerwert</th><th>Aktion</th></tr></thead><tbody id="inventoryRows"></tbody></table></div></div>
     </section>
 
     <section class="tab" id="tab-purchase" hidden>
@@ -119,6 +130,7 @@
     </section>
   </div>
 </main>
+<dialog id="desktopImageViewer" class="desktop-image-viewer"><button type="button" id="desktopImageClose" aria-label="Bild schließen">✕</button><img id="desktopViewerImage" alt="Großes Artikelbild"><p id="desktopViewerCaption"></p></dialog>
 <footer><span>TRUMMCARDS &middot; EST. 2026</span><span>CLOUD TEST &ndash; GETRENNTE TESTDATEN</span></footer>
 </div>
 </body>

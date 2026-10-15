@@ -52,3 +52,9 @@ npm run dist
 `npm run check` covers price parsing, reciprocal purchase totals, FIFO spanning multiple lots, cent rounding, profit, and duplicate-SKU error presentation. The isolated Supabase project has also passed the SQL rollback smoke test (FIFO, sale, oversell prevention, cancellation and foreign-user RLS).
 
 The GitHub workflow builds an installer artifact **without publishing a release, bumping the production app version or touching main**.
+
+## TEST v0.2.0: Artikelbilder in Lager & Artikelanlage
+
+Im Windows Cloud-TEST-Formular koennen beim Anlegen/Bearbeiten Artikelbilder direkt hochgeladen werden; bei verfuegbarer Kamera auch mit Aufnahme. Das Bild wird in dem bestehenden privaten Supabase Storage Bucket unter `<user>/products/<product>/<uuid>` abgelegt und die Metadaten in `tc_product_images` gespeichert. Ohne Lagerbestand bleibt das Bild dem Produkt zugeordnet. Alte Einkauflos-Bilder bleiben erhalten und dienen bei Bedarf als Fallback. Kleine Lager-Vorschaubilder werden nur bei Bedarf ueber temporaere signierte URLs geladen. Ein Klick zeigt die Grossansicht. Der Windows-Test-Installer verwendet wieder das originale TrummCards-Logo und die urspruengliche Anwendung laeuft unveraendert auf v1.6.1.
+
+Bei Upload-Fehlern bleibt der erstellte Artikel erhalten: zum Wiederholen den Artikel bearbeiten statt neu anlegen. Die Test-App verfuegt weiterhin ueber keinen Produktiv-Autoupdater und wird nur als GitHub Actions Artefakt gebaut.

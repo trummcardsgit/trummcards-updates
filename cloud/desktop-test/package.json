@@ -1,6 +1,6 @@
 {
   "name": "trummcards-cloud-test",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "description": "Isolated TrummCards cloud test application (not the production inventory)",
   "main": "main.cjs",
@@ -25,6 +25,7 @@
     "files": [
       "main.cjs",
       "src/index.html",
+      "src/logo.webp",
       "src/styles.css",
       "src/app.js",
       "src/logic.js",
