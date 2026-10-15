@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-title" content="TrummCards TEST">
 <meta name="description" content="TrummCards Cloud TEST – synchronisierte Pokémon-Karten-Lagerverwaltung auf Windows, iPhone und Android.">
 <title>TrummCards · Cloud TEST</title>
-<link rel="icon" type="image/svg+xml" href="./icon.svg">
+<link rel="icon" type="image/webp" href="./logo.webp">
 <link rel="apple-touch-icon" href="./icon-180.png">
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="stylesheet" href="./styles.css">
@@ -18,13 +18,13 @@
 <body>
 <div id="shell">
   <header class="topbar">
-    <div class="brand"><div class="monogram">TC</div><div class="wordmark"><b>TrummCards</b><small>CLOUD <span>TEST</span> · EST. 2026</small></div></div>
+    <div class="brand"><img class="brand-logo" src="./logo.webp" width="60" height="60" alt="TrummCards Logo"><div class="wordmark"><b>TrummCards</b><small>CLOUD <span>TEST</span> · EST. 2026</small></div></div>
     <div class="connection"><span id="connDot" class="dot idle"></span><span id="connLabel">Verbinde …</span></div>
   </header>
   <main>
     <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
     <section id="loginScreen" class="login-screen" hidden>
-      <div class="login-art"><span>✦</span><strong>Dein Lager.<br>Überall.</strong><p>Ein Bestand für PC, iPhone und Android.</p></div>
+      <div class="login-art"><img class="login-logo" src="./logo.webp" alt="TrummCards"><strong>Dein Lager.<br>Überall.</strong><p>Ein Bestand für PC, iPhone und Android.</p></div>
       <div class="panel auth-panel">
         <div class="micro-label">TRUMMCARDS CLOUD</div>
         <h1>Willkommen zurück</h1>
@@ -62,7 +62,16 @@
             <div class="two-fields"><div class="field"><label>Artikelnummer / SKU</label><input name="sku" maxlength="120" placeholder="z. B. PKM-001"></div><div class="field"><label>Set</label><input name="set_name" maxlength="150" placeholder="z. B. Promokarte"></div></div>
             <div class="two-fields"><div class="field"><label>Sprache</label><select name="language"><option>Deutsch</option><option>Englisch</option><option>Japanisch</option><option>Italienisch</option><option>Andere</option></select></div><div class="field"><label>Zustand</label><select name="card_condition"><option value="">Bitte wählen</option><option>Near Mint</option><option>Excellent</option><option>Good</option><option>Played</option><option>Poor</option><option>Sealed</option></select></div></div>
             <div class="field"><label>Notiz</label><textarea name="note" rows="2" maxlength="2000" placeholder="Optional"></textarea></div>
-            <button type="submit" class="primary full" id="articleSubmit">Artikel speichern</button>
+            <div class="article-photo-field">
+              <div class="micro-label">ARTIKELBILD · OPTIONAL</div>
+              <p class="subtle">Fotografiere die Karte direkt oder wähle ein Bild. Das Bild wird beim Speichern mit dem Artikel im privaten Cloud-Speicher gesichert – auch ohne Einkauf.</p>
+              <div class="two-fields photo-buttons">
+                <label class="file-button">📷 Kamera öffnen<input type="file" name="articleCamera" accept="image/*" capture="environment"></label>
+                <label class="file-button">▧ Bild auswählen<input type="file" name="articleGallery" accept="image/*"></label>
+              </div>
+              <div class="article-photo-preview"><img id="articleImagePreview" alt="Vorschau des Artikelbildes" hidden><span id="articleImageSelection">Noch kein neues Bild ausgewählt.</span></div>
+            </div>
+            <button type="submit" class="primary full" id="articleSubmit">Artikel und Bild speichern</button>
             <button type="button" class="secondary full" data-go="home">Zurück zum Lager</button>
           </form>
         </div>
@@ -86,7 +95,7 @@
         <div class="panel"><div class="micro-label">VERKAUF</div><h2>Verkauf erfassen</h2><p class="subtle">Lagerbestand und Einstand werden nach FIFO vom Supabase-Server gebucht.</p>
           <form id="saleForm">
             <div class="field"><label>Artikel mit Bestand *</label><select name="product" required><option value="">Artikel wählen</option></select></div>
-            <div class="two-fields"><div class="field"><label>Datum *</label><input name="date" type="date" required></div><div class="field"><label>Stückzahl *</label><input name="qty" type="number" step="1" min="1" max="1000000" inputmode="numeric" required value="1"></div></div>
+            <div class="two-fields sale-date-qty"><div class="field"><label>Datum *</label><input name="date" type="date" required></div><div class="field sale-qty-field"><label for="saleQty">Stückzahl *</label><div class="qty-stepper"><button id="saleQtyMinus" type="button" aria-label="Stückzahl verringern">−</button><input id="saleQty" name="qty" type="number" step="1" min="1" max="1000000" inputmode="numeric" required value="1"><button id="saleQtyPlus" type="button" aria-label="Stückzahl erhöhen">+</button></div></div></div>
             <div class="field"><label>Verkaufspreis gesamt € *</label><input name="price" type="text" inputmode="decimal" value="0,00" required></div>
             <div class="two-fields"><div class="field"><label>Versand-Einnahmen €</label><input name="shippingIncome" type="text" inputmode="decimal" value="0,00"></div><div class="field"><label>Versandkosten €</label><input name="shippingCost" type="text" inputmode="decimal" value="0,00"></div></div>
             <div class="two-fields"><div class="field"><label>Plattform-Gebühren €</label><input name="fees" type="text" inputmode="decimal" value="0,00"></div><div class="field"><label>Weitere Kosten €</label><input name="other" type="text" inputmode="decimal" value="0,00"></div></div>
@@ -128,6 +137,7 @@
       </section>
     </div>
   </main>
+  <dialog id="imageViewer" class="image-dialog"><button id="closeImageViewer" class="image-dialog-close" type="button" aria-label="Bild schließen">✕</button><img id="viewerImage" alt="Großes Artikelbild"><p id="viewerCaption"></p></dialog>
   <nav id="bottomNav" class="bottom-nav" aria-label="Navigation" hidden>
     <button data-go="home" class="active" type="button"><span>▦</span>Lager</button>
     <button data-go="purchase" type="button"><span>⊕</span>Einkauf</button>
