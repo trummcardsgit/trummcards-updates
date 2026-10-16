@@ -23,6 +23,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Freigabesperren und geplante Backup-Pflicht verifizieren
+        shell: pwsh
+        run: |
+          node --test cloud/release/release-safety.test.mjs
+          if ($LASTEXITCODE -ne 0) { throw 'Release-Sicherheitsregeln fehlgeschlagen.' }
       - name: Nur vorgeprüfte Cloud-1.0-Umschaltungen zulassen (kein Deployment)
         shell: pwsh
         run: node cloud/release/prepare-go-live.mjs --dry-run
