@@ -81,9 +81,39 @@ jobs:
           node cloud/backup/create-fixture.mjs "$RUNNER_TEMP/tc-synthetic.tcbackup"
           node cloud/backup/restore-check.mjs "$RUNNER_TEMP/tc-synthetic.tcbackup"
           rm -f "$RUNNER_TEMP/tc-synthetic.tcbackup"
+  business-flow:
+    name: Fiktive Ein- und Verkaeufe, FIFO, Storno und Bild-RLS im Wegwerf-PostgreSQL
+    needs: offline-checks
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: local-test-only
+          POSTGRES_DB: trummcards_restore
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      PG_RESTORE_URL: postgresql://postgres:local-test-only@127.0.0.1:5432/trummcards_restore
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Lokale PostgreSQL-Tests vorbereiten
+        run: npm install --prefix cloud/backup --no-audit --no-fund --ignore-scripts
+      - name: FIFO-Kosten, Umsatz, Storno, Doppelbuchung und Zugriffsschutz testen
+        run: node cloud/backup/business-flow-check.mjs
+
   windows-preview:
     name: Isolierter Windows PROD-Vorschau-Installer (KEIN RELEASE)
-    needs: [offline-checks, local-restore]
+    needs: [offline-checks, local-restore, business-flow]
     runs-on: windows-latest
     defaults:
       run:
@@ -129,7 +159,7 @@ jobs:
 
   isolated-cloud-1-release-rehearsal:
     name: Cloud 1.0 – Windows-Buildprobe OHNE Veröffentlichung
-    needs: [offline-checks, local-restore]
+    needs: [offline-checks, local-restore, business-flow]
     runs-on: windows-latest
     timeout-minutes: 40
     # These values are synthetic CI-only gate inputs; NO publish token and NO deployment.
