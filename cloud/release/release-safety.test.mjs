@@ -13,13 +13,24 @@ test('Cloud 1.0 deploy stays behind all three approvals',()=>{
  assert.ok(pipeline.includes('on:\n  workflow_dispatch:'));
  assert.ok(!pipeline.includes('  push:\n'),'no automatic production deploy');
 });
-test('A manual backup alone can NEVER authorize production deployment',()=>{
- assert.ok(pipeline.includes("$_.event -eq 'schedule'"),'must require actual scheduled event');
- assert.ok(pipeline.includes("$_.conclusion -eq 'success'"),'must require successful scheduled event');
- assert.ok(pipeline.includes('scheduledArtifactFound'),'must require retained scheduled backup artifact');
- assert.ok(pipeline.includes('size_in_bytes -gt 500'),'must reject missing or tiny artifact');
- assert.ok(pipeline.includes('AddHours(-72)'),'must require recent evidence');
+test('Only first release can explicitly override the not-yet-run scheduler',()=>{
+ assert.ok(pipeline.includes('allow_initial_release_before_daily_backup:'),'owner must opt-in during manual dispatch');
+ assert.ok(pipeline.includes('type: boolean'));
+ assert.ok(pipeline.includes('default: false'));
+ assert.ok(pipeline.includes("inputs.allow_initial_release_before_daily_backup"),'override must be checked');
+ assert.ok(pipeline.includes('scheduledRuns.Count -eq 0'),'a previously fired scheduler forbids the override');
+ assert.ok(pipeline.includes('git ls-tree -r --name-only origin/gh-pages -- cloud-updates/latest.yml'),'an existing release forbids the override');
+ assert.ok(pipeline.includes("if ($oldManifest.Count -gt 0)"),'a previous updater feed prevents repeated use');
+ assert.ok(pipeline.includes('Kein unverfallenes, verschlüsseltes Backup-Artefakt gefunden'),'manual encrypted backup must be present');
 });
+test('Scheduled backups are still mandatory once the first schedule fired',()=>{
+ assert.ok(pipeline.includes("$_.event -eq 'schedule'"),'must check schedule event');
+ assert.ok(pipeline.includes("$_.conclusion -eq 'success'"),'must verify successful scheduled run');
+ assert.ok(pipeline.includes('scheduledArtifactFound'),'must require scheduled encrypted artifact');
+ assert.ok(pipeline.includes('size_in_bytes -gt 500'),'must reject zero-length artifacts');
+ assert.ok(pipeline.includes('AddHours(-72)'),'must require a current backup');
+});
+
 test('Automatic production backup keeps its independent safety controls',()=>{
  assert.ok(backup.includes("cron: '17 2 * * *'"));
  assert.ok(backup.includes("vars.TRUMMCARDS_BACKUP_ACTIVE == 'true'"));
