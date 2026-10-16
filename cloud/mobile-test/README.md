@@ -74,3 +74,13 @@ Lagerlisten zeigen kleine Bilder und bieten eine Grossansicht. Die Verkaufs-Stue
 - Aktualisierter Service-Worker-Cache `trummcards-mobile-test-shell-v4`, weiterhin ohne Caching von privaten API- oder Bilddaten.
 - Validierung: `node --test cloud/mobile-test/tests/test-thumbnails-and-forms.mjs` plus vorhandene PWA-Tests.
 - Veröffentlichung **ausschließlich** in TEST auf `gh-pages`; produktive Windows-Version und Datenbankschema unverändert.
+
+## Mobile TEST v0.4 – kompakte Formulare (iPhone)
+
+Die Buchungsformulare wurden nicht nur durch neue Abstände gestylt, sondern semantisch in drei Fieldsets umgebaut: Artikel & Menge, Preis/Kosten, weitere Angaben. Alle Form-Feldnamen und Eingabelogiken sind unverändert (inklusive FIFO, Preisverknüpfung und Verkauf-Stückzahlbuttons). Geldfelder haben rechtsbündige Ziffern und ein sichtbares €-Suffix außerhalb des editierbaren Werts. Date-Inputs bleiben native Datumspicker.
+
+Ab 680px Fensterbreite und kleiner nutzen die beiden Buchungsformulare konsequent eine Spalte (keine kollidierenden Felder und abgeschnittenen Beschriftungen). Eingabefelder sind bei Mobilgeräten ca. 50px hoch, mindestens 16px Schrift zur Vermeidung des iOS Safari-Zooms. Labels sind ausdrücklich mit den Feldern verbunden, relevante Felder sind Pflichtfelder.
+
+Für PWA-Aktualisierung referenziert `index.html` die CSS- und JS-Dateien unter `?v=0.4.0`; der Service Worker hat den eigenständigen Cache `trummcards-mobile-test-shell-v5` und präcacht exakt diese URLs. Offline-Fallback ignoriert Query-Parameter nur bei öffentlichen Shell-Dateien, nicht bei Auth- oder Business-Requests. Die sichtbaren Formularüberschriften tragen `v0.4` zur Bestätigung des Updates.
+
+Tests: `test-form-layout-v04.mjs` und aktualisierte `test-thumbnails-and-forms.mjs`. Nach Veröffentlichung auf GitHub Pages bitte in der echten iPhone-PWA **Einkauf und Verkauf** optisch prüfen, insbesondere Native-Date-Darstellung. Kein produktiver Windows-Release, keine Änderung an Benutzerkonten oder Datenbank.

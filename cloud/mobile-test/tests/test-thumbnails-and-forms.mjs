@@ -68,10 +68,11 @@ test('Cards contain real thumbnail elements and enlargement remains available',(
 });
 test('Purchase and sale forms are mobile responsive and retain valid input names',()=>{
  for(const form of ['purchaseForm','saleForm'])assert.ok(html.includes('id="'+form+'"'));
- for(const cls of ['booking-panel','booking-date-qty','booking-money-pair','sale-date-qty','qty-stepper'])assert.ok(html.includes(cls),'Missing '+cls);
+ for(const cls of ['booking-panel','booking-form','booking-group','booking-grid-primary','booking-grid-money','qty-stepper'])assert.ok(html.includes(cls),'Missing '+cls);
  assert.ok(html.includes('id="purchaseDate"')&&html.includes('id="saleDate"'));
- assert.ok(css.includes('.booking-panel .two-fields{grid-template-columns:minmax(0,1fr);gap:0}'));
- assert.ok(css.includes('min-width:0;min-height:53px'));
+ assert.ok(css.includes('.booking-panel .booking-grid{'));
+ assert.ok(css.includes('.booking-panel .booking-group :is(input,select,textarea)'));
+ assert.ok(css.includes('grid-template-columns:minmax(0,1fr);gap:14px'));
  assert.ok(css.includes('safe-area-inset-top'));
- assert.ok(sw.includes('trummcards-mobile-test-shell-v4'));
+ assert.ok(sw.includes('trummcards-mobile-test-shell-v5'));
 });
