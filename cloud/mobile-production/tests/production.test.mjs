@@ -31,7 +31,7 @@ test('Production PWA prevents accidental business writes until go-live',()=>{
 });
 test('PWA identity and serviceworker cache cannot delete TEST cache',()=>{
  assert.equal(manifest.name,'TrummCards Cloud');
- assert.equal(manifest.short_name,'TC Cloud PROD');
+ assert.equal(manifest.short_name,'TC Cloud');
  assert.equal(manifest.scope,'./');
  assert.ok(sw.includes("trummcards-mobile-production-shell-v1"));
  assert.ok(sw.includes("keys.filter(k=>k.startsWith('trummcards-mobile-production-shell-')&&k!==CACHE)"));
