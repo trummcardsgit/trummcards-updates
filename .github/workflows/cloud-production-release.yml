@@ -26,7 +26,7 @@ jobs:
       - name: Nur vorgeprüfte Cloud-1.0-Umschaltungen zulassen (kein Deployment)
         shell: pwsh
         run: node cloud/release/prepare-go-live.mjs --dry-run
-      - name: Mindestens ein erfolgreiches PROD-Backup innerhalb der letzten 72 Stunden verlangen
+      - name: Erfolgreiches aktuelles UND automatisch geplantes PROD-Backup verlangen
         shell: pwsh
         run: |
           $resp = gh api "repos/$env:GITHUB_REPOSITORY/actions/workflows/cloud-production-encrypted-backup.yml/runs?per_page=30" | ConvertFrom-Json
@@ -46,6 +46,29 @@ jobs:
             if ($ok.Count -gt 0) { $found=$true; break }
           }
           if (-not $found) { throw 'Kein unverfallenes, verschlüsseltes Backup-Artefakt gefunden.' }
+          # Independent proof that daily automation has actually run. A successful
+          # workflow_dispatch run is NOT sufficient for scheduled backup readiness.
+          $scheduled = @($resp.workflow_runs | Where-Object {
+            $_.event -eq 'schedule' -and $_.conclusion -eq 'success' -and
+            ([datetime]$_.created_at).ToUniversalTime() -gt $maxAge
+          })
+          if ($scheduled.Count -eq 0) {
+            throw 'Kein erfolgreiches automatisch geplantes PROD-Backup in den letzten 72 Stunden. Release verboten.'
+          }
+          $scheduledArtifactFound = $false
+          foreach ($scheduledRun in $scheduled) {
+            $art = gh api "repos/$env:GITHUB_REPOSITORY/actions/runs/$($scheduledRun.id)/artifacts" | ConvertFrom-Json
+            if ($LASTEXITCODE -ne 0) { throw 'Geplante Backup-Artefakte konnten nicht geprueft werden.' }
+            $ok = @($art.artifacts | Where-Object {
+              $_.name -eq "TrummCards-PROD-Encrypted-Backup-$($scheduledRun.id)" -and
+              -not $_.expired -and $_.size_in_bytes -gt 500
+            })
+            if ($ok.Count -gt 0) { $scheduledArtifactFound=$true; break }
+          }
+          if (-not $scheduledArtifactFound) {
+            throw 'Kein unverfallenes, verschluesseltes Artefakt eines automatisch geplanten Backups gefunden. Release verboten.'
+          }
+          Write-Host 'Aktuelles verschluesseltes Backup und erfolgreiche taegliche Sicherung separat bestaetigt.'
       - name: Node und Electron-Abhängigkeiten installieren
         working-directory: cloud/desktop-production
         shell: pwsh
