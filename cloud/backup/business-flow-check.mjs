@@ -24,7 +24,7 @@ const files=[
 ];
 const owner='123e4567-e89b-12d3-a456-426614174000';
 const stranger='123e4567-e89b-12d3-a456-426614174999';
-const product='223e4567-e89b-12d3-a456-426614174000';
+let product;
 const image='523e4567-e89b-12d3-a456-426614174000';
 const firstKey='623e4567-e89b-12d3-a456-426614174000';
 const secondKey='623e4567-e89b-12d3-a456-426614174001';
@@ -44,7 +44,7 @@ try{
  await c.query('set role authenticated');
  await c.query("select set_config('request.jwt.claim.sub',$1,false)",[owner]);
  assert.equal((await c.query('select public.tc_is_authorized() as authorized')).rows[0].authorized,true);
- await c.query('insert into public.tc_products(id,owner_id,sku,name) values($1,$2,$3,$4)',[product,owner,'DEMO-FAKE-001','Fiktive Pokémon-Karte']);
+ product=(await c.query('insert into public.tc_products(owner_id,sku,name) values($1,$2,$3) returning id',[owner,'DEMO-FAKE-001','Fiktive Pokémon-Karte'])).rows[0].id;
  const purchase=async(date,qty,total,key)=>{
    const r=await c.query("select public.tc_book_purchase($1,$2,$3,$4,$5,$6,$7,$8) as id",
      [product,date,qty,total,'0.00','Nur lokaler CI-Test','Nicht real',key]);
