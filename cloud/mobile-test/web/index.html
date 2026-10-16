@@ -78,10 +78,10 @@
       </section>
 
       <section id="page-purchase" class="page" hidden>
-        <div class="panel"><div class="micro-label">EINGANG</div><h2>Einkauf erfassen</h2><p class="subtle">Einzelpreis und Gesamtpreis werden automatisch verknüpft. Die tatsächlichen Einstandskosten werden im Cloud-Lager gespeichert.</p>
+        <div class="panel booking-panel"><div class="micro-label">EINGANG</div><h2>Einkauf erfassen</h2><p class="subtle">Einzelpreis und Gesamtpreis werden automatisch verknüpft. Die tatsächlichen Einstandskosten werden im Cloud-Lager gespeichert.</p>
           <form id="purchaseForm"><div class="field"><label>Artikel *</label><select name="product" required><option value="">Artikel wählen</option></select></div>
-            <div class="two-fields"><div class="field"><label>Datum *</label><input name="date" type="date" required></div><div class="field"><label>Stückzahl *</label><input name="qty" inputmode="numeric" type="number" step="1" min="1" max="1000000" required value="1"></div></div>
-            <div class="two-fields"><div class="field"><label>Einzelpreis € *</label><input name="unit" type="text" inputmode="decimal" value="0,00" required></div><div class="field"><label>Gesamtpreis € *</label><input name="total" type="text" inputmode="decimal" value="0,00" required></div></div>
+            <div class="two-fields booking-date-qty"><div class="field"><label for="purchaseDate">Datum *</label><input id="purchaseDate" name="date" type="date" required></div><div class="field"><label for="purchaseQty">Stückzahl *</label><input id="purchaseQty" name="qty" inputmode="numeric" type="number" step="1" min="1" max="1000000" required value="1"></div></div>
+            <div class="two-fields booking-money-pair"><div class="field"><label for="purchaseUnit">Einzelpreis € *</label><input id="purchaseUnit" name="unit" type="text" inputmode="decimal" value="0,00" required></div><div class="field"><label for="purchaseTotal">Gesamtpreis € *</label><input id="purchaseTotal" name="total" type="text" inputmode="decimal" value="0,00" required></div></div>
             <div class="field"><label>Zusatzkosten gesamt €</label><input name="extra" type="text" inputmode="decimal" value="0,00"></div>
             <div class="field"><label>Bezugsquelle</label><input name="source" placeholder="z. B. Cardmarket, eBay"></div>
             <div class="field"><label>Notiz</label><input name="note" placeholder="Optional"></div>
@@ -92,13 +92,13 @@
       </section>
 
       <section id="page-sale" class="page" hidden>
-        <div class="panel"><div class="micro-label">VERKAUF</div><h2>Verkauf erfassen</h2><p class="subtle">Lagerbestand und Einstand werden nach FIFO vom Supabase-Server gebucht.</p>
+        <div class="panel booking-panel"><div class="micro-label">VERKAUF</div><h2>Verkauf erfassen</h2><p class="subtle">Lagerbestand und Einstand werden nach FIFO vom Supabase-Server gebucht.</p>
           <form id="saleForm">
             <div class="field"><label>Artikel mit Bestand *</label><select name="product" required><option value="">Artikel wählen</option></select></div>
-            <div class="two-fields sale-date-qty"><div class="field"><label>Datum *</label><input name="date" type="date" required></div><div class="field sale-qty-field"><label for="saleQty">Stückzahl *</label><div class="qty-stepper"><button id="saleQtyMinus" type="button" aria-label="Stückzahl verringern">−</button><input id="saleQty" name="qty" type="number" step="1" min="1" max="1000000" inputmode="numeric" required value="1"><button id="saleQtyPlus" type="button" aria-label="Stückzahl erhöhen">+</button></div></div></div>
+            <div class="two-fields sale-date-qty"><div class="field"><label for="saleDate">Datum *</label><input id="saleDate" name="date" type="date" required></div><div class="field sale-qty-field"><label for="saleQty">Stückzahl *</label><div class="qty-stepper"><button id="saleQtyMinus" type="button" aria-label="Stückzahl verringern">−</button><input id="saleQty" name="qty" type="number" step="1" min="1" max="1000000" inputmode="numeric" required value="1"><button id="saleQtyPlus" type="button" aria-label="Stückzahl erhöhen">+</button></div></div></div>
             <div class="field"><label>Verkaufspreis gesamt € *</label><input name="price" type="text" inputmode="decimal" value="0,00" required></div>
-            <div class="two-fields"><div class="field"><label>Versand-Einnahmen €</label><input name="shippingIncome" type="text" inputmode="decimal" value="0,00"></div><div class="field"><label>Versandkosten €</label><input name="shippingCost" type="text" inputmode="decimal" value="0,00"></div></div>
-            <div class="two-fields"><div class="field"><label>Plattform-Gebühren €</label><input name="fees" type="text" inputmode="decimal" value="0,00"></div><div class="field"><label>Weitere Kosten €</label><input name="other" type="text" inputmode="decimal" value="0,00"></div></div>
+            <div class="two-fields booking-money-pair"><div class="field"><label>Versand-Einnahmen €</label><input name="shippingIncome" type="text" inputmode="decimal" value="0,00"></div><div class="field"><label>Versandkosten €</label><input name="shippingCost" type="text" inputmode="decimal" value="0,00"></div></div>
+            <div class="two-fields booking-money-pair"><div class="field"><label>Plattform-Gebühren €</label><input name="fees" type="text" inputmode="decimal" value="0,00"></div><div class="field"><label>Weitere Kosten €</label><input name="other" type="text" inputmode="decimal" value="0,00"></div></div>
             <div class="field"><label>Plattform</label><select name="platform"><option>eBay</option><option>Cardmarket</option><option>Vinted</option><option>Whatnot</option><option>Privat</option><option>Sonstige</option></select></div>
             <div class="field"><label>Notiz</label><input name="note" placeholder="Optional"></div>
             <div class="preview" id="salePreview">Artikel, Stückzahl und Preis wählen.</div>

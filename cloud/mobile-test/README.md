@@ -65,3 +65,12 @@ Die mobile PWA legt neue Artikel wie die Windows-Version an. Optional wird im se
 Lagerlisten zeigen kleine Bilder und bieten eine Grossansicht. Die Verkaufs-Stueckzahl nutzt einen sichtbar breiteren Stepper mit +/- fuer kleine Displays. Logo im Header stammt aus dem bisherigen `assets/trummcards-logo.webp` (dem vom Benutzer gelieferten TrummCards-Logo). Die PWA wird unabhaengig von Windows im Branch `gh-pages` veroeffentlicht; SW-Cache Version v3.
 
 `tc_product_images` wird durch `cloud/supabase/migrations/20261015000300_product_images.sql` aktiviert (RLS, FK und owner guard). Bitte keine geheimen Schluessel veroeffentlichen. Die Nutzer muessen Foto-/Kamerazugriff genehmigen.
+
+## Mobile UI v0.3 – Fotos in der Lagerliste und Buchungsformulare
+
+- Lager: Die ersten zwölf Artikelbilder werden sofort geladen. Für die weiteren Artikel beobachtet die PWA die **sichtbaren Bildcontainer** und nicht das zunächst unsichtbare IMG-Element. Dadurch erscheint das Miniaturbild ohne Klick auf den Platzhalter. Die Bilddateien bleiben privat bei Supabase und werden mit dem angemeldeten JWT abgerufen; Antippen öffnet weiterhin das große Bild.
+- Einkauf und Verkauf: Auf schmalen Smartphones werden die nebeneinanderliegenden Datum-/Stückzahl-/Geldfelder einspaltig dargestellt und nicht über die Formularbreite gedrückt. Die Feldhöhe und Beschriftungen sind einheitlich; Datum verwendet einen nativen mobilen Datumspicker.
+- Die sichere obere Einrückung für iPhones im Standalone-/PWA-Modus berücksichtigt jetzt `safe-area-inset-top`.
+- Aktualisierter Service-Worker-Cache `trummcards-mobile-test-shell-v4`, weiterhin ohne Caching von privaten API- oder Bilddaten.
+- Validierung: `node --test cloud/mobile-test/tests/test-thumbnails-and-forms.mjs` plus vorhandene PWA-Tests.
+- Veröffentlichung **ausschließlich** in TEST auf `gh-pages`; produktive Windows-Version und Datenbankschema unverändert.
