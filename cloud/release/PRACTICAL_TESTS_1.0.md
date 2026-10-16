@@ -31,6 +31,21 @@ Die Dateien für die schreibgeschützte Version 0.9.0 sind bereits auf GitHub Pa
 **Abnahme:** Die mobile Vorschau ist nur ein Login-/Darstellungs-/Caching-Test. Synchronisierung mit echten neu gebuchten Artikeln, Bildvorschau, FIFO-Verkauf, Storno und Wiederherstellung mit Daten bleiben für den isolierten synthetischen End-to-End-Test bzw. nach Freigabe offen.
 
 
+## B.1 Ausdrücklicher Releasewunsch vom 16.10.2026
+Eigentümer: **„ich möchte aber jetzt die 1.0 veröffentlichen und damit arbeiten“**. Damit liegt die Zustimmung zur erstmaligen Veröffentlichung von Version 1.0.0 und zum Produktivbetrieb vor.
+
+**Einmaliger Erst-Release vor dem geplanten Backup:** Das echte manuelle verschlüsselte Backup #38931448375 ist erfolgreich geprüft und vom Eigentümer zusätzlich lokal gesichert worden. Der geplante Sicherungslauf um 02:17 UTC war zum Zeitpunkt der Freigabe noch nicht fällig. Der Release-Workflow erlaubt deshalb einen **bewusst manuell angekreuzten Einmal-Ausnahmewert** nur, wenn noch kein geplanter Backup-Lauf existiert UND noch kein Cloud-Updater `cloud-updates/latest.yml` veröffentlicht ist. Das ist kein Ersatz für die tägliche Sicherung. Ein fehlgeschlagener geplanter Backup-Lauf darf damit **nicht** übergangen werden.
+
+**Konkrete Durchführung, sobald das Release-PR auf main zusammengeführt ist:**
+1. Repository Settings → Secrets and variables → Actions → **Variables**: `TRUMMCARDS_PRODUCTION_APPROVED` auf `true` setzen; bereits bestätigte `TRUMMCARDS_BACKUP_ACTIVE=true`, `TRUMMCARDS_RESTORE_VERIFIED=true` beibehalten.
+2. GitHub Actions → **TrummCards Cloud 1.0 – CONTROLLED Release (disabled until approvals)** → **Run workflow**, Branch `main`; beim **ERSTEN** Release die Option **„Nur fuer ERST-Release: heute starten, bevor die erste taegliche Sicherung gelaufen ist?“** aktivieren.
+3. Nur nach **grünem** Release-Workflow mit veröffentlichtem Manifest `https://trummcardsgit.github.io/trummcards-updates/cloud-updates/latest.yml` Windows 1.0.0 aus dem separaten Cloud-Updateordner installieren; der Installer 0.9.0 ist NICHT updatefähig und muss manuell auf 1.0.0 aktualisiert werden.
+4. Mobile PWA `https://trummcardsgit.github.io/trummcards-updates/production/` nach frischem Laden kontrollieren (Version 1.0.0). **TEST-Root bleibt unverändert.**
+5. Erst dann mit dem neuen, weiterhin leeren PROD-Lager arbeiten: einen kontrollierten echten ersten Artikel und ein gültiges JPEG/PNG hochladen, Thumbnail und Vergrößerung auf beiden Geräten prüfen, anschließend Einkauf, Verkauf und Bestandssync nachvollziehen. Fehlbuchungen durch Storno korrigieren.
+6. Am nächsten Tag den automatischen Backup-Lauf **und seine verschlüsselte Sicherungsdatei** überprüfen. Backups lokal regelmäßig sichern. Probleme sofort beheben, bevor umfangreiche Daten eingetragen werden.
+
+**Restrisiken bei früher Freigabe:** kein nachgewiesener Live-Bild-Upload, noch kein veröffentlichter automatischer Updatewechsel und keine erfolgreich beobachtete *automatisch geplante* Sicherung. Benutzer entscheidet über den vorzeitigen Start. GitHub Actions führt keine Veröffentlichung aus, bevor die drei Repo-Variablen und der manuelle Workflow-Start erfolgt sind.
+
 ## C. Automatisch geprüfte Voraussetzungen
 - Die neue Datenbank hat RLS auf 7 Tabellen, Besitzer-Guard und privaten Image-Bucket.
 - Ein echtes verschlüsseltes Backup einer momentan leeren DB wurde erstellt, verifiziert und in temporäres PostgreSQL 17 zurückgespielt: https://github.com/trummcardsgit/trummcards-updates/actions/runs/38931448375
@@ -71,8 +86,9 @@ Der GitHub-Connector kann Repository-Variablen nicht auslesen. Angaben zu den er
 - [ ] Unsignierter Installer/SmartScreen-Bewertung akzeptabel oder Code-Signing vor Verteilung eingerichtet
 - [ ] Supabase Free-Tarif: Leaked-Password-Protection laut Dokumentation Pro+; einziges Konto mit starkem, einzigartigem Passwort/ggf. MFA geschützt
 - [x] `TRUMMCARDS_RESTORE_VERIFIED=true` am 16.10.2026 laut Eigentümer als GitHub-Repository-Variable angelegt; GitHub-API-Verifizierung der Variablen nicht verfügbar
-- [ ] Ausdrückliche Produktionsfreigabe des Eigentümers; **erst danach** `TRUMMCARDS_PRODUCTION_APPROVED=true` setzen und Release auslösen
+- [x] **Ausdrückliche Produktionsfreigabe des Eigentümers** am 16.10.2026 erteilt; frühe Erstauslieferung trotz noch ausstehender erster geplanter Sicherung gewünscht
+- [ ] `TRUMMCARDS_PRODUCTION_APPROVED=true` vom Eigentümer im GitHub-Repository setzen und kontrollierten Release-Workflow manuell ausführen; Veröffentlichung selbst ist noch offen
 
 **Installationshinweis:** Der bisherige Windows-Cloud-Preview-Installer 0.9.0 hat den Updater absichtlich deaktiviert. Der erste Wechsel auf 1.0.0 erfolgt daher durch eine **manuelle, getrennte Installation**; automatische Updates sollen erst ab 1.0.0 aus dem separaten `/cloud-updates/`-Feed funktionieren.
 
-**Nie** alle drei Go-Live-Variablen setzen, bevor die offenen Prüfungen nachweislich bestanden wurden. Testgeräte sollten bis zur Freigabe ausschließlich das read-only 0.9.0-Testpaket verwenden.
+**Bis zur erfolgreichen Veröffentlichung** verbleiben beide Clients bei der schreibgeschützten 0.9.0-Version. Einmaliger Start vor dem ersten geplanten Backup nur mit ausdrücklicher Einwilligung und der im Workflow dokumentierten kontrollierten Ausnahme; alle anderen Freigabeprüfungen müssen erfolgreich sein.
