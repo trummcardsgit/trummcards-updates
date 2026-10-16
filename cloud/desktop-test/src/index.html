@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self' https://*.supabase.co wss://*.supabase.co; img-src 'self' data: blob: https://*.supabase.co; object-src 'none'; base-uri 'none'; form-action 'none'">
+<title>TrummCards Cloud TEST</title>
+<link rel="stylesheet" href="styles.css">
+<script defer src="logic.js"></script>
+<script defer src="vendor.js"></script>
+<script defer src="app.js"></script>
+</head>
+<body>
+<div id="shell">
+<header>
+  <div class="brand"><img class="brand-image" src="logo.webp" width="74" height="74" alt="TrummCards Logo"><div><h1>TrummCards <span>Cloud</span></h1><p>Eigene Windows-Testanwendung &middot; EST. 2026</p></div></div>
+  <div class="headright"><span class="test-pill">TESTUMGEBUNG</span><span id="syncBadge" class="sync">Nicht verbunden</span></div>
+</header>
+<main>
+  <div class="warning"><strong>Nur Testdaten!</strong> Diese App ist getrennt von deiner installierten TrummCards-Version 1.6.1. Hier eingegebene Artikel und Verkaeufe gehen in dein Supabase-Testprojekt.</div>
+  <div id="feedback" role="alert" class="feedback" hidden></div>
+
+  <section id="setupPanel" class="panel narrow" hidden>
+    <h2>Cloud-Verbindung einrichten</h2>
+    <p class="muted">Diese App speichert hier nur die Supabase-Projektadresse und den <strong>oeffentlichen Publishable Key</strong>. Niemals Secret-, Service-Role- oder Datenbankpasswoerter einfuegen.</p>
+    <form id="setupForm">
+      <label>Supabase-Projektadresse <input name="url" type="url" required placeholder="https://projekt-id.supabase.co" autocomplete="off"></label>
+      <label>Publishable Key <input name="key" type="text" required placeholder="sb_publishable_..." autocomplete="off" spellcheck="false"></label>
+      <p class="small muted">Im Supabase-Dashboard: Project Settings &rarr; API Keys. Nur der Schluessel mit <code>sb_publishable_</code> ist erlaubt.</p>
+      <button class="primary" type="submit">Mit TEST-Projekt verbinden</button>
+    </form>
+  </section>
+
+  <section id="loginPanel" class="panel narrow" hidden>
+    <h2>Persoenliche Anmeldung</h2>
+    <p class="muted">Melde dich mit deinem Benutzer aus Supabase &rarr; Authentication &rarr; Users an. Nur das freigeschaltete Konto kann Lagerbuchungen durchfuehren.</p>
+    <form id="loginForm">
+      <label>E-Mail-Adresse <input type="email" name="email" required autocomplete="username"></label>
+      <label>Passwort <input type="password" name="password" required autocomplete="current-password"></label>
+      <div class="actions"><button class="primary" type="submit">Anmelden</button><button id="changeSettings" type="button">Verbindung aendern</button></div>
+    </form>
+    <p class="small muted">Das Passwort wird nicht in der TrummCards-Konfiguration gespeichert. Der Anmeldesitzungsschluessel wird lokal im eigenen Testprofil gehalten.</p>
+  </section>
+
+  <div id="appArea" hidden>
+    <div class="toolbar"><div id="accountLabel" class="muted"></div><div class="actions"><button id="refreshBtn" type="button">Jetzt synchronisieren</button><button id="logoutBtn" type="button">Abmelden</button></div></div>
+    <div class="metrics">
+      <div class="metric"><small>Artikel</small><strong id="metricProducts">0</strong></div>
+      <div class="metric"><small>Stueck auf Lager</small><strong id="metricQty">0</strong></div>
+      <div class="metric"><small>Lagerwert</small><strong id="metricValue">0,00 EUR</strong></div>
+      <div class="metric"><small>Gewinn aus Buchungen</small><strong id="metricProfit">0,00 EUR</strong></div>
+    </div>
+    <nav id="tabs" aria-label="Bereiche">
+      <button type="button" data-tab="inventory" class="active">Lager &amp; Artikel</button>
+      <button type="button" data-tab="purchase">Einkauf erfassen</button>
+      <button type="button" data-tab="sale">Verkauf erfassen</button>
+      <button type="button" data-tab="bookings">Buchungen</button>
+      <button type="button" data-tab="photos">Artikelbilder</button>
+    </nav>
+
+    <section class="tab" id="tab-inventory">
+      <div class="panel"><h2 id="productFormTitle">Artikel anlegen</h2>
+        <form id="productForm"><input type="hidden" name="edit_id">
+          <div class="grid">
+            <label>Artikelname * <input name="name" maxlength="300" required placeholder="z.B. Delta Herrschaft"></label>
+            <label>Artikelnummer / SKU <input name="sku" maxlength="120" placeholder="z.B. PKM-001"></label>
+            <label>Set <input name="set_name" maxlength="150" placeholder="z.B. Promo"></label>
+            <label>Sprache <select name="language"><option>Deutsch</option><option>Englisch</option><option>Japanisch</option><option>Italienisch</option><option>Andere</option></select></label>
+            <label>Zustand <select name="card_condition"><option value="">Bitte waehlen</option><option>Near Mint</option><option>Excellent</option><option>Good</option><option>Played</option><option>Poor</option><option>Sealed</option></select></label>
+            <label>Notiz <input name="note" maxlength="2000"></label>
+          </div>
+          <div class="article-photo-panel">
+            <h3>Artikelbild direkt hinzufügen (optional)</h3>
+            <p class="muted small">Wähle eine Datei oder mache ein Bild mit einer angeschlossenen Kamera. Das Bild wird zusammen mit diesem Artikel privat in Supabase gespeichert, auch ohne Einkaufslos.</p>
+            <div class="grid">
+              <label>Bild auswählen <input name="productPicture" type="file" accept="image/jpeg,image/png,image/webp" id="productPicture"></label>
+              <div><span class="small muted">Kamera (sofern am PC vorhanden)</span><div class="actions camera-actions"><button type="button" id="cameraStart">Kamera starten</button><button type="button" id="cameraShot" hidden>Foto aufnehmen</button><button type="button" id="cameraStop" hidden>Kamera schließen</button></div></div>
+            </div>
+            <video id="productCameraVideo" autoplay muted playsinline hidden></video>
+            <div class="product-preview"><img id="productImagePreview" alt="Artikelbild-Vorschau" hidden><div class="product-preview-details"><span id="productImageSelection">Noch kein neues Bild ausgewählt.</span><button id="productCurrentImageOpen" type="button" class="preview-enlarge" hidden>Bild vergrößern ↗</button></div></div>
+          </div>
+          <div class="actions"><button class="primary" id="productSubmit" type="submit">Artikel und Bild speichern</button><button id="productCancel" type="button" hidden>Bearbeitung abbrechen</button></div>
+        </form></div>
+      <div class="panel"><h2>Lagerbestand</h2><div class="table-wrap"><table><thead><tr><th>Bild</th><th>Artikel</th><th>SKU</th><th>Set</th><th>Zustand</th><th>Bestand</th><th>Lagerwert</th><th>Aktion</th></tr></thead><tbody id="inventoryRows"></tbody></table></div></div>
+    </section>
+
+    <section class="tab" id="tab-purchase" hidden>
+      <div class="panel"><h2>Einkauf ins Cloud-Lager buchen</h2>
+      <p class="muted">Beim Einkauf wird ein neues FIFO-Los angelegt. Der Einzelpreis und der Gesamtpreis rechnen sich automatisch gegenseitig aus.</p>
+      <form id="purchaseForm"><div class="grid">
+        <label>Artikel * <select name="product" required></select></label>
+        <label>Einkaufsdatum * <input name="date" type="date" required></label>
+        <label>Stueckzahl * <input name="qty" type="number" min="1" max="1000000" step="1" value="1" required></label>
+        <label>Einzelpreis (EUR) * <input name="unit" type="text" inputmode="decimal" value="0,00" required></label>
+        <label>Gesamtpreis (EUR) * <input name="total" type="text" inputmode="decimal" value="0,00" required></label>
+        <label>Zusatzkosten gesamt (EUR) <input name="extra" type="text" inputmode="decimal" value="0,00"></label>
+        <label>Bezugsquelle <input name="source" placeholder="z.B. eBay, Cardmarket"></label>
+        <label>Notiz <input name="note"></label>
+      </div><p class="hint" id="purchaseHint" aria-live="polite"></p><div class="actions"><button class="primary" type="submit">Einkauf buchen</button></div></form></div>
+    </section>
+
+    <section class="tab" id="tab-sale" hidden>
+      <div class="panel"><h2>Verkauf im Testprojekt buchen</h2>
+      <p class="muted">Alle Eingabefelder sind direkt bearbeitbar. Der Server verteilt den Einstand nach FIFO, verhindert Ueberverkaeufe und speichert die Buchung atomar.</p>
+      <form id="saleForm"><div class="grid">
+        <label>Artikel mit Lagerbestand * <select name="product" required></select></label>
+        <label>Verkaufsdatum * <input name="date" type="date" required></label>
+        <label>Stueckzahl * <input name="qty" type="number" min="1" step="1" value="1" required></label>
+        <label>Verkaufspreis gesamt (EUR) * <input name="price" type="text" inputmode="decimal" value="0,00" required></label>
+        <label>Versand-Einnahmen (EUR) <input name="shippingIncome" type="text" inputmode="decimal" value="0,00"></label>
+        <label>Versandkosten (EUR) <input name="shippingCost" type="text" inputmode="decimal" value="0,00"></label>
+        <label>Plattform-Gebuehren (EUR) <input name="fees" type="text" inputmode="decimal" value="0,00"></label>
+        <label>Weitere Kosten (EUR) <input name="other" type="text" inputmode="decimal" value="0,00"></label>
+        <label>Plattform <select name="platform"><option>eBay</option><option>Cardmarket</option><option>Vinted</option><option>Whatnot</option><option>Privat</option><option>Sonstige</option></select></label>
+        <label>Notiz <input name="note"></label>
+      </div><p class="hint" id="saleHint" aria-live="polite"></p><div class="actions"><button class="primary" type="submit">Verkauf buchen &amp; Bestand reduzieren</button></div></form></div>
+    </section>
+
+    <section class="tab" id="tab-bookings" hidden>
+      <div class="panel"><h2>Verkaeufe</h2><p class="small muted">Testbuchungen koennen storniert werden. Ein Storno stellt den Lagerbestand wieder her, entfernt die Historie aber nicht.</p>
+      <div class="table-wrap"><table><thead><tr><th>Datum</th><th>Artikel</th><th>Stk.</th><th>Preis</th><th>Einstand</th><th>Gewinn</th><th>Status</th><th>Aktion</th></tr></thead><tbody id="salesRows"></tbody></table></div></div>
+      <div class="panel"><h2>Einkaufschargen</h2><div class="table-wrap"><table><thead><tr><th>Datum</th><th>Artikel</th><th>Gekauft</th><th>Verfuegbar</th><th>Gesamtkosten</th><th>Quelle</th></tr></thead><tbody id="lotsRows"></tbody></table></div></div>
+    </section>
+
+    <section class="tab" id="tab-photos" hidden>
+      <div class="panel"><h2>Artikelbilder im privaten Cloud-Speicher</h2>
+        <p class="muted">Das Bild gehoert zu einem konkreten Einkaufslos. Maximal 10 MB pro Bild; JPG, PNG oder WebP.</p>
+        <form id="imageForm"><div class="grid"><label>Einkaufslos * <select name="lot" required></select></label><label>Bild auswaehlen * <input name="file" type="file" accept="image/jpeg,image/png,image/webp" required></label></div><div class="actions"><button class="primary" type="submit">Bild sicher hochladen</button></div></form>
+      </div><div class="panel"><h2>Gespeicherte Bilder</h2><div id="imageCards" class="image-grid"></div></div>
+    </section>
+  </div>
+</main>
+<dialog id="desktopImageViewer" class="desktop-image-viewer"><button type="button" id="desktopImageClose" aria-label="Bild schließen">✕</button><img id="desktopViewerImage" alt="Großes Artikelbild"><p id="desktopViewerCaption"></p></dialog>
+<footer><span>TRUMMCARDS &middot; EST. 2026</span><span>CLOUD TEST &ndash; GETRENNTE TESTDATEN</span></footer>
+</div>
+</body>
+</html>

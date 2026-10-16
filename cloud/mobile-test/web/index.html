@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#101828">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="TrummCards TEST">
+<meta name="description" content="TrummCards Cloud TEST – synchronisierte Pokémon-Karten-Lagerverwaltung auf Windows, iPhone und Android.">
+<title>TrummCards · Cloud TEST</title>
+<link rel="icon" type="image/webp" href="./logo.webp">
+<link rel="apple-touch-icon" href="./icon-180.png">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="stylesheet" href="./styles.css?v=0.4.0">
+<script src="./app.js?v=0.4.0" defer></script>
+</head>
+<body>
+<div id="shell">
+  <header class="topbar">
+    <div class="brand"><img class="brand-logo" src="./logo.webp" width="60" height="60" alt="TrummCards Logo"><div class="wordmark"><b>TrummCards</b><small>CLOUD <span>TEST</span> · EST. 2026</small></div></div>
+    <div class="connection"><span id="connDot" class="dot idle"></span><span id="connLabel">Verbinde …</span></div>
+  </header>
+  <main>
+    <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+    <section id="loginScreen" class="login-screen" hidden>
+      <div class="login-art"><img class="login-logo" src="./logo.webp" alt="TrummCards"><strong>Dein Lager.<br>Überall.</strong><p>Ein Bestand für PC, iPhone und Android.</p></div>
+      <div class="panel auth-panel">
+        <div class="micro-label">TRUMMCARDS CLOUD</div>
+        <h1>Willkommen zurück</h1>
+        <p class="subtle">Melde dich mit deinem Supabase-Testkonto an. Deine Verkäufe und Einkäufe werden mit deinem Windows-Testprogramm synchronisiert.</p>
+        <form id="loginForm" autocomplete="on">
+          <label for="email">E-Mail-Adresse</label><input type="email" id="email" name="email" autocomplete="username" inputmode="email" required placeholder="name@beispiel.at">
+          <label for="password">Passwort</label><input type="password" id="password" name="password" autocomplete="current-password" required placeholder="Dein Supabase-Passwort">
+          <button class="primary full" type="submit" id="signInBtn">Sicher anmelden <span>→</span></button>
+        </form>
+        <p class="tiny"><a href="./reset-password.html" style="color:#f3d28e">Passwort vergessen? Hier zurücksetzen</a></p>
+        <p class="tiny">Nur das für TrummCards freigeschaltete Konto erhält Zugriff. Keine Registrierung in dieser Test-App.</p>
+      </div>
+    </section>
+    <div id="appScreen" hidden>
+      <div class="test-note"><span>TESTUMGEBUNG</span> Artikel und Verkäufe gehen direkt in dein Supabase-Projekt <b>TEST</b> – nicht in dein bisheriges lokales Windows-Lager.</div>
+      <div class="topactions"><div><span class="eyebrow" id="welcomeText">DEINE SAMMLUNG</span><h1 id="screenTitle">Übersicht</h1></div><button class="icon-btn" id="refreshBtn" aria-label="Jetzt synchronisieren" title="Synchronisieren">↻</button></div>
+      <div id="pendingBanner" class="pending" hidden></div>
+
+      <section id="page-home" class="page">
+        <div class="stats-grid">
+          <div class="stat"><span>Artikel</span><strong id="statProducts">0</strong><small>erfasst</small></div>
+          <div class="stat"><span>Lagerbestand</span><strong id="statPieces">0</strong><small>Stück verfügbar</small></div>
+          <div class="stat"><span>Lagerwert</span><strong id="statValue">0,00 €</strong><small>FIFO-Restwert</small></div>
+          <div class="stat"><span>Gewinn</span><strong id="statProfit">0,00 €</strong><small>gebuchte Verkäufe</small></div>
+        </div>
+        <div class="sectionhead"><h2>Dein Lager</h2><button class="text-button" data-go="article">+ Artikel</button></div>
+        <label class="searchbox"><span>⌕</span><input id="search" aria-label="Artikel suchen" placeholder="Artikel oder SKU suchen …" autocomplete="off" type="search"></label>
+        <div id="productsList" class="stack"></div>
+      </section>
+
+      <section id="page-article" class="page" hidden>
+        <div class="panel"><div class="micro-label">KARTENVERWALTUNG</div><h2 id="articleTitle">Artikel anlegen</h2>
+          <form id="articleForm"><input type="hidden" name="id">
+            <div class="field"><label>Artikelname *</label><input name="name" required maxlength="300" placeholder="z. B. Delta Herrschaft"></div>
+            <div class="two-fields"><div class="field"><label>Artikelnummer / SKU</label><input name="sku" maxlength="120" placeholder="z. B. PKM-001"></div><div class="field"><label>Set</label><input name="set_name" maxlength="150" placeholder="z. B. Promokarte"></div></div>
+            <div class="two-fields"><div class="field"><label>Sprache</label><select name="language"><option>Deutsch</option><option>Englisch</option><option>Japanisch</option><option>Italienisch</option><option>Andere</option></select></div><div class="field"><label>Zustand</label><select name="card_condition"><option value="">Bitte wählen</option><option>Near Mint</option><option>Excellent</option><option>Good</option><option>Played</option><option>Poor</option><option>Sealed</option></select></div></div>
+            <div class="field"><label>Notiz</label><textarea name="note" rows="2" maxlength="2000" placeholder="Optional"></textarea></div>
+            <div class="article-photo-field">
+              <div class="micro-label">ARTIKELBILD · OPTIONAL</div>
+              <p class="subtle">Fotografiere die Karte direkt oder wähle ein Bild. Das Bild wird beim Speichern mit dem Artikel im privaten Cloud-Speicher gesichert – auch ohne Einkauf.</p>
+              <div class="two-fields photo-buttons">
+                <label class="file-button">📷 Kamera öffnen<input type="file" name="articleCamera" accept="image/*" capture="environment"></label>
+                <label class="file-button">▧ Bild auswählen<input type="file" name="articleGallery" accept="image/*"></label>
+              </div>
+              <div class="article-photo-preview"><img id="articleImagePreview" alt="Vorschau des Artikelbildes" hidden><span id="articleImageSelection">Noch kein neues Bild ausgewählt.</span></div>
+            </div>
+            <button type="submit" class="primary full" id="articleSubmit">Artikel und Bild speichern</button>
+            <button type="button" class="secondary full" data-go="home">Zurück zum Lager</button>
+          </form>
+        </div>
+      </section>
+
+      <section id="page-purchase" class="page" hidden>
+        <div class="panel booking-panel"><div class="micro-label">EINGANG · CLOUD TEST v0.4</div><h2>Einkauf erfassen</h2>
+          <p class="subtle">Erfasse deinen Einkauf. Einzel- und Gesamtpreis werden automatisch berechnet.</p>
+          <form id="purchaseForm" class="booking-form">
+            <fieldset class="booking-group">
+              <legend><span class="group-number">01</span> Artikel &amp; Menge</legend>
+              <div class="field"><label for="purchaseProduct">Artikel *</label><select id="purchaseProduct" name="product" required><option value="">Artikel wählen</option></select></div>
+              <div class="booking-grid booking-grid-primary">
+                <div class="field"><label for="purchaseDate">Datum *</label><input id="purchaseDate" name="date" type="date" required></div>
+                <div class="field"><label for="purchaseQty">Stückzahl *</label><input id="purchaseQty" name="qty" inputmode="numeric" type="number" step="1" min="1" max="1000000" required value="1"></div>
+              </div>
+            </fieldset>
+            <fieldset class="booking-group">
+              <legend><span class="group-number">02</span> Einkaufspreis</legend>
+              <div class="booking-grid booking-grid-money">
+                <div class="field"><label for="purchaseUnit">Einzelpreis *</label><div class="money-input"><input id="purchaseUnit" name="unit" type="text" inputmode="decimal" value="0,00" required autocomplete="off"><span aria-hidden="true">€</span></div></div>
+                <div class="field"><label for="purchaseTotal">Gesamtpreis *</label><div class="money-input"><input id="purchaseTotal" name="total" type="text" inputmode="decimal" value="0,00" required autocomplete="off"><span aria-hidden="true">€</span></div></div>
+              </div>
+              <div class="field"><label for="purchaseExtra">Zusatzkosten gesamt</label><div class="money-input"><input id="purchaseExtra" name="extra" type="text" inputmode="decimal" value="0,00" autocomplete="off"><span aria-hidden="true">€</span></div></div>
+            </fieldset>
+            <fieldset class="booking-group">
+              <legend><span class="group-number">03</span> Weitere Angaben</legend>
+              <div class="field"><label for="purchaseSource">Bezugsquelle</label><input id="purchaseSource" name="source" placeholder="z. B. Cardmarket oder eBay" autocomplete="off"></div>
+              <div class="field"><label for="purchaseNote">Notiz</label><input id="purchaseNote" name="note" placeholder="Optional" autocomplete="off"></div>
+            </fieldset>
+            <div id="purchasePreview" class="preview">Stückzahl und Preise eingeben.</div>
+            <button class="primary full booking-submit" type="submit">Einkauf buchen <span>→</span></button>
+          </form>
+        </div>
+      </section>
+
+      <section id="page-sale" class="page" hidden>
+        <div class="panel booking-panel"><div class="micro-label">VERKAUF · CLOUD TEST v0.4</div><h2>Verkauf erfassen</h2>
+          <p class="subtle">Der Lagerbestand und FIFO-Einstand werden nach der Buchung automatisch aktualisiert.</p>
+          <form id="saleForm" class="booking-form">
+            <fieldset class="booking-group">
+              <legend><span class="group-number">01</span> Artikel &amp; Menge</legend>
+              <div class="field"><label for="saleProduct">Artikel mit Bestand *</label><select id="saleProduct" name="product" required><option value="">Artikel mit Bestand wählen</option></select></div>
+              <div class="booking-grid booking-grid-primary">
+                <div class="field"><label for="saleDate">Datum *</label><input id="saleDate" name="date" type="date" required></div>
+                <div class="field sale-qty-field"><label for="saleQty">Stückzahl *</label>
+                  <div class="qty-stepper">
+                    <button id="saleQtyMinus" type="button" aria-label="Stückzahl verringern">−</button>
+                    <input id="saleQty" name="qty" type="number" step="1" min="1" max="1000000" inputmode="numeric" required value="1">
+                    <button id="saleQtyPlus" type="button" aria-label="Stückzahl erhöhen">+</button>
+                  </div>
+                </div>
+              </div>
+            </fieldset>
+            <fieldset class="booking-group">
+              <legend><span class="group-number">02</span> Verkaufspreis &amp; Kosten</legend>
+              <div class="field"><label for="salePrice">Verkaufspreis gesamt *</label><div class="money-input"><input id="salePrice" name="price" type="text" inputmode="decimal" value="0,00" required autocomplete="off"><span aria-hidden="true">€</span></div></div>
+              <div class="booking-grid booking-grid-money">
+                <div class="field"><label for="saleShippingIncome">Versand-Einnahmen</label><div class="money-input"><input id="saleShippingIncome" name="shippingIncome" type="text" inputmode="decimal" value="0,00" autocomplete="off"><span aria-hidden="true">€</span></div></div>
+                <div class="field"><label for="saleShippingCost">Versandkosten</label><div class="money-input"><input id="saleShippingCost" name="shippingCost" type="text" inputmode="decimal" value="0,00" autocomplete="off"><span aria-hidden="true">€</span></div></div>
+                <div class="field"><label for="saleFees">Plattform-Gebühren</label><div class="money-input"><input id="saleFees" name="fees" type="text" inputmode="decimal" value="0,00" autocomplete="off"><span aria-hidden="true">€</span></div></div>
+                <div class="field"><label for="saleOther">Weitere Kosten</label><div class="money-input"><input id="saleOther" name="other" type="text" inputmode="decimal" value="0,00" autocomplete="off"><span aria-hidden="true">€</span></div></div>
+              </div>
+            </fieldset>
+            <fieldset class="booking-group">
+              <legend><span class="group-number">03</span> Weitere Angaben</legend>
+              <div class="field"><label for="salePlatform">Plattform</label><select id="salePlatform" name="platform"><option>eBay</option><option>Cardmarket</option><option>Vinted</option><option>Whatnot</option><option>Privat</option><option>Sonstige</option></select></div>
+              <div class="field"><label for="saleNote">Notiz</label><input id="saleNote" name="note" placeholder="Optional" autocomplete="off"></div>
+            </fieldset>
+            <div class="preview" id="salePreview">Artikel, Stückzahl und Preis wählen.</div>
+            <button class="primary full booking-submit" type="submit">Verkauf buchen <span>→</span></button>
+          </form>
+        </div>
+      </section>
+
+      <section id="page-sales" class="page" hidden>
+        <div class="sectionhead"><h2>Verkäufe & Einkäufe</h2></div>
+        <div id="salesList" class="stack"></div>
+        <h2 class="subheading">Einkaufschargen</h2><div id="lotsList" class="stack"></div>
+      </section>
+
+      <section id="page-photos" class="page" hidden>
+        <div class="panel"><div class="micro-label">FOTOS</div><h2>Artikelbilder</h2><p class="subtle">Mache ein Foto mit deinem Handy oder wähle ein Bild. Bilder sind ausschließlich in deinem privaten Cloud-Speicher zugänglich.</p>
+          <form id="photoForm"><div class="field"><label>Einkaufslos *</label><select name="lot" required><option value="">Einkauf wählen</option></select></div>
+            <div class="two-fields photo-buttons"><label class="file-button">📷 Foto aufnehmen<input type="file" name="camera" accept="image/*" capture="environment"></label><label class="file-button">▧ Bild auswählen<input type="file" name="gallery" accept="image/*"></label></div>
+            <div id="photoSelection" class="image-selection">Noch kein Bild ausgewählt.</div>
+            <button class="primary full" type="submit">Bild sicher hochladen</button>
+          </form>
+        </div>
+        <div class="sectionhead"><h2>Gespeicherte Bilder</h2></div><div id="photosList" class="photo-grid"></div>
+      </section>
+
+      <section id="page-more" class="page" hidden>
+        <div class="panel"><div class="micro-label">KONTO & SYNCHRONISIERUNG</div><h2>Cloud TEST</h2>
+          <div class="setting-row"><span>Angemeldet als</span><b id="accountEmail">–</b></div>
+          <div class="setting-row"><span>Datenbank</span><b>Supabase TEST</b></div>
+          <div class="setting-row"><span>Letzte Aktualisierung</span><b id="lastUpdated">–</b></div>
+          <p class="subtle">Die App aktualisiert den Bestand etwa alle 12 Sekunden, sobald sie im Vordergrund ist. Beim Zurückkehren wird zusätzlich synchronisiert. Für Buchungen wird Internet benötigt.</p>
+          <button class="secondary full" type="button" id="moreRefresh">Jetzt synchronisieren</button>
+          <button class="danger full" type="button" id="signOutBtn">Abmelden</button>
+        </div>
+        <div class="panel"><h2>Zum Home-Bildschirm</h2><p class="subtle"><b>iPhone:</b> In Safari auf „Teilen“ tippen und „Zum Home-Bildschirm“ wählen.<br><b>Android:</b> In Chrome im Menü auf „App installieren“ oder „Zum Startbildschirm hinzufügen“ tippen.</p></div>
+      </section>
+    </div>
+  </main>
+  <dialog id="imageViewer" class="image-dialog"><button id="closeImageViewer" class="image-dialog-close" type="button" aria-label="Bild schließen">✕</button><img id="viewerImage" alt="Großes Artikelbild"><p id="viewerCaption"></p></dialog>
+  <nav id="bottomNav" class="bottom-nav" aria-label="Navigation" hidden>
+    <button data-go="home" class="active" type="button"><span>▦</span>Lager</button>
+    <button data-go="purchase" type="button"><span>⊕</span>Einkauf</button>
+    <button data-go="sale" type="button"><span>↗</span>Verkauf</button>
+    <button data-go="photos" type="button"><span>▧</span>Bilder</button>
+    <button data-go="more" type="button"><span>☰</span>Mehr</button>
+  </nav>
+  <footer>TRUMMCARDS · EST. 2026 <span>CLOUD TEST · KEINE PRODUKTIVDATEN</span></footer>
+</div>
+</body>
+</html>
