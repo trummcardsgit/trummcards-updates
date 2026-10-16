@@ -38,8 +38,12 @@ test('Automatic production backup keeps its independent safety controls',()=>{
  assert.ok(backup.includes('restore-check.mjs'),'must verify restore');
 });
 test('Release changes only isolated Cloud paths and not TEST root or legacy Windows',()=>{
- assert.ok(pipeline.includes('git add -- production cloud-updates'));
- assert.ok(pipeline.includes('git push origin HEAD:gh-pages'));
- assert.ok(pipeline.includes('Copy-Item'));
- assert.ok(!pipeline.includes('git add -A'));
+ assert.ok(pipeline.includes('git worktree add --detach'), 'Pages must use independent worktree, not switch main');
+ assert.ok(!pipeline.includes('git checkout gh-pages'), 'do not switch modified main checkout');
+ assert.ok(pipeline.includes('add -- production cloud-updates'), 'stage only Cloud paths');
+ assert.ok(pipeline.includes('$_ -notmatch'), 'reject staged paths outside Cloud paths');
+ assert.ok(pipeline.includes('push origin HEAD:gh-pages'), 'publish only Pages branch');
+ assert.ok(pipeline.includes('Copy-Item'), 'copy staged release assets');
+ assert.ok(!pipeline.includes('git add -A'), 'do not stage TEST root');
+ assert.ok(!pipeline.includes('push --force'), 'do not overwrite gh-pages history');
 });
