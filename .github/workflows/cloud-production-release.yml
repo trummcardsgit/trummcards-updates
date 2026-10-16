@@ -23,9 +23,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Releasefreigabe, getrennte Datenbank und Versionsnummer prüfen
+      - name: Nur vorgeprüfte Cloud-1.0-Umschaltungen zulassen (kein Deployment)
         shell: pwsh
-        run: node cloud/release/check-go-live.mjs
+        run: node cloud/release/prepare-go-live.mjs --dry-run
       - name: Mindestens ein erfolgreiches PROD-Backup innerhalb der letzten 72 Stunden verlangen
         shell: pwsh
         run: |
@@ -58,6 +58,18 @@ jobs:
           cd cloud/desktop-production
           npm run check
           if ($LASTEXITCODE -ne 0) { throw 'Windows-Prüfungen fehlgeschlagen.' }
+      - name: Cloud 1.0 im isolierten Runner aktivieren (Freigabe erforderlich)
+        shell: pwsh
+        run: |
+          node cloud/release/prepare-go-live.mjs
+          if ($LASTEXITCODE -ne 0) { throw '1.0 Staging fehlgeschlagen.' }
+          node cloud/release/check-go-live.mjs
+          if ($LASTEXITCODE -ne 0) { throw 'Go-Live-Kontrolle fehlgeschlagen.' }
+          node --test cloud/mobile-production/tests/release.test.mjs
+          if ($LASTEXITCODE -ne 0) { throw 'PWA Release-Tests fehlgeschlagen.' }
+          cd cloud/desktop-production
+          npm run check
+          if ($LASTEXITCODE -ne 0) { throw 'Windows Release-Pruefung fehlgeschlagen.' }
       - name: Windows Icon vorbereiten
         shell: pwsh
         run: python -m pip install --disable-pip-version-check pillow
