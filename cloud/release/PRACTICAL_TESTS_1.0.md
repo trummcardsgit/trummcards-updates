@@ -1,6 +1,6 @@
 # TrummCards Cloud 1.0 – kontrollierter Praxistest
 
-**Stand:** 16.10.2026 – Freigabe ausstehend. Nur der **read-only Windows-Preview-Installer 0.9.0** darf vor dem Produktions-Go-Live installiert werden. Kein produktives PWA-Deployment, keine TEST-Umschaltung, keine Echtbuchungen.
+**Stand:** 16.10.2026 – Freigabe ausstehend. Die **schreibgeschützte Windows-Vorschau 0.9.0** wurde vom Eigentümer als funktionierend gemeldet. Die **ebenfalls schreibgeschützte PWA-Vorschau 0.9.0** liegt bereits unter `gh-pages/production/`; eine direkte HTTPS-Erreichbarkeitsprüfung war von dieser Umgebung aus nicht möglich. Kein Release 1.0.0, keine TEST-Umschaltung und keine Echtbuchungen.
 
 ## A. Windows-Preview testen (echter Benutzer, keine Buchungen)
 1. GitHub Actions: https://github.com/trummcardsgit/trummcards-updates/actions/runs/38933990190
@@ -15,8 +15,21 @@
 
 **Signatur/SmartScreen:** Das interne Windows-Testartefakt kann unsigniert sein. Bei einer Sicherheitswarnung nicht pauschal Schutzmechanismen abschalten. Den Installer nur verwenden, wenn Herausgeber und Quelle eindeutig geprüft sind.
 
-## B. Mobile-PWA
-Die produktive PWA ist noch nicht veröffentlicht. Die alte TEST-PWA ist ausdrücklich **kein** Produktionstest. Für einen echten iOS-/Android-Test braucht die Produktion ihre eigenständige HTTPS-Adresse sowie erlaubte Auth-Redirect-URLs und einen finalen Service-Worker-Scope. Keine Daten vor Go-Live in PROD schreiben.
+## B. Mobile-PWA – jetzt mit der vorhandenen Produktionsvorschau prüfen
+Die Dateien für die schreibgeschützte Version 0.9.0 sind bereits auf GitHub Pages im Ordner `gh-pages/production/` vorhanden. Der dortige Code hat **`WRITES_ENABLED=false`**, verwendet die neue PROD-Ref `hgdexyvtgfffcasfpjyu` und keinen TEST-Datenbankverweis. Der separate Pfad ist **keine separate Web-Origin**, die PWA verwendet aber eigene Session-/Cache-Namen und einen auf `./` begrenzten Service-Worker-Scope.
+
+**Testadresse:** https://trummcardsgit.github.io/trummcards-updates/production/
+
+1. Die URL direkt am iPhone (Safari) oder Android (Chrome) öffnen. Bei **404**, Zertifikatswarnung, fehlender Darstellung oder Weiterleitung an die TEST-Startseite zuerst hier abbrechen und melden.
+2. In der Kopfzeile **CLOUD PRODUCTION / PRODUKTIONSVORSCHAU 0.9.0** prüfen. Keine Daten eingeben, bevor diese Kennzeichnung korrekt ist.
+3. Mit dem **bereits in Supabase Production angelegten** persönlichen Konto anmelden; niemals Passwörter, JWTs, Cookies oder Screenshots mit diesen Daten veröffentlichen.
+4. Prüfen: `0` Artikel, `0` lagernde Stück, `0,00 €` Lagerwert, `0,00 €` Gewinn; Seitenwechsel zwischen Lager, Einkauf, Verkauf, Bilder und Einstellungen; Synchronisieren.
+5. Die Eingabefelder für Kauf und Verkauf ansehen; kein Speichern, keine Testartikel oder echten Bilder hochladen. Die Version 0.9.0 verweigert Geschäftsbuchungen absichtlich.
+6. Abmelden, Seite neu öffnen und erneut anmelden. Bei Erfolg iPhone über Safari **Teilen → Zum Home-Bildschirm**, Android über Chrome **Menü → App installieren** oder **Zum Startbildschirm hinzufügen**.
+7. Passwort-Reset separat und erst nach Prüfung der Supabase **Authentication → URL Configuration → Redirect URLs** testen; Ziel muss ausschließlich auf die Produktions-PWA und niemals auf die TEST-Startseite zeigen.
+
+**Abnahme:** Die mobile Vorschau ist nur ein Login-/Darstellungs-/Caching-Test. Synchronisierung mit echten neu gebuchten Artikeln, Bildvorschau, FIFO-Verkauf, Storno und Wiederherstellung mit Daten bleiben für den isolierten synthetischen End-to-End-Test bzw. nach Freigabe offen.
+
 
 ## C. Automatisch geprüfte Voraussetzungen
 - Die neue Datenbank hat RLS auf 7 Tabellen, Besitzer-Guard und privaten Image-Bucket.
@@ -26,9 +39,11 @@ Die produktive PWA ist noch nicht veröffentlicht. Die alte TEST-PWA ist ausdrü
 - TEST und Windows 1.6.1 bleiben unangetastet.
 
 ## D. Abschließendes Go/No-Go
-- [ ] Echtes Windows-Preview-Login und Abmeldung durch Eigentümer erfolgreich
+- [x] Windows-Preview-Anmeldung laut Rückmeldung des Eigentümers erfolgreich (16.10.2026, „in der windows version hat alles geklappt“)
+- [ ] Windows-Abmeldung, Neustart und schreibgeschützte Formularsperre einzeln protokolliert
 - [ ] Unangemeldete Anfragen und fremder Benutzer können keine Bestände/Bilder/Buchungen einsehen oder ändern
-- [ ] Produktions-PWA mit eigener HTTPS-Adresse, Redirects, Passwort-Reset und iOS-/Android-Login geprüft
+- [ ] Bestehende HTTPS-PWA unter `/production/` am iPhone/Android erreichbar, Anmeldung, Abmeldung und Navigation erfolgreich
+- [ ] Produktions-PWA Passwort-Reset und sichere Auth-Redirects geprüft; separates Origin-Konzept für endgültigen Betrieb bewertet
 - [ ] Geschäftslogik (Einkauf → FIFO-Verkauf → Storno) inkl. Fotos und Wiederherstellung **mit nichtleeren synthetischen Daten im isolierten Testsystem** geprüft
 - [ ] Bildvorschauen auf Windows und Mobilgeräten sichtbar und vergrößerbar
 - [ ] Feature-Parität (insbesondere Einkaufs-/Verkaufsbearbeitung, CSV-Import und Export) bestätigt oder bewusst eingeschränkt
