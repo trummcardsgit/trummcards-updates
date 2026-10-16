@@ -44,9 +44,42 @@ jobs:
           test -s src/vendor.js
       - name: Kein Prod-Deployment und kein Zugriff auf TEST
         run: echo 'Only static source checks. PROD, TEST, releases and GitHub Pages stay unchanged.'
+  local-restore:
+    name: Offline-Backup wirklich in temporäres PostgreSQL 17 zurückspielen
+    needs: offline-checks
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: local-test-only
+          POSTGRES_DB: trummcards_restore
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      TC_BACKUP_PASSPHRASE: synthetic-example-only-for-ci-not-a-secret
+      PG_RESTORE_URL: postgresql://postgres:local-test-only@127.0.0.1:5432/trummcards_restore
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Temporäre PostgreSQL Restore-Abhängigkeit installieren
+        run: npm install --prefix cloud/backup --no-audit --no-fund --ignore-scripts
+      - name: Fiktives verschlüsseltes Backup erzeugen und wiederherstellen
+        run: |
+          node cloud/backup/create-fixture.mjs "$RUNNER_TEMP/tc-synthetic.tcbackup"
+          node cloud/backup/restore-check.mjs "$RUNNER_TEMP/tc-synthetic.tcbackup"
+          rm -f "$RUNNER_TEMP/tc-synthetic.tcbackup"
   windows-preview:
     name: Isolierter Windows PROD-Vorschau-Installer (KEIN RELEASE)
-    needs: offline-checks
+    needs: [offline-checks, local-restore]
     runs-on: windows-latest
     defaults:
       run:
