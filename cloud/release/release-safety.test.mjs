@@ -3,8 +3,8 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {fileURLToPath} from 'node:url';
 
-const pipeline=readFileSync(fileURLToPath(new URL('../../.github/workflows/cloud-production-release.yml',import.meta.url)),'utf8');
-const backup=readFileSync(fileURLToPath(new URL('../../.github/workflows/cloud-production-encrypted-backup.yml',import.meta.url)),'utf8');
+const pipeline=readFileSync(fileURLToPath(new URL('../../.github/workflows/cloud-production-release.yml',import.meta.url)),'utf8').replace(/\r\n?/g,'\n');
+const backup=readFileSync(fileURLToPath(new URL('../../.github/workflows/cloud-production-encrypted-backup.yml',import.meta.url)),'utf8').replace(/\r\n?/g,'\n');
 
 test('Cloud 1.0 deploy stays behind all three approvals',()=>{
  for(const name of ['TRUMMCARDS_BACKUP_ACTIVE','TRUMMCARDS_RESTORE_VERIFIED','TRUMMCARDS_PRODUCTION_APPROVED']){
