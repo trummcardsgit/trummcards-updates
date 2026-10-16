@@ -24,6 +24,10 @@ jobs:
           node --check cloud/mobile-production/web/reset-password.js
           node --check cloud/mobile-production/web/sw.js
           node --test cloud/mobile-production/tests/production.test.mjs
+      - name: Production Anmeldung und RLS anonym schreibfrei pruefen
+        run: |
+          node --check cloud/release/probe-prod-anon.mjs
+          node cloud/release/probe-prod-anon.mjs
       - name: Verschlüsseltes Backup offline testen
         run: |
           node --check cloud/backup/secure-archive.mjs
@@ -42,8 +46,8 @@ jobs:
           npm run check
           npm run bundle
           test -s src/vendor.js
-      - name: Kein Prod-Deployment und kein Zugriff auf TEST
-        run: echo 'Only static source checks. PROD, TEST, releases and GitHub Pages stay unchanged.'
+      - name: Kein Prod-Deployment, kein Schreibzugriff und kein Zugriff auf TEST
+        run: echo 'Static tests and unauthenticated, read-only PROD API checks only. TEST, releases, PROD data and GitHub Pages stay unchanged.'
   local-restore:
     name: Offline-Backup wirklich in temporäres PostgreSQL 17 zurückspielen
     needs: offline-checks
