@@ -186,23 +186,41 @@ jobs:
           Copy-Item 'cloud/desktop-production/dist/TrummCards-Cloud-Setup-1.0.0.exe*' "$stage/updates/" -Force
           Copy-Item 'cloud/desktop-production/dist/latest.yml' "$stage/updates/" -Force
           "TC_CLOUD_STAGE=$stage" >> $env:GITHUB_ENV
-      - name: Nur PROD-Unterordner auf gh-pages aktualisieren – TEST-Root behalten
+      - name: PROD-Dateien in separatem gh-pages-Worktree veröffentlichen – TEST-Root behalten
         shell: pwsh
         run: |
-          git fetch origin gh-pages
-          git checkout gh-pages
-          New-Item -ItemType Directory -Path 'production','cloud-updates' -Force | Out-Null
-          Copy-Item "$env:TC_CLOUD_STAGE/pwa/*" 'production/' -Recurse -Force
-          Copy-Item "$env:TC_CLOUD_STAGE/updates/*" 'cloud-updates/' -Force
-          git add -- production cloud-updates
-          git diff --cached --quiet
+          # main contains staged release-version edits. Switching its worktree to
+          # gh-pages fails with "local changes would be overwritten".
+          # Use a separate checkout; never reset or force-push the TEST branch.
+          git fetch origin +refs/heads/gh-pages:refs/remotes/origin/gh-pages
+          if ($LASTEXITCODE -ne 0) { throw 'gh-pages konnte nicht geladen werden.' }
+          $pagesDir = Join-Path $env:RUNNER_TEMP 'trummcards-publish-gh-pages'
+          git worktree add --detach "$pagesDir" refs/remotes/origin/gh-pages
+          if ($LASTEXITCODE -ne 0) { throw 'Separater gh-pages-Worktree konnte nicht erstellt werden.' }
+          $prodDir = Join-Path $pagesDir 'production'
+          $updatesDir = Join-Path $pagesDir 'cloud-updates'
+          New-Item -ItemType Directory -Path $prodDir,$updatesDir -Force | Out-Null
+          Copy-Item "$env:TC_CLOUD_STAGE/pwa/*" $prodDir -Recurse -Force
+          Copy-Item "$env:TC_CLOUD_STAGE/updates/*" $updatesDir -Force
+          git -C "$pagesDir" add -- production cloud-updates
+          if ($LASTEXITCODE -ne 0) { throw 'Nur-Cloud-Dateien konnten nicht gestaged werden.' }
+          $paths = @(git -C "$pagesDir" diff --cached --name-only)
+          if ($LASTEXITCODE -ne 0) { throw 'Aenderungsumfang konnte nicht geprueft werden.' }
+          $outside = @($paths | Where-Object { $_ -notmatch '^(production|cloud-updates)/' })
+          if ($outside.Count -gt 0) { throw 'TEST-Root bzw. nicht freigegebene Dateien betroffen. Release verweigert.' }
+          git -C "$pagesDir" diff --cached --quiet
           if ($LASTEXITCODE -eq 1) {
-            git config user.name 'github-actions[bot]'
-            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-            git commit -m 'Deploy TrummCards Cloud 1.0 (separate updater and PWA)'
-            git push origin HEAD:gh-pages
-            if ($LASTEXITCODE -ne 0) { throw 'GitHub Pages Publish fehlgeschlagen.' }
-          } elseif ($LASTEXITCODE -ne 0) { throw 'git diff fehlgeschlagen.' }
+            git -C "$pagesDir" config user.name 'github-actions[bot]'
+            git -C "$pagesDir" config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git -C "$pagesDir" commit -m 'Deploy TrummCards Cloud 1.0 (separate updater and PWA)'
+            if ($LASTEXITCODE -ne 0) { throw 'Cloud-Commit fehlgeschlagen.' }
+            git -C "$pagesDir" push origin HEAD:gh-pages
+            if ($LASTEXITCODE -ne 0) { throw 'GitHub Pages Publish fehlgeschlagen (kein Force-Push).' }
+          } elseif ($LASTEXITCODE -ne 0) {
+            throw 'git diff fehlgeschlagen.'
+          } else {
+            Write-Host 'Cloud 1.0 ist auf gh-pages bereits identisch vorhanden.'
+          }
       - name: Pages Build nach GITHUB_TOKEN-Push ausdrücklich anfordern
         shell: pwsh
         run: |
