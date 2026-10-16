@@ -24,6 +24,10 @@ jobs:
           node --check cloud/mobile-production/web/reset-password.js
           node --check cloud/mobile-production/web/sw.js
           node --test cloud/mobile-production/tests/production.test.mjs
+      - name: Production Anmeldung und RLS anonym schreibfrei pruefen
+        run: |
+          node --check cloud/release/probe-prod-anon.mjs
+          node cloud/release/probe-prod-anon.mjs
       - name: Verschlüsseltes Backup offline testen
         run: |
           node --check cloud/backup/secure-archive.mjs
@@ -35,6 +39,7 @@ jobs:
         run: |
           node --check cloud/release/check-go-live.mjs
           node --test cloud/release/check-go-live.test.mjs
+          node --test cloud/release/release-safety.test.mjs
       - name: Windows Cloud Source und Business-Logik pruefen
         working-directory: cloud/desktop-production
         run: |
@@ -42,8 +47,8 @@ jobs:
           npm run check
           npm run bundle
           test -s src/vendor.js
-      - name: Kein Prod-Deployment und kein Zugriff auf TEST
-        run: echo 'Only static source checks. PROD, TEST, releases and GitHub Pages stay unchanged.'
+      - name: Kein Prod-Deployment, kein Schreibzugriff und kein Zugriff auf TEST
+        run: echo 'Static tests and unauthenticated, read-only PROD API checks only. TEST, releases, PROD data and GitHub Pages stay unchanged.'
   local-restore:
     name: Offline-Backup wirklich in temporäres PostgreSQL 17 zurückspielen
     needs: offline-checks
@@ -77,9 +82,39 @@ jobs:
           node cloud/backup/create-fixture.mjs "$RUNNER_TEMP/tc-synthetic.tcbackup"
           node cloud/backup/restore-check.mjs "$RUNNER_TEMP/tc-synthetic.tcbackup"
           rm -f "$RUNNER_TEMP/tc-synthetic.tcbackup"
+  business-flow:
+    name: Fiktive Ein- und Verkaeufe, FIFO, Storno und Bild-RLS im Wegwerf-PostgreSQL
+    needs: offline-checks
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: local-test-only
+          POSTGRES_DB: trummcards_restore
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      PG_RESTORE_URL: postgresql://postgres:local-test-only@127.0.0.1:5432/trummcards_restore
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Lokale PostgreSQL-Tests vorbereiten
+        run: npm install --prefix cloud/backup --no-audit --no-fund --ignore-scripts
+      - name: FIFO-Kosten, Umsatz, Storno, Doppelbuchung und Zugriffsschutz testen
+        run: node cloud/backup/business-flow-check.mjs
+
   windows-preview:
     name: Isolierter Windows PROD-Vorschau-Installer (KEIN RELEASE)
-    needs: [offline-checks, local-restore]
+    needs: [offline-checks, local-restore, business-flow]
     runs-on: windows-latest
     defaults:
       run:
@@ -122,3 +157,59 @@ jobs:
             cloud/desktop-production/dist/latest.yml
           if-no-files-found: error
           retention-days: 14
+
+  isolated-cloud-1-release-rehearsal:
+    name: Cloud 1.0 – Windows-Buildprobe OHNE Veröffentlichung
+    needs: [offline-checks, local-restore, business-flow]
+    runs-on: windows-latest
+    timeout-minutes: 40
+    # These values are synthetic CI-only gate inputs; NO publish token and NO deployment.
+    # Only an ephemeral GitHub runner checkout is modified; TEST and PROD are untouched.
+    env:
+      TRUMMCARDS_BACKUP_ACTIVE: 'true'
+      TRUMMCARDS_RESTORE_VERIFIED: 'true'
+      TRUMMCARDS_PRODUCTION_APPROVED: 'true'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: 1.0 Umschaltung im isolierten Checkout trocken pruefen
+        shell: pwsh
+        run: node cloud/release/prepare-go-live.mjs --dry-run
+      - name: 1.0 nur im temporaeren CI-Checkout aktivieren
+        shell: pwsh
+        run: |
+          node cloud/release/prepare-go-live.mjs
+          if ($LASTEXITCODE -ne 0) { throw '1.0 Build-Umschaltung fehlgeschlagen.' }
+          node cloud/release/check-go-live.mjs
+          if ($LASTEXITCODE -ne 0) { throw '1.0 Gate-Probe fehlgeschlagen.' }
+          node --test cloud/mobile-production/tests/release.test.mjs
+          if ($LASTEXITCODE -ne 0) { throw '1.0 PWA-Tests fehlgeschlagen.' }
+      - name: Release-Code und Windows-App pruefen
+        shell: pwsh
+        working-directory: cloud/desktop-production
+        run: |
+          npm install --no-audit --no-fund
+          if ($LASTEXITCODE -ne 0) { throw 'Abhaengigkeiten fehlgeschlagen.' }
+          npm run check
+          if ($LASTEXITCODE -ne 0) { throw 'Windows-Tests fehlgeschlagen.' }
+      - name: Windows-Icon generieren
+        shell: pwsh
+        run: python -m pip install --disable-pip-version-check pillow
+      - name: 1.0 Windows-Installer und Cloud-Update-Manifest bauen (nur CI)
+        shell: pwsh
+        working-directory: cloud/desktop-production
+        run: |
+          npm run dist
+          if ($LASTEXITCODE -ne 0) { throw 'Windows-1.0-Installer-Build fehlgeschlagen.' }
+          $exe = 'dist/TrummCards-Cloud-Setup-1.0.0.exe'
+          $meta = 'dist/latest.yml'
+          if (-not (Test-Path $exe) -or -not (Test-Path "$exe.blockmap") -or -not (Test-Path $meta)) {
+            throw 'Cloud 1.0 Installer, Blockmap oder Update-Manifest fehlt.'
+          }
+          $manifest = Get-Content $meta -Raw
+          if (-not $manifest.Contains('TrummCards-Cloud-Setup-1.0.0.exe') -or -not $manifest.Contains('version: 1.0.0')) {
+            throw 'Release-Update-Manifest verweist nicht auf Cloud 1.0.0.'
+          }
+          Write-Host 'Cloud-1.0-Buildprobe erfolgreich. KEIN Upload, KEIN Release, KEIN Deployment.'
