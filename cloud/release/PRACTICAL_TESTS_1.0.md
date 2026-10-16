@@ -1,6 +1,6 @@
 # TrummCards Cloud 1.0 – kontrollierter Praxistest
 
-**Stand:** 16.10.2026 – Freigabe ausstehend. Die **schreibgeschützte Windows-Vorschau 0.9.0** wurde vom Eigentümer als funktionierend gemeldet. Die **ebenfalls schreibgeschützte PWA-Vorschau 0.9.0** liegt bereits unter `gh-pages/production/`; eine direkte HTTPS-Erreichbarkeitsprüfung war von dieser Umgebung aus nicht möglich. Kein Release 1.0.0, keine TEST-Umschaltung und keine Echtbuchungen.
+**Stand:** 16.10.2026 – Windows und Handy-Anmeldung/Bedienoberfläche vom Eigentümer bestätigt. Freigabe ausstehend. Die **schreibgeschützte Windows-Vorschau 0.9.0** wurde vom Eigentümer als funktionierend gemeldet. Die **ebenfalls schreibgeschützte PWA-Vorschau 0.9.0** liegt bereits unter `gh-pages/production/`; eine direkte HTTPS-Erreichbarkeitsprüfung war von dieser Umgebung aus nicht möglich. Kein Release 1.0.0, keine TEST-Umschaltung und keine Echtbuchungen.
 
 ## A. Windows-Preview testen (echter Benutzer, keine Buchungen)
 1. GitHub Actions: https://github.com/trummcardsgit/trummcards-updates/actions/runs/38933990190
@@ -42,7 +42,8 @@ Die Dateien für die schreibgeschützte Version 0.9.0 sind bereits auf GitHub Pa
 - [x] Windows-Preview-Anmeldung laut Rückmeldung des Eigentümers erfolgreich (16.10.2026, „in der windows version hat alles geklappt“)
 - [ ] Windows-Abmeldung, Neustart und schreibgeschützte Formularsperre einzeln protokolliert
 - [ ] Unangemeldete Anfragen und fremder Benutzer können keine Bestände/Bilder/Buchungen einsehen oder ändern
-- [ ] Bestehende HTTPS-PWA unter `/production/` am iPhone/Android erreichbar, Anmeldung, Abmeldung und Navigation erfolgreich
+- [x] Bestehende HTTPS-PWA unter `/production/`: Anmeldung und Darstellung am Handy vom Eigentümer am 16.10.2026 bestätigt ("es funktioniert soweit alles")
+- [ ] Abmeldung und erneute Anmeldung, PWA-Installation auf dem Startbildschirm und Browser-/Cache-Neustart separat protokollieren
 - [ ] Produktions-PWA Passwort-Reset und sichere Auth-Redirects geprüft; separates Origin-Konzept für endgültigen Betrieb bewertet
 - [ ] Geschäftslogik (Einkauf → FIFO-Verkauf → Storno) inkl. Fotos und Wiederherstellung **mit nichtleeren synthetischen Daten im isolierten Testsystem** geprüft
 - [ ] Bildvorschauen auf Windows und Mobilgeräten sichtbar und vergrößerbar
