@@ -72,7 +72,7 @@ function renderProducts(){
  list.innerHTML=ps.length?ps.map(p=>{
   const inv=state.inventory.find(x=>x.product_id===p.id);
   const thumb=imagePathForProduct(p.id)?
-   '<button type="button" class="list-image-button" data-photo-open="'+p.id+'" title="Artikelbild vergrößern"><img data-thumb="'+p.id+'" alt="Bild von '+esc(p.name)+'" hidden><span class="image-placeholder" aria-hidden="true">▧</span></button>':
+   '<button type="button" class="list-image-button" data-photo-open="'+p.id+'" title="Artikelbild vergrößern"><img data-thumb="'+p.id+'" alt="Bild von '+esc(p.name)+'" loading="eager" decoding="async" width="64" height="74" hidden><span class="image-placeholder" aria-hidden="true">▧</span></button>':
    '<div class="list-image-button" aria-label="Noch kein Artikelbild"><span class="image-placeholder">▧</span></div>';
   return '<div class="list-card">'+thumb+'<div class="item-main"><strong>'+esc(p.name)+'</strong><small>'+esc(p.set_name||'Ohne Set')+' · '+esc(p.sku||'ohne SKU')+'</small><button type="button" class="tiny-btn" data-edit="'+p.id+'">Bearbeiten</button></div><div class="item-end"><b>'+Number(inv?.available_qty||0)+' Stk.</b><small>'+euro(inv?.remaining_cost||0)+'</small></div></div>';
  }).join(''):'<div class="empty">Keine Artikel gefunden. Erfasse deinen ersten Testartikel.</div>';
@@ -109,13 +109,27 @@ async function fillThumbnail(img){
 }
 function prepareInventoryThumbnails(){
  if(thumbnailObserver){thumbnailObserver.disconnect();thumbnailObserver=null;}
- const imgs=[...document.querySelectorAll('#productsList img[data-thumb]')];
+ // The image starts with [hidden]. Observing that element causes a deadlock:
+ // it cannot intersect the viewport until the image has already loaded.
+ // Observe its visible button container instead, and eagerly load the first cards.
+ const targets=[...document.querySelectorAll('#productsList img[data-thumb]')]
+  .map(img=>img.closest('.list-image-button')).filter(Boolean);
+ const load=target=>{
+  const img=target.querySelector('img[data-thumb]');
+  if(img)void fillThumbnail(img);
+ };
  if('IntersectionObserver' in window){
-  thumbnailObserver=new IntersectionObserver(entries=>{
-   for(const entry of entries)if(entry.isIntersecting){thumbnailObserver?.unobserve(entry.target);void fillThumbnail(entry.target);}
-  },{rootMargin:'200px'});
-  imgs.forEach(img=>thumbnailObserver.observe(img));
- }else imgs.slice(0,100).forEach(img=>void fillThumbnail(img));
+  const observer=new IntersectionObserver(entries=>{
+   for(const entry of entries){
+    if(entry.isIntersecting){observer.unobserve(entry.target);load(entry.target);}
+   }
+  },{rootMargin:'300px'});
+  thumbnailObserver=observer;
+  targets.forEach((target,index)=>{
+   if(index<12)load(target); // Always show the first visible cards, including in iOS PWA.
+   else observer.observe(target);
+  });
+ }else targets.forEach(load);
 }
 async function openProductImage(id){
  const path=imagePathForProduct(id);if(!path)return;

@@ -32,3 +32,49 @@ main{width:min(100%,1000px);padding:21px 18px 24px;margin:0 auto;flex:1}.login-s
 .image-dialog p{text-align:center;font-weight:600}
 .image-dialog-close{position:absolute;right:10px;top:7px;border:0;background:#2b3d54;color:#fff;border-radius:7px;padding:6px 10px}
 @media(max-width:560px){.sale-date-qty{grid-template-columns:minmax(0,1fr)}.brand-logo{width:49px;height:49px}}
+
+/* Cloud TEST v0.3 – visible card thumbnails and iPhone-friendly booking forms. */
+.list-image-button{flex:0 0 66px;width:66px;height:76px;background:#0d1a2b;border-color:#526681}
+.list-image-button img{width:100%;height:100%;object-fit:contain;background:#0c1828;padding:3px;border-radius:10px}
+.list-image-button img:not([hidden]) + .image-placeholder{display:none}
+.list-image-button .image-placeholder{font-size:22px;color:#9badc5}
+
+.booking-panel{border-color:#354863;background:linear-gradient(155deg,#17263a,#111d30);padding:24px}
+.booking-panel .subtle{line-height:1.65;margin:10px 0 20px}
+.booking-panel form{max-width:100%;min-width:0}
+.booking-panel .field{min-width:0;margin-bottom:18px}
+.booking-panel .field>label{display:block;min-height:19px;line-height:1.35;font-size:13px;font-weight:700;color:#d7e1f0;margin:0 0 9px}
+.booking-panel .two-fields{grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;align-items:start}
+.booking-panel :is(input,select,textarea){display:block;box-sizing:border-box;width:100%;max-width:100%;min-width:0;min-height:53px;height:53px;margin:0;padding:12px 14px;border:1px solid #50617c;border-radius:13px;background:#0c192a;color:#f7f9ff;font-size:16px;line-height:1.3;box-shadow:inset 0 1px 3px #0003;outline:none}
+.booking-panel textarea{height:auto;min-height:88px}
+.booking-panel :is(input,select,textarea)::placeholder{color:#8da0b8;opacity:1}
+.booking-panel :is(input,select,textarea):focus{border-color:#e6b96c;box-shadow:0 0 0 3px #e7b96a2a,inset 0 1px 2px #0002}
+.booking-panel select{padding-right:28px;text-overflow:ellipsis}
+.booking-panel input[type="date"]{min-width:0;text-align:left;color-scheme:dark;overflow:hidden}
+.booking-panel input[type="date"]::-webkit-date-and-time-value{text-align:left;min-width:0}
+.booking-panel input[type="date"]::-webkit-datetime-edit{text-align:left;min-width:0;padding:0}
+.booking-panel input[type="date"]::-webkit-calendar-picker-indicator{opacity:.75;filter:invert(.85);margin-left:auto}
+.booking-panel input[type="number"]{appearance:textfield;-moz-appearance:textfield}
+.booking-panel .qty-stepper{min-width:0;min-height:53px;height:53px;grid-template-columns:48px minmax(0,1fr) 48px;border-radius:13px;border-color:#50617c}
+.booking-panel .qty-stepper button{background:#2a405c;display:grid;place-items:center;font-size:25px;line-height:1}
+.booking-panel .qty-stepper input{height:51px;min-height:51px;min-width:0;padding:9px 4px;text-align:center;border:0;box-shadow:none;border-radius:0}
+.booking-panel .qty-stepper:focus-within{outline:2px solid #e6b96c;outline-offset:2px}
+.booking-panel .preview{margin-top:8px;line-height:1.6}
+.booking-panel .primary{min-height:53px}
+@media(max-width:560px){
+ .topbar{padding-top:calc(13px + env(safe-area-inset-top, 0px))}
+ .booking-panel{padding:19px 16px;border-radius:17px}
+ .booking-panel .two-fields{grid-template-columns:minmax(0,1fr);gap:0}
+ .booking-panel .field{margin-bottom:16px}
+ .booking-panel .subtle{margin-bottom:18px}
+ .booking-panel :is(input,select,textarea){padding-inline:14px}
+ .list-card{gap:11px;padding:12px}
+ .list-image-button{flex-basis:62px;width:62px;height:74px}
+ .item-end{max-width:36%}
+}
+@media(max-width:380px){
+ .booking-panel{padding:17px 13px}
+ .booking-panel .field>label{font-size:12px}
+ .list-card{gap:9px}
+ .list-image-button{flex-basis:56px;width:56px;height:66px}
+}
