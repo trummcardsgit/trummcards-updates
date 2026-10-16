@@ -11,11 +11,13 @@ const preload=get('preload.cjs');
 const app=get('src/app.js');
 const html=get('src/index.html');
 const css=get('src/styles.css');
+const isRelease=pkg.version==='1.0.0';
+assert.ok(['0.9.0','1.0.0'].includes(pkg.version),'Unsupported Cloud version');
 
 test('Cloud production uses a distinct Windows identity and profile',()=>{
  assert.equal(pkg.build.appId,'at.trummcards.cloudproduction');
  assert.equal(pkg.build.productName,'TrummCards Cloud');
- assert.equal(pkg.version,'0.9.0');
+ assert.equal(pkg.version,isRelease?'1.0.0':'0.9.0');
  assert.ok(main.includes("trummcards-cloud-production"));
  assert.ok(!main.includes("'trummcards-cloud-test'"));
  assert.ok(!main.includes("'trummcards_inventory_v1'"));
@@ -37,7 +39,7 @@ test('Updater retains auto-check, auto-download and explicit installation semant
  for(const term of ['electron-updater',"autoUpdater.autoDownload=true","autoUpdater.autoInstallOnAppQuit=false","autoUpdater.checkForUpdates()","autoUpdater.quitAndInstall(false,true)","updates:info","updates:check","updates:install","update-available","update-not-available","download-progress","update-downloaded","12*60*60*1000"])assert.ok(main.includes(term),term);
  assert.ok(main.includes("window.trummcardsCloudIsSaving?.()"));
  assert.ok(preload.includes("contextBridge.exposeInMainWorld('trummcardsCloudUpdates'"));
- assert.ok(main.includes('const UPDATE_FEED_ENABLED=false'));
+ assert.ok(main.includes('const UPDATE_FEED_ENABLED='+String(isRelease)+';'));
  assert.ok(!main.includes('autoUpdater.allowPrerelease=true'));
 });
 test('Production app targets only new Supabase project via public key and isolated auth storage',()=>{
@@ -50,15 +52,16 @@ test('Production app targets only new Supabase project via public key and isolat
  assert.ok(!app.includes('settingsKey'));
  assert.ok(app.includes("window.TrummSupabase.createClient(DEFAULT_URL,PUBLIC_KEY"));
 });
-test('Preview strictly forbids every business write',()=>{
- assert.ok(app.includes('const WRITES_ENABLED = false'));
+test('Preview remains read-only; released version enables controlled business writes',()=>{
+ assert.ok(app.includes('const WRITES_ENABLED = '+String(isRelease)+';'));
  for(const fun of ['saveProduct(e)','savePurchase(e)','saveSale(e)','saveImage(e)','voidSale(id)']){
   const start=app.indexOf('async function '+fun);
   assert.ok(start>=0,fun);
   const end=app.indexOf('\n  }',start);
   assert.ok(app.slice(start,end).includes('if(!WRITES_ENABLED)'),fun);
  }
- assert.ok(html.includes('Produktionsvorschau – noch nicht freigegeben'));
+ if(isRelease)assert.ok(html.includes('TrummCards Cloud 1.0 – Produktivbetrieb'));
+ else assert.ok(html.includes('Produktionsvorschau – noch nicht freigegeben'));
 });
 test('Windows UI has dedicated update tab and secure preload',()=>{
  for(const id of ['tab-updates','cloudUpdateVersion','cloudUpdateStatus','cloudUpdateProgress','cloudUpdateCheck','cloudUpdateInstall'])assert.ok(html.includes('id="'+id+'"'),id);
