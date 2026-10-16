@@ -51,11 +51,15 @@ Die Dateien für die schreibgeschützte Version 0.9.0 sind bereits auf GitHub Pa
 - [ ] Reale Geräteprüfung mit hochgeladenem **gültigem JPEG/PNG**, Anzeige/Vollbild sowie Cloud-Synchronisierung neuer Buchungen auf beiden Geräten – noch nicht durchgeführt
 - [ ] Bildvorschauen auf Windows und Mobilgeräten sichtbar und vergrößerbar
 - [ ] Feature-Parität (insbesondere Einkaufs-/Verkaufsbearbeitung, CSV-Import und Export) bestätigt oder bewusst eingeschränkt
-- [ ] Backup-Zeitplan nach GitHub-Variable tatsächlich durch erfolgreichen geplanten Lauf bestätigt
-- [ ] Zweite offline verwahrte, verschlüsselte Sicherung und Wiederherstellungsanleitung vorhanden
+- [ ] Backup-Zeitplan: `TRUMMCARDS_BACKUP_ACTIVE=true` laut Eigentümer angelegt; erster **geplanter** Sicherungslauf noch zu bestätigen (02:17 UTC täglich). Manueller Erfolg reicht nicht als Beleg für den Zeitplan
+- [x] Zweite Kopie des verschlüsselten GitHub-Backups laut Eigentümer aufbewahrt (16.10.2026, „ich habe sie gespeichert“); separater, sicherer Aufbewahrungsort empfohlen
+- [x] Wiederherstellung einer fiktiven Testdatei in PostgreSQL 17 und erstes leeres PROD-Backup geprüft
+- [ ] Entschlüsselung und Wiederherstellung der **lokal gespeicherten** Archivkopie unabhängig getestet; Passphrase separat verwahren
 - [ ] Windows-Installer-Integrität, Update-Manifest und Updates aus getrenntem Cloud-Kanal durch Praxisprobe bestätigt
 - [ ] Unsignierter Installer/SmartScreen-Bewertung akzeptabel oder Code-Signing vor Verteilung eingerichtet
 - [ ] Supabase Free-Tarif: Leaked-Password-Protection laut Dokumentation Pro+; einziges Konto mit starkem, einzigartigem Passwort/ggf. MFA geschützt
 - [ ] Ausdrückliche Produktionsfreigabe des Eigentümers, danach erst `TRUMMCARDS_RESTORE_VERIFIED` und `TRUMMCARDS_PRODUCTION_APPROVED` setzen
+
+**Installationshinweis:** Der bisherige Windows-Cloud-Preview-Installer 0.9.0 hat den Updater absichtlich deaktiviert. Der erste Wechsel auf 1.0.0 erfolgt daher durch eine **manuelle, getrennte Installation**; automatische Updates sollen erst ab 1.0.0 aus dem separaten `/cloud-updates/`-Feed funktionieren.
 
 **Nie** alle drei Go-Live-Variablen setzen, bevor die offenen Prüfungen nachweislich bestanden wurden. Testgeräte sollten bis zur Freigabe ausschließlich das read-only 0.9.0-Testpaket verwenden.
