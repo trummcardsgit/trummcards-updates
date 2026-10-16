@@ -1,0 +1,7 @@
+node_modules/
+dist/
+src/vendor.js
+*.log
+.env
+.env.*
+*.secret.json

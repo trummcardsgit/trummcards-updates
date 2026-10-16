@@ -1,0 +1,80 @@
+name: TrummCards Cloud PRODUCTION - Release Candidate (NO DEPLOY)
+on:
+  pull_request:
+    paths:
+      - 'cloud/desktop-production/**'
+      - 'cloud/mobile-production/**'
+      - 'cloud/release/**'
+      - '.github/workflows/cloud-production-preview.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  offline-checks:
+    name: PROD-Sicherheitschecks ohne Cloud-Schreibzugriff
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Production PWA und Konfigurationsgrenzen pruefen
+        run: |
+          node --check cloud/mobile-production/web/app.js
+          node --check cloud/mobile-production/web/reset-password.js
+          node --check cloud/mobile-production/web/sw.js
+          node --test cloud/mobile-production/tests/production.test.mjs
+      - name: Windows Cloud Source und Business-Logik pruefen
+        working-directory: cloud/desktop-production
+        run: |
+          npm install --no-audit --no-fund
+          npm run check
+          npm run bundle
+          test -s src/vendor.js
+      - name: Kein Prod-Deployment und kein Zugriff auf TEST
+        run: echo 'Only static source checks. PROD, TEST, releases and GitHub Pages stay unchanged.'
+  windows-preview:
+    name: Isolierter Windows PROD-Vorschau-Installer (KEIN RELEASE)
+    needs: offline-checks
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: cloud/desktop-production
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Abhaengigkeiten installieren
+        shell: pwsh
+        run: npm install --no-audit --no-fund
+      - name: Pillow installieren
+        shell: pwsh
+        run: python -m pip install --disable-pip-version-check pillow
+      - name: Windows Release Candidate und Update-Metadaten bauen (OHNE VERÖFFENTLICHUNG)
+        shell: pwsh
+        run: npm run dist
+      - name: Cloud-Updatepaket isoliert pruefen
+        shell: pwsh
+        run: |
+          $version = node -p "require('./package.json').version"
+          $exe = "dist/TrummCards-Cloud-Setup-$version.exe"
+          $yml = "dist/latest.yml"
+          if (-not (Test-Path $exe)) { throw 'TrummCards Cloud EXE fehlt.' }
+          if (-not (Test-Path $yml)) { throw 'Cloud Auto-Update Manifest latest.yml fehlt.' }
+          if (-not (Test-Path "$exe.blockmap")) { throw 'Cloud Auto-Update .blockmap fehlt.' }
+          if ((Get-Item $exe).Length -lt 10000000) { throw 'Cloud Installer ist zu klein.' }
+          $meta = Get-Content $yml -Raw
+          if (-not $meta.Contains((Split-Path $exe -Leaf))) { throw 'latest.yml verweist auf falschen Installer.' }
+          if (-not $meta.Contains("version: $version")) { throw 'latest.yml hat falsche Version.' }
+          Write-Host 'Windows Cloud RC und Update-Metadaten erfolgreich validiert. Es wird NICHTS deployed.'
+      - name: Nur Vorschau-Artefakt fuer interne Tests bereitstellen
+        uses: actions/upload-artifact@v4
+        with:
+          name: TrummCards-Cloud-PROD-RC-0.9.0-NO-RELEASE
+          path: |
+            cloud/desktop-production/dist/TrummCards-Cloud-Setup-0.9.0.exe
+            cloud/desktop-production/dist/TrummCards-Cloud-Setup-0.9.0.exe.blockmap
+            cloud/desktop-production/dist/latest.yml
+          if-no-files-found: error
+          retention-days: 14
