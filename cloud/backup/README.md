@@ -19,7 +19,7 @@ Unter GitHub → Repo → Settings → Secrets and variables → Actions **Repos
 
 Sicherheitsabwägung: Ein echtes Besitzer-Passwort als CI-Secret bietet weniger Isolation als ein unabhängiger nur lesender Sicherungsnutzer. Wer diese Art von GitHub-Actions-Sicherung nicht möchte, sollte vor der Freigabe eine lokal geplante Sicherung mit eigener Backup-Identität einsetzen.
 
-Unter **Actions → TrummCards PROD – AES-verschlüsselte Sicherung (Free) → Run workflow** einen manuellen Lauf starten. Ein grüner Test und der verschlüsselte Download sind Voraussetzung. Danach unter **Repository variables** `TRUMMCARDS_BACKUP_ACTIVE = true` setzen. Erst danach führt der tägliche Zeitplan um 02:17 UTC das Backup aus. Solange die Variable fehlt, werden geplante Jobs **übersprungen**, nicht gesichert.
+Unter **Actions → TrummCards PROD – AES-verschlüsselte Sicherung (Free) → Run workflow** einen manuellen Lauf starten. Ein grüner Test und der verschlüsselte Download sind Voraussetzung. Danach unter **Repository variables** `TRUMMCARDS_BACKUP_ACTIVE = true` setzen. **WICHTIG:** Geplante GitHub Actions laufen ausschließlich, wenn der Workflow auf dem Standardzweig `main` liegt. Solange er nur auf `release/production-readiness` existiert, läuft der Cronjob überhaupt nicht. Nach Secrets + erfolgreichem manuellen Test muss der geprüfte Sicherungscode samt Workflow auf `main` übernommen werden. Erst dann und nach Aktivieren der Repository-Variable läuft der tägliche Zeitplan um 02:17 UTC. Fehlende Variable bedeutet **übersprungene** Jobs, nicht vorhandene Backups.
 
 ## Kontrolle und Wiederherstellung
 
