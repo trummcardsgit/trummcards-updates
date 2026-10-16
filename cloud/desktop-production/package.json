@@ -1,0 +1,61 @@
+{
+  "name": "trummcards-cloud-production",
+  "version": "0.9.0",
+  "private": true,
+  "description": "TrummCards Cloud production release candidate – read-only until go-live approval",
+  "main": "main.cjs",
+  "scripts": {
+    "start": "npm run bundle && electron .",
+    "bundle": "node scripts/bundle.mjs",
+    "check": "node --check main.cjs && node --check preload.cjs && node --check src/app.js && node --check src/logic.js && node --test tests/*.test.cjs",
+    "dist": "npm run bundle && npm run check && python scripts/make-icon.py && electron-builder --win nsis --publish never"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.57.0",
+    "electron-updater": "^6.8.9"
+  },
+  "devDependencies": {
+    "electron": "^35.0.0",
+    "electron-builder": "^26.0.0",
+    "esbuild": "^0.25.0"
+  },
+  "build": {
+    "appId": "at.trummcards.cloudproduction",
+    "productName": "TrummCards Cloud",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.cjs",
+      "preload.cjs",
+      "src/index.html",
+      "src/logo.webp",
+      "src/styles.css",
+      "src/app.js",
+      "src/logic.js",
+      "src/vendor.js",
+      "assets/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        "nsis"
+      ],
+      "icon": "assets/cloud-production.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "shortcutName": "TrummCards Cloud",
+      "createStartMenuShortcut": true
+    },
+    "publish": [
+      {
+        "provider": "generic",
+        "url": "https://trummcardsgit.github.io/trummcards-updates/cloud-updates/"
+      }
+    ],
+    "artifactName": "TrummCards-Cloud-Setup-${version}.${ext}"
+  }
+}
