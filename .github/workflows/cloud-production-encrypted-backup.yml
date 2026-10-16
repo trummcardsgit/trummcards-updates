@@ -1,0 +1,70 @@
+name: TrummCards PROD – AES-verschlüsselte Sicherung (Free)
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 2 * * *'
+permissions:
+  contents: read
+concurrency:
+  group: trummcards-prod-backup
+  cancel-in-progress: false
+jobs:
+  encrypted-backup:
+    # Enable the repo variable only AFTER all three secrets and a successful manual test exist.
+    # Skipped schedule != successful backup. Never interpret the skipped job as a backup.
+    if: ${{ github.event_name == 'workflow_dispatch' || vars.TRUMMCARDS_BACKUP_ACTIVE == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: local-test-only
+          POSTGRES_DB: trummcards_restore
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      TC_BACKUP_EMAIL: ${{ secrets.TC_PROD_BACKUP_EMAIL }}
+      TC_BACKUP_PASSWORD: ${{ secrets.TC_PROD_BACKUP_PASSWORD }}
+      TC_BACKUP_PASSPHRASE: ${{ secrets.TC_PROD_BACKUP_PASSPHRASE }}
+    steps:
+      - name: Repository auschecken (nur read)
+        uses: actions/checkout@v4
+      - name: Node.js 22 installieren
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Prüfen, ob sämtliche Backup-Geheimnisse konfiguriert sind
+        shell: bash
+        run: |
+          test -n "$TC_BACKUP_EMAIL" || (echo 'Secret TC_PROD_BACKUP_EMAIL fehlt' && exit 1)
+          test -n "$TC_BACKUP_PASSWORD" || (echo 'Secret TC_PROD_BACKUP_PASSWORD fehlt' && exit 1)
+          test -n "$TC_BACKUP_PASSPHRASE" || (echo 'Secret TC_PROD_BACKUP_PASSPHRASE fehlt' && exit 1)
+          test "${#TC_BACKUP_PASSPHRASE}" -ge 24 || (echo 'Die separate Backup-Passphrase ist zu kurz' && exit 1)
+      - name: Lokalen PostgreSQL-Restore-Tester vorbereiten
+        run: npm install --prefix cloud/backup --no-audit --no-fund --ignore-scripts
+      - name: Verschlüsseltes Backup der Datenbank und privaten Bilder erstellen
+        shell: bash
+        run: |
+          mkdir -p "$RUNNER_TEMP/trummcards-backup"
+          node cloud/backup/create.mjs "$RUNNER_TEMP/trummcards-backup/TrummCards-PROD-${{ github.run_id }}.tcbackup"
+          node cloud/backup/verify.mjs "$RUNNER_TEMP/trummcards-backup/TrummCards-PROD-${{ github.run_id }}.tcbackup"
+      - name: Datenbank und Bilder in lokales PostgreSQL 17 wiederherstellen und prüfen
+        env:
+          PG_RESTORE_URL: postgresql://postgres:local-test-only@127.0.0.1:5432/trummcards_restore
+        shell: bash
+        run: |
+          node cloud/backup/restore-check.mjs "$RUNNER_TEMP/trummcards-backup/TrummCards-PROD-${{ github.run_id }}.tcbackup"
+      - name: NUR verschlüsselte Backup-Datei speichern
+        uses: actions/upload-artifact@v4
+        with:
+          name: TrummCards-PROD-Encrypted-Backup-${{ github.run_id }}
+          path: ${{ runner.temp }}/trummcards-backup/*.tcbackup
+          if-no-files-found: error
+          retention-days: 30

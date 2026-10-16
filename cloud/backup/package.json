@@ -1,0 +1,12 @@
+{
+  "name": "trummcards-cloud-backup-tools",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "pg": "8.13.3"
+  },
+  "scripts": {
+    "test": "node --test backup.test.mjs"
+  }
+}
