@@ -41,11 +41,14 @@ Die Dateien für die schreibgeschützte Version 0.9.0 sind bereits auf GitHub Pa
 ## D. Abschließendes Go/No-Go
 - [x] Windows-Preview-Anmeldung laut Rückmeldung des Eigentümers erfolgreich (16.10.2026, „in der windows version hat alles geklappt“)
 - [ ] Windows-Abmeldung, Neustart und schreibgeschützte Formularsperre einzeln protokolliert
-- [ ] Unangemeldete Anfragen und fremder Benutzer können keine Bestände/Bilder/Buchungen einsehen oder ändern
+- [x] Anonyme Requests gegen Production und fremde Auth-Identität im lokalen DB-E2E-Test ohne Zugriff (Sicherheitschecks)
+- [ ] Reale zweite Supabase-Identität gegen Production noch nicht unabhängig getestet
 - [x] Bestehende HTTPS-PWA unter `/production/`: Anmeldung und Darstellung am Handy vom Eigentümer am 16.10.2026 bestätigt ("es funktioniert soweit alles")
 - [ ] Abmeldung und erneute Anmeldung, PWA-Installation auf dem Startbildschirm und Browser-/Cache-Neustart separat protokollieren
 - [ ] Produktions-PWA Passwort-Reset und sichere Auth-Redirects geprüft; separates Origin-Konzept für endgültigen Betrieb bewertet
-- [ ] Geschäftslogik (Einkauf → FIFO-Verkauf → Storno) inkl. Fotos und Wiederherstellung **mit nichtleeren synthetischen Daten im isolierten Testsystem** geprüft
+- [x] Geschäftsbuchungen mit **fiktiven Daten in einer wegwerfbaren PostgreSQL-17-Datenbank**: 2 Einkäufe, FIFO-Verkauf (Einstand 55,00 €, Gewinn 38,00 €), Storno, Idempotenz, Bestandsgrenze und fremde Nutzerrechte bestanden (Run #38937164898)
+- [x] Verschlüsselte Rücksicherung einer nichtleeren **synthetischen Daten- und Bilddatei** in isoliertes PostgreSQL erfolgreich
+- [ ] Reale Geräteprüfung mit hochgeladenem **gültigem JPEG/PNG**, Anzeige/Vollbild sowie Cloud-Synchronisierung neuer Buchungen auf beiden Geräten – noch nicht durchgeführt
 - [ ] Bildvorschauen auf Windows und Mobilgeräten sichtbar und vergrößerbar
 - [ ] Feature-Parität (insbesondere Einkaufs-/Verkaufsbearbeitung, CSV-Import und Export) bestätigt oder bewusst eingeschränkt
 - [ ] Backup-Zeitplan nach GitHub-Variable tatsächlich durch erfolgreichen geplanten Lauf bestätigt
