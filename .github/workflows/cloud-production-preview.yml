@@ -31,6 +31,10 @@ jobs:
           node --check cloud/backup/validate.mjs
           node --check cloud/backup/verify.mjs
           node --test cloud/backup/backup.test.mjs
+      - name: Release 1.0 bleibt bis zu Backups, Restore und Freigabe gesperrt
+        run: |
+          node --check cloud/release/check-go-live.mjs
+          node --test cloud/release/check-go-live.test.mjs
       - name: Windows Cloud Source und Business-Logik pruefen
         working-directory: cloud/desktop-production
         run: |

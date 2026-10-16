@@ -1,0 +1,109 @@
+name: TrummCards Cloud 1.0 – CONTROLLED Release (disabled until approvals)
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+  pages: write
+concurrency:
+  group: trummcards-cloud-prod-release
+  cancel-in-progress: false
+jobs:
+  release:
+    # NO-GO unless all three variables are explicitly approved by the owner.
+    if: ${{ vars.TRUMMCARDS_BACKUP_ACTIVE == 'true' && vars.TRUMMCARDS_RESTORE_VERIFIED == 'true' && vars.TRUMMCARDS_PRODUCTION_APPROVED == 'true' }}
+    runs-on: windows-latest
+    timeout-minutes: 45
+    env:
+      TRUMMCARDS_BACKUP_ACTIVE: ${{ vars.TRUMMCARDS_BACKUP_ACTIVE }}
+      TRUMMCARDS_RESTORE_VERIFIED: ${{ vars.TRUMMCARDS_RESTORE_VERIFIED }}
+      TRUMMCARDS_PRODUCTION_APPROVED: ${{ vars.TRUMMCARDS_PRODUCTION_APPROVED }}
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Releasefreigabe, getrennte Datenbank und Versionsnummer prüfen
+        shell: pwsh
+        run: node cloud/release/check-go-live.mjs
+      - name: Mindestens ein erfolgreiches PROD-Backup innerhalb der letzten 72 Stunden verlangen
+        shell: pwsh
+        run: |
+          $resp = gh api "repos/$env:GITHUB_REPOSITORY/actions/workflows/cloud-production-encrypted-backup.yml/runs?per_page=30" | ConvertFrom-Json
+          if ($LASTEXITCODE -ne 0) { throw 'Backup-Workflow konnte nicht geprüft werden.' }
+          $maxAge = (Get-Date).ToUniversalTime().AddHours(-72)
+          $recent = @($resp.workflow_runs | Where-Object {
+            $_.conclusion -eq 'success' -and ([datetime]$_.created_at).ToUniversalTime() -gt $maxAge
+          })
+          if ($recent.Count -eq 0) { throw 'Kein erfolgreiches, aktuelles PROD-Backup. Release verboten.' }
+          $found = $false
+          foreach ($run in $recent) {
+            $art = gh api "repos/$env:GITHUB_REPOSITORY/actions/runs/$($run.id)/artifacts" | ConvertFrom-Json
+            if ($LASTEXITCODE -ne 0) { throw 'Backup-Artefakte konnten nicht geprüft werden.' }
+            $ok = @($art.artifacts | Where-Object {
+              $_.name -like 'TrummCards-PROD-Encrypted-Backup-*' -and -not $_.expired -and $_.size_in_bytes -gt 500
+            })
+            if ($ok.Count -gt 0) { $found=$true; break }
+          }
+          if (-not $found) { throw 'Kein unverfallenes, verschlüsseltes Backup-Artefakt gefunden.' }
+      - name: Node und Electron-Abhängigkeiten installieren
+        working-directory: cloud/desktop-production
+        shell: pwsh
+        run: npm install --no-audit --no-fund
+      - name: Windows-Code und PWA prüfen
+        shell: pwsh
+        run: |
+          node --test cloud/backup/backup.test.mjs
+          node --test cloud/mobile-production/tests/production.test.mjs
+          cd cloud/desktop-production
+          npm run check
+          if ($LASTEXITCODE -ne 0) { throw 'Windows-Prüfungen fehlgeschlagen.' }
+      - name: Windows Icon vorbereiten
+        shell: pwsh
+        run: python -m pip install --disable-pip-version-check pillow
+      - name: Cloud 1.0 NSIS-Installer und Update-Metadaten erstellen
+        shell: pwsh
+        working-directory: cloud/desktop-production
+        run: npm run dist
+      - name: Generic Updater Assets validieren
+        shell: pwsh
+        run: |
+          $d='cloud/desktop-production/dist'
+          foreach ($file in @('TrummCards-Cloud-Setup-1.0.0.exe','TrummCards-Cloud-Setup-1.0.0.exe.blockmap','latest.yml')) {
+            if (-not (Test-Path "$d/$file")) { throw "Release-Datei fehlt: $file" }
+          }
+          $meta=Get-Content "$d/latest.yml" -Raw
+          if (-not $meta.Contains('version: 1.0.0') -or -not $meta.Contains('TrummCards-Cloud-Setup-1.0.0.exe')) {
+            throw 'Updater-Manifeste enthalten falsche Version.'
+          }
+      - name: Statische Produktionsdateien für gesonderte Pfade vorbereiten
+        shell: pwsh
+        run: |
+          $stage=Join-Path $env:RUNNER_TEMP 'tc-cloud-stage'
+          New-Item -ItemType Directory -Path "$stage/pwa","$stage/updates" -Force | Out-Null
+          Copy-Item 'cloud/mobile-production/web/*' "$stage/pwa/" -Recurse -Force
+          Copy-Item 'cloud/desktop-production/dist/TrummCards-Cloud-Setup-1.0.0.exe*' "$stage/updates/" -Force
+          Copy-Item 'cloud/desktop-production/dist/latest.yml' "$stage/updates/" -Force
+          "TC_CLOUD_STAGE=$stage" >> $env:GITHUB_ENV
+      - name: Nur PROD-Unterordner auf gh-pages aktualisieren – TEST-Root behalten
+        shell: pwsh
+        run: |
+          git fetch origin gh-pages
+          git checkout gh-pages
+          New-Item -ItemType Directory -Path 'production','cloud-updates' -Force | Out-Null
+          Copy-Item "$env:TC_CLOUD_STAGE/pwa/*" 'production/' -Recurse -Force
+          Copy-Item "$env:TC_CLOUD_STAGE/updates/*" 'cloud-updates/' -Force
+          git add -- production cloud-updates
+          git diff --cached --quiet
+          if ($LASTEXITCODE -eq 1) {
+            git config user.name 'github-actions[bot]'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git commit -m 'Deploy TrummCards Cloud 1.0 (separate updater and PWA)'
+            git push origin HEAD:gh-pages
+            if ($LASTEXITCODE -ne 0) { throw 'GitHub Pages Publish fehlgeschlagen.' }
+          } elseif ($LASTEXITCODE -ne 0) { throw 'git diff fehlgeschlagen.' }
+      - name: Pages Build nach GITHUB_TOKEN-Push ausdrücklich anfordern
+        shell: pwsh
+        run: |
+          gh api --method POST "repos/$env:GITHUB_REPOSITORY/pages/builds"
+          if ($LASTEXITCODE -ne 0) { throw 'Pages-Build konnte nicht gestartet werden.' }
