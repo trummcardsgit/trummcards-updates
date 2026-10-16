@@ -1,6 +1,12 @@
 name: TrummCards Cloud 1.0 – CONTROLLED Release (disabled until approvals)
 on:
   workflow_dispatch:
+    inputs:
+      allow_initial_release_before_daily_backup:
+        description: 'Nur fuer ERST-Release: heute starten, bevor die erste taegliche Sicherung gelaufen ist?'
+        required: true
+        type: boolean
+        default: false
 permissions:
   contents: write
   pages: write
@@ -57,23 +63,43 @@ jobs:
             $_.event -eq 'schedule' -and $_.conclusion -eq 'success' -and
             ([datetime]$_.created_at).ToUniversalTime() -gt $maxAge
           })
-          if ($scheduled.Count -eq 0) {
-            throw 'Kein erfolgreiches automatisch geplantes PROD-Backup in den letzten 72 Stunden. Release verboten.'
+          $scheduledRuns = @($resp.workflow_runs | Where-Object { $_.event -eq 'schedule' })
+          if ($scheduledRuns.Count -eq 0) {
+            # One-time FIRST release exception. An owner explicitly checks this box in
+            # GitHub AND the repo approval variable remains mandatory. Never reuse
+            # this exception for updates or after a failed scheduled backup.
+            if ('${{ inputs.allow_initial_release_before_daily_backup }}' -ne 'true') {
+              throw 'Erstes taegliches Backup steht noch aus. Nur eine explizite Erst-Release-Ausnahme erlaubt den heutigen Start.'
+            }
+            git fetch origin gh-pages
+            if ($LASTEXITCODE -ne 0) { throw 'gh-pages konnte fuer Erst-Release-Kontrolle nicht geprueft werden.' }
+            $oldManifest = @(git ls-tree -r --name-only origin/gh-pages -- cloud-updates/latest.yml)
+            if ($LASTEXITCODE -ne 0) { throw 'Bereits vorhandener Cloud-Updatekanal konnte nicht geprueft werden.' }
+            if ($oldManifest.Count -gt 0) {
+              throw 'Erst-Release-Ausnahme verboten: Cloud-Updater bereits veroeffentlicht.'
+            }
+            Write-Warning 'Eigentuemer hat explizit den ERST-Release vor der ersten geplanten Sicherung freigegeben. Vorhandenes manuelles Backup und Restore wurden geprueft. Erste automatische Sicherung bleibt nach Release verpflichtend.'
+          } else {
+            # Once the scheduler has actually fired, a failed/skipped scheduled backup
+            # can NOT be bypassed with the initial-launch checkbox.
+            if ($scheduled.Count -eq 0) {
+              throw 'Geplantes Backup existiert, ist aber nicht erfolgreich oder aktuell. Release verboten.'
+            }
+            $scheduledArtifactFound = $false
+            foreach ($scheduledRun in $scheduled) {
+              $art = gh api "repos/$env:GITHUB_REPOSITORY/actions/runs/$($scheduledRun.id)/artifacts" | ConvertFrom-Json
+              if ($LASTEXITCODE -ne 0) { throw 'Geplante Backup-Artefakte konnten nicht geprueft werden.' }
+              $ok = @($art.artifacts | Where-Object {
+                $_.name -eq "TrummCards-PROD-Encrypted-Backup-$($scheduledRun.id)" -and
+                -not $_.expired -and $_.size_in_bytes -gt 500
+              })
+              if ($ok.Count -gt 0) { $scheduledArtifactFound=$true; break }
+            }
+            if (-not $scheduledArtifactFound) {
+              throw 'Geplantes Backup ohne verschluesseltes Artefakt. Release verboten.'
+            }
+            Write-Host 'Aktuelles und automatisch geplantes verschluesseltes Backup bestaetigt.'
           }
-          $scheduledArtifactFound = $false
-          foreach ($scheduledRun in $scheduled) {
-            $art = gh api "repos/$env:GITHUB_REPOSITORY/actions/runs/$($scheduledRun.id)/artifacts" | ConvertFrom-Json
-            if ($LASTEXITCODE -ne 0) { throw 'Geplante Backup-Artefakte konnten nicht geprueft werden.' }
-            $ok = @($art.artifacts | Where-Object {
-              $_.name -eq "TrummCards-PROD-Encrypted-Backup-$($scheduledRun.id)" -and
-              -not $_.expired -and $_.size_in_bytes -gt 500
-            })
-            if ($ok.Count -gt 0) { $scheduledArtifactFound=$true; break }
-          }
-          if (-not $scheduledArtifactFound) {
-            throw 'Kein unverfallenes, verschluesseltes Artefakt eines automatisch geplanten Backups gefunden. Release verboten.'
-          }
-          Write-Host 'Aktuelles verschluesseltes Backup und erfolgreiche taegliche Sicherung separat bestaetigt.'
       - name: Node und Electron-Abhängigkeiten installieren
         working-directory: cloud/desktop-production
         shell: pwsh
