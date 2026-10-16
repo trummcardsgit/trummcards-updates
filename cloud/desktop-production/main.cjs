@@ -4,7 +4,7 @@ const {app,BrowserWindow,ipcMain,shell}=require('electron');
 const {autoUpdater}=require('electron-updater');
 const path=require('node:path');
 
-// Dedicated updater feed: NOT the legacy GitHub releases/latest.yml.
+// Dedicated updater feed: never consume any releases from the legacy app.
 // This URL is currently unpublished; cannot update until separately approved.
 const CLOUD_UPDATE_FEED='https://trummcardsgit.github.io/trummcards-updates/cloud-updates/';
 const UPDATE_FEED_ENABLED=false; // Release gate: enable only after signed, verified feed and backups.
