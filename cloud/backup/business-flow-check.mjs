@@ -60,9 +60,10 @@ try{
  )).rows[0].id;
  const saleId=await sale(4,saleKey);
  assert.equal(await sale(4,saleKey),saleId,'Sale idempotency');
- const booking=(await c.query('select qty,cogs_total,status from public.tc_sales where id=$1',[saleId])).rows[0];
+ const booking=(await c.query('select qty,cogs_total,price,shipping_income,shipping_cost,fees,other_cost,status from public.tc_sales where id=$1',[saleId])).rows[0];
  assert.equal(toNum(booking.qty),4);
  assert.equal(toNum(booking.cogs_total),55,'FIFO cost 3*10 + 1*25');
+ assert.equal(toNum(booking.price)+toNum(booking.shipping_income)-toNum(booking.shipping_cost)-toNum(booking.fees)-toNum(booking.other_cost)-toNum(booking.cogs_total),38,'Net sale profit');
  assert.equal(booking.status,'booked');
  const left=await c.query('select id,available_qty,allocated_cost from public.tc_purchase_lots where product_id=$1',[product]);
  const map=new Map(left.rows.map(row=>[row.id,row]));
