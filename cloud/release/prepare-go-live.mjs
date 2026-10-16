@@ -115,6 +115,12 @@ const replacements={
       "v=1.0.0"
     ]
   ],
+  "cloud/mobile-production/web/manifest.webmanifest": [
+    [
+      "TrummCards Cloud Produktionsvorschau – mit eigenem Supabase-Produktivprojekt",
+      "TrummCards Cloud 1.0 – synchronisierte Karten- und Lagerverwaltung"
+    ]
+  ],
   "cloud/mobile-production/web/reset-password.html": [
     [
       "v=0.9.0",
