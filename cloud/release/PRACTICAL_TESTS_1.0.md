@@ -38,6 +38,14 @@ Die Dateien für die schreibgeschützte Version 0.9.0 sind bereits auf GitHub Pa
 - Bei jedem PR-Lauf wird der **anonyme, ausschließlich lesende** Zugriff auf Supabase Production geprüft; keine Auth-Daten oder Business-Schreiboperationen.
 - TEST und Windows 1.6.1 bleiben unangetastet.
 
+## C.1 Backup-/Release-Flags (Repository Variables)
+Vom Eigentümer am 16.10.2026 gemeldet:
+- `TRUMMCARDS_BACKUP_ACTIVE=true` – angelegt, **geplanter Sicherungslauf noch nicht beobachtet**.
+- `TRUMMCARDS_RESTORE_VERIFIED=true` – angelegt, lokaler automatisierter Restore eines echten leeren Backups und separater nichtleerer Testdaten bestanden.
+- `TRUMMCARDS_PRODUCTION_APPROVED` – **nicht setzen**, bevor die finale Freigabe ausgesprochen und die offenen Prüfungen abgearbeitet sind.
+
+Der GitHub-Connector kann Repository-Variablen nicht auslesen. Angaben zu den ersten beiden Variablen basieren auf Nutzerbestätigung; die Variable `TRUMMCARDS_PRODUCTION_APPROVED` ist nicht als bestätigt bekannt.
+
 ## D. Abschließendes Go/No-Go
 - [x] Windows-Preview-Anmeldung laut Rückmeldung des Eigentümers erfolgreich (16.10.2026, „in der windows version hat alles geklappt“)
 - [ ] Windows-Abmeldung, Neustart und schreibgeschützte Formularsperre einzeln protokolliert
@@ -45,20 +53,22 @@ Die Dateien für die schreibgeschützte Version 0.9.0 sind bereits auf GitHub Pa
 - [ ] Reale zweite Supabase-Identität gegen Production noch nicht unabhängig getestet
 - [x] Bestehende HTTPS-PWA unter `/production/`: Anmeldung und Darstellung am Handy vom Eigentümer am 16.10.2026 bestätigt ("es funktioniert soweit alles")
 - [ ] Abmeldung und erneute Anmeldung, PWA-Installation auf dem Startbildschirm und Browser-/Cache-Neustart separat protokollieren
-- [ ] Produktions-PWA Passwort-Reset und sichere Auth-Redirects geprüft; separates Origin-Konzept für endgültigen Betrieb bewertet
+- [ ] In **Supabase Production** `Authentication → URL Configuration`: Site URL exakt `https://trummcardsgit.github.io/trummcards-updates/production/` und Redirect URL exakt `https://trummcardsgit.github.io/trummcards-updates/production/reset-password.html` eingetragen; keine TEST-Ref oder globalen Wildcards erforderlich
+- [ ] Passwort-Reset vom Produktions-Login bis zum E-Mail-Link und erneuter Anmeldung getestet; separates Origin-Konzept für endgültigen Betrieb bewertet
 - [x] Geschäftsbuchungen mit **fiktiven Daten in einer wegwerfbaren PostgreSQL-17-Datenbank**: 2 Einkäufe, FIFO-Verkauf (Einstand 55,00 €, Gewinn 38,00 €), Storno, Idempotenz, Bestandsgrenze und fremde Nutzerrechte bestanden (Run #38937164898)
 - [x] Verschlüsselte Rücksicherung einer nichtleeren **synthetischen Daten- und Bilddatei** in isoliertes PostgreSQL erfolgreich
 - [ ] Reale Geräteprüfung mit hochgeladenem **gültigem JPEG/PNG**, Anzeige/Vollbild sowie Cloud-Synchronisierung neuer Buchungen auf beiden Geräten – noch nicht durchgeführt
 - [ ] Bildvorschauen auf Windows und Mobilgeräten sichtbar und vergrößerbar
 - [ ] Feature-Parität (insbesondere Einkaufs-/Verkaufsbearbeitung, CSV-Import und Export) bestätigt oder bewusst eingeschränkt
-- [ ] Backup-Zeitplan: `TRUMMCARDS_BACKUP_ACTIVE=true` laut Eigentümer angelegt; erster **geplanter** Sicherungslauf noch zu bestätigen (02:17 UTC täglich). Manueller Erfolg reicht nicht als Beleg für den Zeitplan
+- [ ] `TRUMMCARDS_BACKUP_ACTIVE=true` laut Eigentümer eingerichtet; **erster geplanter Lauf** am 17.10.2026 gegen 04:17 Uhr MESZ (02:17 UTC) muss noch erfolgreich und mit gültigem verschlüsselten Artefakt bestätigt werden. Manuelle Sicherung allein reicht dafür nicht.
 - [x] Zweite Kopie des verschlüsselten GitHub-Backups laut Eigentümer aufbewahrt (16.10.2026, „ich habe sie gespeichert“); separater, sicherer Aufbewahrungsort empfohlen
 - [x] Wiederherstellung einer fiktiven Testdatei in PostgreSQL 17 und erstes leeres PROD-Backup geprüft
 - [ ] Entschlüsselung und Wiederherstellung der **lokal gespeicherten** Archivkopie unabhängig getestet; Passphrase separat verwahren
 - [ ] Windows-Installer-Integrität, Update-Manifest und Updates aus getrenntem Cloud-Kanal durch Praxisprobe bestätigt
 - [ ] Unsignierter Installer/SmartScreen-Bewertung akzeptabel oder Code-Signing vor Verteilung eingerichtet
 - [ ] Supabase Free-Tarif: Leaked-Password-Protection laut Dokumentation Pro+; einziges Konto mit starkem, einzigartigem Passwort/ggf. MFA geschützt
-- [ ] Ausdrückliche Produktionsfreigabe des Eigentümers, danach erst `TRUMMCARDS_RESTORE_VERIFIED` und `TRUMMCARDS_PRODUCTION_APPROVED` setzen
+- [x] `TRUMMCARDS_RESTORE_VERIFIED=true` am 16.10.2026 laut Eigentümer als GitHub-Repository-Variable angelegt; GitHub-API-Verifizierung der Variablen nicht verfügbar
+- [ ] Ausdrückliche Produktionsfreigabe des Eigentümers; **erst danach** `TRUMMCARDS_PRODUCTION_APPROVED=true` setzen und Release auslösen
 
 **Installationshinweis:** Der bisherige Windows-Cloud-Preview-Installer 0.9.0 hat den Updater absichtlich deaktiviert. Der erste Wechsel auf 1.0.0 erfolgt daher durch eine **manuelle, getrennte Installation**; automatische Updates sollen erst ab 1.0.0 aus dem separaten `/cloud-updates/`-Feed funktionieren.
 
