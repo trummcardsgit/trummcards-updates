@@ -13,7 +13,7 @@
   let activeTab='inventory';
   let lastPurchasePrice='unit';
   let lastSyncAt=0;
-  let productPhotoFile=null,productPreviewUrl=null,cameraStream=null,desktopThumbObserver=null;
+  let productPhotoFile=null,productPreviewUrl=null,cameraStream=null,desktopThumbObserver=null,productPreviewGeneration=0;
   const desktopThumbCache=new Map();
 
   const getForm = (form,name) => form.elements.namedItem(name);
@@ -61,7 +61,7 @@
     const config=ensureSettings(saved.url,saved.key);
     return window.TrummSupabase.createClient(config.url,config.key,{
       auth:{storageKey:'trummcards-cloud-test-auth-v1',persistSession:true,autoRefreshToken:true,detectSessionInUrl:false},
-      global:{headers:{'x-trummcards-client':'cloud-test-0.2.0'}}
+      global:{headers:{'x-trummcards-client':'cloud-test-0.2.1'}}
     });
   }
   function lockForms(locked) {
@@ -147,13 +147,18 @@
   }
   function prepareDesktopThumbnails(){
     if(desktopThumbObserver){desktopThumbObserver.disconnect();desktopThumbObserver=null;}
-    const pics=[...document.querySelectorAll('#inventoryRows img[data-inventory-thumb]')];
+    // Observe the VISIBLE thumbnail button, not its hidden <img>. A hidden image
+    // never intersects, so observing it would leave the placeholder forever.
+    const cards=[...document.querySelectorAll('#inventoryRows img[data-inventory-thumb]')]
+      .map(img=>img.closest('.inventory-thumb')).filter(Boolean);
+    const load=card=>{const img=card.querySelector('img[data-inventory-thumb]');if(img)void loadDesktopThumbnail(img);};
     if('IntersectionObserver' in window){
-      desktopThumbObserver=new IntersectionObserver(entries=>{
-        for(const entry of entries)if(entry.isIntersecting){desktopThumbObserver?.unobserve(entry.target);void loadDesktopThumbnail(entry.target);}
-      },{rootMargin:'200px'});
-      pics.forEach(img=>desktopThumbObserver.observe(img));
-    }else pics.slice(0,100).forEach(img=>void loadDesktopThumbnail(img));
+      const observer=new IntersectionObserver(entries=>{
+        for(const entry of entries)if(entry.isIntersecting){observer.unobserve(entry.target);load(entry.target);}
+      },{rootMargin:'300px'});
+      desktopThumbObserver=observer;
+      cards.forEach((card,index)=>{if(index<24)load(card);else observer.observe(card);});
+    }else cards.forEach(load);
   }
   async function openDesktopProductImage(id){
     const path=productImagePath(id);if(!path)return;
@@ -171,7 +176,7 @@
     $('metricProfit').textContent=L.euro(state.sales.filter(s=>s.status==='booked').reduce((n,s)=>n+L.profit({price:Number(s.price),shippingIncome:Number(s.shipping_income),shippingCost:Number(s.shipping_cost),fees:Number(s.fees),other:Number(s.other_cost),cost:Number(s.cogs_total)}),0));
     $('inventoryRows').innerHTML=state.products.map(p=>{
       const x=inv.find(i=>i.product_id===p.id)||{available_qty:0,remaining_cost:0};
-      const picture=productImagePath(p.id)?'<button type="button" class="inventory-thumb" data-open-product-image="'+p.id+'" title="Bild groß anzeigen"><img data-inventory-thumb="'+p.id+'" alt="Bild" hidden><span aria-hidden="true">▧</span></button>':'<div class="inventory-thumb no-photo" title="Noch kein Artikelbild">▧</div>';
+      const picture=productImagePath(p.id)?'<button type="button" class="inventory-thumb" data-open-product-image="'+p.id+'" aria-label="Artikelbild von '+escapeHtml(p.name)+' vergrößern" title="Bild groß anzeigen"><img data-inventory-thumb="'+p.id+'" alt="Bild von '+escapeHtml(p.name)+'" width="60" height="72" decoding="async" hidden><span class="inventory-photo-placeholder" aria-hidden="true">▧</span></button>':'<div class="inventory-thumb no-photo" title="Noch kein Artikelbild" aria-label="Kein Bild vorhanden">▧</div>';
       return '<tr><td>'+picture+'</td><td>'+escapeHtml(p.name)+'</td><td>'+escapeHtml(p.sku||'-')+'</td><td>'+escapeHtml(p.set_name||'-')+'</td><td>'+escapeHtml(p.card_condition||'-')+'</td><td>'+Number(x.available_qty)+'</td><td>'+L.euro(x.remaining_cost)+'</td><td><button type="button" data-edit-product="'+p.id+'">Bearbeiten</button></td></tr>';
     }).join('') || '<tr><td colspan="8" class="empty">Noch keine Testartikel erfasst.</td></tr>';
     prepareDesktopThumbnails();
@@ -222,10 +227,32 @@
   function previewProductPicture(file){
     if(productPreviewUrl)URL.revokeObjectURL(productPreviewUrl);
     productPreviewUrl=null;productPhotoFile=file||null;
+    productPreviewGeneration++;
     const img=$('productImagePreview'),caption=$('productImageSelection');
+    $('productCurrentImageOpen').hidden=true;
     img.hidden=true;img.removeAttribute('src');
     caption.textContent=file?file.name+' ('+Math.ceil(file.size/1024)+' KB) wird beim Speichern hochgeladen.':'Noch kein neues Bild ausgewählt.';
     if(file){productPreviewUrl=URL.createObjectURL(file);img.src=productPreviewUrl;img.hidden=false;}
+  }
+  async function showCurrentProductEditPhoto(productId){
+    const path=productImagePath(productId);
+    if(!path)return;
+    const generation=++productPreviewGeneration;
+    $('productImageSelection').textContent='Gespeichertes Bild wird geladen …';
+    try{
+      const signedUrl=await productImageUrl(path);
+      const form=$('productForm');
+      if(generation!==productPreviewGeneration||getValue(form,'edit_id')!==productId||productPhotoFile)return;
+      const img=$('productImagePreview');
+      img.src=signedUrl;img.hidden=false;
+      $('productImageSelection').textContent='Aktuelles Artikelbild – per Klick vergrößern oder neues Bild auswählen.';
+      $('productCurrentImageOpen').hidden=false;
+    }catch(err){
+      if(generation===productPreviewGeneration){
+        $('productImageSelection').textContent='Bild vorhanden, Vorschau konnte nicht geladen werden: '+L.apiError(err);
+        $('productCurrentImageOpen').hidden=false;
+      }
+    }
   }
   function startProductEdit(id) {
     const p=selectedProduct(id);if(!p)return;
@@ -235,7 +262,7 @@
     getForm(form,'edit_id').value=p.id;
     $('productFormTitle').textContent='Artikel bearbeiten';
     $('productSubmit').textContent='Aenderungen und Bild speichern';$('productCancel').hidden=false;
-    if(productImagePath(id))$('productImageSelection').textContent='Ein Bild ist vorhanden. Nur bei Bedarf ein neues auswaehlen.';
+    if(productImagePath(id))void showCurrentProductEditPhoto(id);
     switchTab('inventory');form.elements.namedItem('name').focus();
   }
   function resetProductEdit(){
@@ -459,6 +486,14 @@
     $('cameraStop').addEventListener('click',stopProductCamera);
     $('desktopImageClose').addEventListener('click',()=>$('desktopImageViewer').close());
     $('desktopImageViewer').addEventListener('click',e=>{if(e.target===$('desktopImageViewer'))$('desktopImageViewer').close();});
+    $('productCurrentImageOpen').addEventListener('click',()=>{
+      const id=getValue($('productForm'),'edit_id');
+      if(id)void openDesktopProductImage(id);
+    });
+    $('productImagePreview').addEventListener('click',()=>{
+      const id=getValue($('productForm'),'edit_id');
+      if(id&&!productPhotoFile)void openDesktopProductImage(id);
+    });
     $('productCancel').addEventListener('click',resetProductEdit);
     $('inventoryRows').addEventListener('click',e=>{const view=e.target.closest('[data-open-product-image]');if(view){void openDesktopProductImage(view.dataset.openProductImage);return;}const b=e.target.closest('[data-edit-product]');if(b)startProductEdit(b.dataset.editProduct);});
     $('purchaseForm').addEventListener('submit',savePurchase);

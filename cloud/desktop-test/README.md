@@ -58,3 +58,15 @@ The GitHub workflow builds an installer artifact **without publishing a release,
 Im Windows Cloud-TEST-Formular koennen beim Anlegen/Bearbeiten Artikelbilder direkt hochgeladen werden; bei verfuegbarer Kamera auch mit Aufnahme. Das Bild wird in dem bestehenden privaten Supabase Storage Bucket unter `<user>/products/<product>/<uuid>` abgelegt und die Metadaten in `tc_product_images` gespeichert. Ohne Lagerbestand bleibt das Bild dem Produkt zugeordnet. Alte Einkauflos-Bilder bleiben erhalten und dienen bei Bedarf als Fallback. Kleine Lager-Vorschaubilder werden nur bei Bedarf ueber temporaere signierte URLs geladen. Ein Klick zeigt die Grossansicht. Der Windows-Test-Installer verwendet wieder das originale TrummCards-Logo und die urspruengliche Anwendung laeuft unveraendert auf v1.6.1.
 
 Bei Upload-Fehlern bleibt der erstellte Artikel erhalten: zum Wiederholen den Artikel bearbeiten statt neu anlegen. Die Test-App verfuegt weiterhin ueber keinen Produktiv-Autoupdater und wird nur als GitHub Actions Artefakt gebaut.
+
+## Windows Cloud TEST 0.2.1 – Artikelbilder wie in der PWA
+
+- In **Lager & Artikel > Lagerbestand** erscheint jetzt ein kleines Bild (60 × 72 px) direkt neben jedem Artikel. Die ersten 24 Miniaturbilder werden sofort geladen, weitere anhand der **sichtbaren Button-Fläche** (nicht anhand des zunächst versteckten IMG). Dadurch werden Bilder zuverlässig ohne Klick angezeigt.
+- Das Bild anklicken, um es groß im bestehenden Dialog anzusehen; Schließen über X, Escape oder Klick auf den Hintergrund.
+- **Bearbeiten** zeigt auch das bereits gespeicherte Artikelbild und bietet **Bild vergrößern**. Dateiauswahl und Kamera können es weiterhin ersetzen; der ursprüngliche Artikel bleibt erhalten.
+- Produktbilder stehen ausschließlich über authentifizierte, kurzlebige Supabase Storage Signed URLs bereit; keine öffentlichen URLs oder Nutzerdaten werden in GitHub veröffentlicht.
+- GitHub Actions erstellt einen **separaten Cloud-TEST 0.2.1 Installer** als herunterladbares ZIP-Artefakt, kein GitHub Release und keine Änderung am bestehenden Produktiv-Updater.
+- Die Anmeldekonfiguration und die lokale TEST-Sitzung bleiben bei Installation über die bestehende TEST-App erhalten.
+- Regressionstests unter `tests/thumbnails.test.cjs` prüfen automatisches Laden, Platzhalter, Bildvergrößerung und Vorschau im Bearbeitungsmodus.
+
+**Wichtig:** Die private Supabase TEST-Datenbank bleibt unverändert. Artikelbilder sind keine Teilmenge des Windows-Installers und werden live aus Supabase geladen.

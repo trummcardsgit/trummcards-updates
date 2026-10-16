@@ -66,7 +66,7 @@ jobs:
       - name: TEST Installer als Actions Artifact bereitstellen
         uses: actions/upload-artifact@v4
         with:
-          name: TrummCards-Cloud-TEST-Windows-0.2.0
-          path: cloud/desktop-test/dist/TrummCards-Cloud-TEST-0.2.0-Setup.exe
+          name: TrummCards-Cloud-TEST-Windows-0.2.1
+          path: cloud/desktop-test/dist/TrummCards-Cloud-TEST-0.2.1-Setup.exe
           if-no-files-found: error
           retention-days: 14

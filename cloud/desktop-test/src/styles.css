@@ -20,3 +20,31 @@
 .desktop-image-viewer img{display:block;max-height:75vh;max-width:100%;margin:0 auto;object-fit:contain}
 .desktop-image-viewer p{text-align:center;font-weight:700}
 #desktopImageClose{position:absolute;top:7px;right:8px}
+
+
+/* Cloud TEST 0.2.1 – same auto-loading inventory thumbnails as the mobile PWA. */
+.inventory-thumb{
+  width:60px;height:72px;min-width:60px;border-radius:9px;
+  position:relative;display:grid;place-items:center;
+  overflow:hidden;background:#101b2a;border:1px solid #607794;
+  padding:2px;vertical-align:middle;
+}
+.inventory-thumb:not(.no-photo){cursor:zoom-in}
+.inventory-thumb img{width:100%;height:100%;display:block;object-fit:contain;border-radius:5px;background:#0c1625}
+.inventory-thumb img:not([hidden]) + .inventory-photo-placeholder{display:none}
+.inventory-thumb .inventory-photo-placeholder{font-size:24px;color:#91a8c2}
+.inventory-thumb.no-photo{border-style:dashed;color:#8197b4;font-size:24px;cursor:default}
+#inventoryRows td:first-child{width:79px;text-align:center}
+#inventoryRows td{vertical-align:middle}
+#inventoryRows td:nth-child(2){font-weight:650}
+.product-preview{flex-wrap:wrap;min-height:54px}
+.product-preview-details{display:flex;flex-direction:column;gap:8px;align-items:flex-start;min-width:0;flex:1}
+.product-preview-details span{line-height:1.4}
+.product-preview img:not([hidden]){cursor:zoom-in}
+.preview-enlarge{
+  border:1px solid #bd9a59;color:#f5d598;background:#2b2b30;
+  border-radius:9px;padding:8px 11px;min-height:37px;
+}
+.preview-enlarge:hover{background:#454035}
+.desktop-image-viewer{max-width:min(760px,95vw)}
+.desktop-image-viewer img{width:auto;max-width:100%;max-height:76vh;object-fit:contain}
