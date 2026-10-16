@@ -24,3 +24,7 @@ jobs:
           node --check cloud/scripts/test-legacy-import.mjs
           node cloud/scripts/test-legacy-import.mjs
           node cloud/scripts/prepare-legacy-import.mjs cloud/examples/demo-backup.json
+      - name: Prod-Release-Preflight (nur offline, kein Deploy)
+        run: |
+          node --check cloud/release/check-readiness.mjs
+          node --test cloud/release/check-readiness.test.mjs

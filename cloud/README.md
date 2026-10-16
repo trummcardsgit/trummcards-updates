@@ -1,4 +1,6 @@
-# TrummCards Cloud – Phase 1 (Entwurf, ohne Deployment)
+# TrummCards Cloud – Projektübersicht
+
+> **Aktueller Stand (16.10.2026):** Windows Cloud TEST 0.2.1 und Mobile PWA TEST v0.4 existieren bereits und wurden auf echten Geräten getestet. Die alten Phase-1-Abschnitte unten sind historische Entwurfsinformationen. **Release-Vorbereitung:** [release/README.md](release/README.md); neue, leere PROD-Datenbank geplant; TEST bleibt unangetastet. Noch **kein** produktives Projekt, keine Produktions-Apps und keine Alt-Datenmigration.
 
 **Ziel:** Einen sicheren Cloud-Datenbank-Unterbau für genau einen TrummCards-Benutzer vorbereiten. Windows 1.6.1 bleibt unverändert und synchronisiert derzeit **nicht** mit der Cloud.
 

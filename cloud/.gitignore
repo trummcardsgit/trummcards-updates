@@ -13,3 +13,8 @@ local-data/
 *.db
 
 !examples/demo-backup.json
+
+# Production release manifests are local approval records, never commit them.
+release/*.private.json
+release/*.local.json
+release/production.json

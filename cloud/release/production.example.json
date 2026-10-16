@@ -1,0 +1,21 @@
+{
+  "environment": "production",
+  "projectRef": "REPLACE_WITH_NEW_PRODUCTION_REF",
+  "projectUrl": "https://REPLACE_WITH_NEW_PRODUCTION_REF.supabase.co",
+  "pwaUrl": "https://production.example.invalid/",
+  "testProjectRef": "cpycfxolqpidfjbhhsmr",
+  "legacyDataImport": false,
+  "checks": {
+    "newProjectCreated": false,
+    "threeSchemaMigrationsApplied": false,
+    "ownerCreatedAndAuthorized": false,
+    "anonymousAndForeignUsersDenied": false,
+    "privateImageStorageChecked": false,
+    "databaseAndImageBackupsRestored": false,
+    "authEmailRecoveryWorks": false,
+    "desktopAndPwaIntegrationTested": false,
+    "updateRollbackAndSigningReviewed": false,
+    "zeroInventoryAndSalesConfirmed": false,
+    "explicitGoLiveApproval": false
+  }
+}
