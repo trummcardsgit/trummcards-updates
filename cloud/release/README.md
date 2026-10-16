@@ -2,9 +2,14 @@
 
 **Entscheidung vom 16.10.2026:** Mit **leeren Echtdaten** in einem **neuen, separaten Supabase-Projekt** beginnen. Alte 1.6.1-Daten und TEST-Daten werden **nicht** importiert. Das bestehende Supabase-Projekt `TEST` (Ref `cpycfxolqpidfjbhhsmr`) sowie die Windows-Produktivversion 1.6.1 und die TEST-PWA bleiben unberührt.
 
-**Status:** Ausschließlich Release-Vorbereitung. Noch kein neues Supabase-Projekt, keine Auth-User, kein SQL auf produktiv, keine Echtbuchungen, kein GitHub-Release, keine Umschaltung von Windows oder PWA. Nicht mit einer Freigabe zur Produktion verwechseln.
+**Status (16.10.2026):** Supabase-Produktivprojekt **TrummCards Production** (Ref `hgdexyvtgfffcasfpjyu`) im **Free-Plan (0 €/Monat Projektkosten)** in `eu-west-1` erstellt und Grundschema mit drei Migrationen eingerichtet. **Alle 7 App-Tabellen, privater Bildspeicher und Auth-Benutzer enthalten 0 Datensätze**; RLS aktiv, Bucket nicht öffentlich, aktuell keine Security-Advisors-Warnungen. Noch **kein Produktiv-Benutzer**, keine Echtbuchungen, keine Windows-/PWA-Umschaltung und kein GitHub-Release. **GO-LIVE weiterhin gesperrt.**
 
 ## 1. Neue, strikt getrennte Umgebung
+
+**Bereits erledigt:** Projekt `hgdexyvtgfffcasfpjyu` (nicht TEST) ist ACTIVE_HEALTHY. Migrationen `phase1_schema`, `cloud_session_probe`, `article_images` erfolgreich; Verifikation am 16.10.2026: 7 Tabellen/Storage/Owner/Auth = 0, RLS für alle 7 Tabellen aktiviert und privater Bucket. Vor dem Go-Live erneut prüfen, da die Zahlen Momentaufnahmen sind.
+
+**Free-Plan-Grenzen:** $0/Monat laut Supabase-Projektkostenabfrage, maximal 2 aktive Free-Projekte, 500 MB Datenbank und 1 GB Storage. Automatische Wiederherstellungs-Backups sind im Free-Plan **nicht inklusive**; Database-Dump und separate Sicherung des privaten Storage sind erforderlich. Projekte können nach 7 Tagen geringer Aktivität pausieren. Keine kostenpflichtigen Add-ons ohne gesonderte Zustimmung aktivieren.
+
 
 1. Der Nutzer bestätigt zuerst die Ziel-**Supabase-Organisation** sowie mögliche Projektkosten. Bei mehreren Organisationen nie automatisch eine wählen. Vorgesehener Projektname: **TrummCards Production**, Region **eu-west-1 (Irland)** wie TEST.
 2. **Neues Projekt** anlegen, keine Branch von TEST, kein Backup-/Dump-Klon. Projekt-ID und URL getrennt dokumentieren; nach Erstellung prüfen, dass die neue Ref **ungleich** `cpycfxolqpidfjbhhsmr` ist.
