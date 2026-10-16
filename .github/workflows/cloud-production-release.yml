@@ -15,7 +15,41 @@ concurrency:
   group: trummcards-cloud-prod-release
   cancel-in-progress: false
 jobs:
+  release-configuration:
+    name: Freigabevariablen pruefen (OHNE Deployment)
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    permissions:
+      contents: read
+    env:
+      BACKUP_ACTIVE: ${{ vars.TRUMMCARDS_BACKUP_ACTIVE }}
+      RESTORE_VERIFIED: ${{ vars.TRUMMCARDS_RESTORE_VERIFIED }}
+      PRODUCTION_APPROVED: ${{ vars.TRUMMCARDS_PRODUCTION_APPROVED }}
+    steps:
+      - name: Fehlende Freigabevariablen eindeutig anzeigen
+        shell: bash
+        run: |
+          missing=0
+          if [[ "$BACKUP_ACTIVE" != "true" ]]; then
+            echo "::error title=GitHub Actions Variables::TRUMMCARDS_BACKUP_ACTIVE fehlt oder hat nicht exakt den Wert true. Unter Settings > Secrets and variables > Actions > Variables anlegen."
+            missing=1
+          fi
+          if [[ "$RESTORE_VERIFIED" != "true" ]]; then
+            echo "::error title=GitHub Actions Variables::TRUMMCARDS_RESTORE_VERIFIED fehlt oder hat nicht exakt den Wert true. Unter Settings > Secrets and variables > Actions > Variables anlegen."
+            missing=1
+          fi
+          if [[ "$PRODUCTION_APPROVED" != "true" ]]; then
+            echo "::error title=GitHub Actions Variables::TRUMMCARDS_PRODUCTION_APPROVED fehlt oder hat nicht exakt den Wert true. Unter Settings > Secrets and variables > Actions > Variables anlegen."
+            missing=1
+          fi
+          if [[ "$missing" -ne 0 ]]; then
+            echo 'Release bleibt sicher blockiert. Alle drei Eintraege muessen Repository-Variablen sein, nicht Secrets.'
+            exit 1
+          fi
+          echo 'Alle drei Repository-Variablen sind korrekt gesetzt.'
+          echo 'Der eigentliche Release-Job kontrolliert weiterhin Backup, Restore und ausdrueckliche Erst-Release-Freigabe.'
   release:
+    needs: release-configuration
     # NO-GO unless all three variables are explicitly approved by the owner.
     if: ${{ vars.TRUMMCARDS_BACKUP_ACTIVE == 'true' && vars.TRUMMCARDS_RESTORE_VERIFIED == 'true' && vars.TRUMMCARDS_PRODUCTION_APPROVED == 'true' }}
     runs-on: windows-latest
