@@ -53,7 +53,7 @@ Der GitHub-Connector kann Repository-Variablen nicht auslesen. Angaben zu den er
 - [ ] Reale zweite Supabase-Identität gegen Production noch nicht unabhängig getestet
 - [x] Bestehende HTTPS-PWA unter `/production/`: Anmeldung und Darstellung am Handy vom Eigentümer am 16.10.2026 bestätigt ("es funktioniert soweit alles")
 - [ ] Abmeldung und erneute Anmeldung, PWA-Installation auf dem Startbildschirm und Browser-/Cache-Neustart separat protokollieren
-- [ ] In **Supabase Production** `Authentication → URL Configuration`: Site URL exakt `https://trummcardsgit.github.io/trummcards-updates/production/` und Redirect URL exakt `https://trummcardsgit.github.io/trummcards-updates/production/reset-password.html` eingetragen; keine TEST-Ref oder globalen Wildcards erforderlich
+- [x] Supabase Production `Authentication → URL Configuration` laut Eigentümer am 16.10.2026 eingerichtet: Site URL `https://trummcardsgit.github.io/trummcards-updates/production/`; Redirect URL `https://trummcardsgit.github.io/trummcards-updates/production/reset-password.html`. **Direkte Dashboard-Auslesung über Connector nicht möglich.**
 - [ ] Passwort-Reset vom Produktions-Login bis zum E-Mail-Link und erneuter Anmeldung getestet; separates Origin-Konzept für endgültigen Betrieb bewertet
   - **Wichtig:** Wenn beim Test das Produktionspasswort geändert wird, danach das GitHub Actions Secret `TC_PROD_BACKUP_PASSWORD` mit dem neuen Passwort aktualisieren und eine neue **manuelle** erfolgreiche Sicherung prüfen. Sonst schlägt die tägliche Sicherung ab dem nächsten Lauf fehl. Passwörter und Secrets niemals ins Chatprotokoll schreiben.
 - [x] Geschäftsbuchungen mit **fiktiven Daten in einer wegwerfbaren PostgreSQL-17-Datenbank**: 2 Einkäufe, FIFO-Verkauf (Einstand 55,00 €, Gewinn 38,00 €), Storno, Idempotenz, Bestandsgrenze und fremde Nutzerrechte bestanden (Run #38937164898)
@@ -61,6 +61,7 @@ Der GitHub-Connector kann Repository-Variablen nicht auslesen. Angaben zu den er
 - [ ] Reale Geräteprüfung mit hochgeladenem **gültigem JPEG/PNG**, Anzeige/Vollbild sowie Cloud-Synchronisierung neuer Buchungen auf beiden Geräten – noch nicht durchgeführt
 - [ ] Bildvorschauen auf Windows und Mobilgeräten sichtbar und vergrößerbar
 - [ ] Feature-Parität (insbesondere Einkaufs-/Verkaufsbearbeitung, CSV-Import und Export) bestätigt oder bewusst eingeschränkt
+- [x] Release-Workflow vorzeitigem Go-Live geschützt: erfolgreiches **automatisch per `schedule` ausgelöstes** Backup und gültiges verschlüsseltes Artefakt innerhalb von 72 Stunden sind zusätzlich zur aktuellen Sicherung erforderlich; manueller Lauf allein reicht nicht.
 - [ ] `TRUMMCARDS_BACKUP_ACTIVE=true` laut Eigentümer eingerichtet; **erster geplanter Lauf** am 17.10.2026 gegen 04:17 Uhr MESZ (02:17 UTC) muss noch erfolgreich und mit gültigem verschlüsselten Artefakt bestätigt werden. Manuelle Sicherung allein reicht dafür nicht.
 - [x] Zweite Kopie des verschlüsselten GitHub-Backups laut Eigentümer aufbewahrt (16.10.2026, „ich habe sie gespeichert“); separater, sicherer Aufbewahrungsort empfohlen
 - [x] Wiederherstellung einer fiktiven Testdatei in PostgreSQL 17 und erstes leeres PROD-Backup geprüft
