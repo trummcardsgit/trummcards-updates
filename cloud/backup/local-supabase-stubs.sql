@@ -11,12 +11,12 @@ create schema storage;
 -- Supabase Storage helper used by the real storage.objects RLS policies.
 -- Return all path segments except the final filename (first element = owner UUID).
 create or replace function storage.foldername(name text)
-returns text[] language sql immutable as $
+returns text[] language sql immutable as $foldername$
   select case
     when position('/' in name)=0 then array[]::text[]
     else (string_to_array(name, '/'))[1:greatest(array_length(string_to_array(name, '/'),1)-1,0)]
   end;
-$;
+$foldername$;
 create table storage.buckets(
  id text primary key,
  name text not null,
