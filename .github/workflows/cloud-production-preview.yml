@@ -122,3 +122,59 @@ jobs:
             cloud/desktop-production/dist/latest.yml
           if-no-files-found: error
           retention-days: 14
+
+  isolated-cloud-1-release-rehearsal:
+    name: Cloud 1.0 – Windows-Buildprobe OHNE Veröffentlichung
+    needs: [offline-checks, local-restore]
+    runs-on: windows-latest
+    timeout-minutes: 40
+    # These values are synthetic CI-only gate inputs; NO publish token and NO deployment.
+    # Only an ephemeral GitHub runner checkout is modified; TEST and PROD are untouched.
+    env:
+      TRUMMCARDS_BACKUP_ACTIVE: 'true'
+      TRUMMCARDS_RESTORE_VERIFIED: 'true'
+      TRUMMCARDS_PRODUCTION_APPROVED: 'true'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: 1.0 Umschaltung im isolierten Checkout trocken pruefen
+        shell: pwsh
+        run: node cloud/release/prepare-go-live.mjs --dry-run
+      - name: 1.0 nur im temporaeren CI-Checkout aktivieren
+        shell: pwsh
+        run: |
+          node cloud/release/prepare-go-live.mjs
+          if ($LASTEXITCODE -ne 0) { throw '1.0 Build-Umschaltung fehlgeschlagen.' }
+          node cloud/release/check-go-live.mjs
+          if ($LASTEXITCODE -ne 0) { throw '1.0 Gate-Probe fehlgeschlagen.' }
+          node --test cloud/mobile-production/tests/release.test.mjs
+          if ($LASTEXITCODE -ne 0) { throw '1.0 PWA-Tests fehlgeschlagen.' }
+      - name: Release-Code und Windows-App pruefen
+        shell: pwsh
+        working-directory: cloud/desktop-production
+        run: |
+          npm install --no-audit --no-fund
+          if ($LASTEXITCODE -ne 0) { throw 'Abhaengigkeiten fehlgeschlagen.' }
+          npm run check
+          if ($LASTEXITCODE -ne 0) { throw 'Windows-Tests fehlgeschlagen.' }
+      - name: Windows-Icon generieren
+        shell: pwsh
+        run: python -m pip install --disable-pip-version-check pillow
+      - name: 1.0 Windows-Installer und Cloud-Update-Manifest bauen (nur CI)
+        shell: pwsh
+        working-directory: cloud/desktop-production
+        run: |
+          npm run dist
+          if ($LASTEXITCODE -ne 0) { throw 'Windows-1.0-Installer-Build fehlgeschlagen.' }
+          $exe = 'dist/TrummCards-Cloud-Setup-1.0.0.exe'
+          $meta = 'dist/latest.yml'
+          if (-not (Test-Path $exe) -or -not (Test-Path "$exe.blockmap") -or -not (Test-Path $meta)) {
+            throw 'Cloud 1.0 Installer, Blockmap oder Update-Manifest fehlt.'
+          }
+          $manifest = Get-Content $meta -Raw
+          if (-not $manifest.Contains('TrummCards-Cloud-Setup-1.0.0.exe') -or -not $manifest.Contains('version: 1.0.0')) {
+            throw 'Release-Update-Manifest verweist nicht auf Cloud 1.0.0.'
+          }
+          Write-Host 'Cloud-1.0-Buildprobe erfolgreich. KEIN Upload, KEIN Release, KEIN Deployment.'
