@@ -24,6 +24,13 @@ jobs:
           node --check cloud/mobile-production/web/reset-password.js
           node --check cloud/mobile-production/web/sw.js
           node --test cloud/mobile-production/tests/production.test.mjs
+      - name: Verschlüsseltes Backup offline testen
+        run: |
+          node --check cloud/backup/secure-archive.mjs
+          node --check cloud/backup/create.mjs
+          node --check cloud/backup/validate.mjs
+          node --check cloud/backup/verify.mjs
+          node --test cloud/backup/backup.test.mjs
       - name: Windows Cloud Source und Business-Logik pruefen
         working-directory: cloud/desktop-production
         run: |
