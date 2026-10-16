@@ -1,4 +1,4 @@
-/* TrummCards Mobile Cloud PRODUCTION RC v0.9.0 – static GitHub Pages client; only a public key.
+/* TrummCards Mobile Cloud PRODUCTION v1.0.0 – static GitHub Pages client; only a public key.
  * Data is readable/writeable only with a Supabase JWT and the database owner RLS guard.
  * Test data ONLY. A connection is required to write; no offline operation replay.
  */
@@ -6,8 +6,8 @@
 const $=id=>document.getElementById(id), f=(form,name)=>form.elements.namedItem(name), val=(form,name)=>String(f(form,name)?.value??'').trim();
 const STORE='trummcards-mobile-production-session-v1',PENDING='trummcards-mobile-production-pending-v1';
 const PROJECT='hgdexyvtgfffcasfpjyu';
-const WRITES_ENABLED=false; // Release gate: allow writes only after approved backups and GO LIVE.
-const NO_WRITES='Produktionsvorschau: Echtdaten und Buchungen bleiben bis zur Releasefreigabe gesperrt.';
+const WRITES_ENABLED=true; // Release gate: allow writes only after approved backups and GO LIVE.
+const NO_WRITES='Schreiben ist in dieser App-Version nicht freigegeben.';
 let ROOT='',KEY='',session=null,authCheckPromise=null,refreshPromise=null,loading=false,busy=false,activePage='home',lastPurchaseEntry='unit',pendingImage=null,imageObjects=[];
 let state={products:[],inventory:[],lots:[],sales:[],images:[],productImages:[]};
 let articleImageFile=null,articleImagePreviewUrl=null,thumbnailObserver=null;

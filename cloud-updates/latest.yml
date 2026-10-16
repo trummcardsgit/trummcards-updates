@@ -1,0 +1,8 @@
+version: 1.0.0
+files:
+  - url: TrummCards-Cloud-Setup-1.0.0.exe
+    sha512: QdRbvXdCQ8bbETbQLgPUzmDqfEK53WpS0fue0RVCSJECXX+vfsuW1VikrIOPMbI0jzWRadCW3RqvIQ5nckS6ig==
+    size: 85698584
+path: TrummCards-Cloud-Setup-1.0.0.exe
+sha512: QdRbvXdCQ8bbETbQLgPUzmDqfEK53WpS0fue0RVCSJECXX+vfsuW1VikrIOPMbI0jzWRadCW3RqvIQ5nckS6ig==
+releaseDate: '2026-10-16T21:17:35.967Z'

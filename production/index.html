@@ -12,8 +12,8 @@
 <link rel="icon" type="image/webp" href="./logo.webp">
 <link rel="apple-touch-icon" href="./icon-180.png">
 <link rel="manifest" href="./manifest.webmanifest">
-<link rel="stylesheet" href="./styles.css?v=0.9.0">
-<script src="./app.js?v=0.9.0" defer></script>
+<link rel="stylesheet" href="./styles.css?v=1.0.0">
+<script src="./app.js?v=1.0.0" defer></script>
 </head>
 <body>
 <div id="shell">
@@ -28,18 +28,18 @@
       <div class="panel auth-panel">
         <div class="micro-label">TRUMMCARDS CLOUD</div>
         <h1>Willkommen zurück</h1>
-        <p class="subtle">Melde dich mit deinem TrummCards-Produktivkonto an. Lagerdaten werden später zwischen Windows und PWA synchronisiert. Aktuell sind Buchungen zum Schutz deiner Daten gesperrt.</p>
+        <p class="subtle">Melde dich mit deinem TrummCards-Produktivkonto an. Lagerdaten werden später zwischen Windows und PWA synchronisiert. Deine Kartenbestände werden mit deinem TrummCards-Produktivkonto synchronisiert.</p>
         <form id="loginForm" autocomplete="on">
           <label for="email">E-Mail-Adresse</label><input type="email" id="email" name="email" autocomplete="username" inputmode="email" required placeholder="name@beispiel.at">
           <label for="password">Passwort</label><input type="password" id="password" name="password" autocomplete="current-password" required placeholder="Dein Supabase-Passwort">
           <button class="primary full" type="submit" id="signInBtn">Sicher anmelden <span>→</span></button>
         </form>
         <p class="tiny"><a href="./reset-password.html" style="color:#f3d28e">Passwort vergessen? Hier zurücksetzen</a></p>
-        <p class="tiny">Nur das für TrummCards freigeschaltete Konto erhält Zugriff. Keine Registrierung in dieser Produktionsvorschau.</p>
+        <p class="tiny">Nur das für TrummCards freigeschaltete Konto erhält Zugriff.</p>
       </div>
     </section>
     <div id="appScreen" hidden>
-      <div class="test-note production-preview"><span>PRODUKTIONSVORSCHAU 0.9.0</span> Die PWA verbindet sich ausschließlich mit der neuen leeren Datenbank <b>TrummCards Production</b>. Artikelanlage, Ein- und Verkäufe sowie Bilduploads bleiben bis zur Freigabe gesperrt.</div>
+      <div class="test-note production-preview"><span>TRUMMCARDS CLOUD 1.0.0</span> Die PWA verbindet sich ausschließlich mit <b>TrummCards Production</b>. Deine Daten werden zwischen Windows und Handy synchronisiert.</div>
       <div class="topactions"><div><span class="eyebrow" id="welcomeText">DEINE SAMMLUNG</span><h1 id="screenTitle">Übersicht</h1></div><button class="icon-btn" id="refreshBtn" aria-label="Jetzt synchronisieren" title="Synchronisieren">↻</button></div>
       <div id="pendingBanner" class="pending" hidden></div>
 
@@ -78,7 +78,7 @@
       </section>
 
       <section id="page-purchase" class="page" hidden>
-        <div class="panel booking-panel"><div class="micro-label">EINGANG · PRODUCTION · VORSCHAU 0.9.0</div><h2>Einkauf erfassen</h2>
+        <div class="panel booking-panel"><div class="micro-label">EINGANG · PRODUCTION · CLOUD 1.0.0</div><h2>Einkauf erfassen</h2>
           <p class="subtle">Erfasse deinen Einkauf. Einzel- und Gesamtpreis werden automatisch berechnet.</p>
           <form id="purchaseForm" class="booking-form">
             <fieldset class="booking-group">
@@ -109,7 +109,7 @@
       </section>
 
       <section id="page-sale" class="page" hidden>
-        <div class="panel booking-panel"><div class="micro-label">VERKAUF · PRODUCTION · VORSCHAU 0.9.0</div><h2>Verkauf erfassen</h2>
+        <div class="panel booking-panel"><div class="micro-label">VERKAUF · PRODUCTION · CLOUD 1.0.0</div><h2>Verkauf erfassen</h2>
           <p class="subtle">Der Lagerbestand und FIFO-Einstand werden nach der Buchung automatisch aktualisiert.</p>
           <form id="saleForm" class="booking-form">
             <fieldset class="booking-group">
@@ -185,7 +185,7 @@
     <button data-go="photos" type="button"><span>▧</span>Bilder</button>
     <button data-go="more" type="button"><span>☰</span>Mehr</button>
   </nav>
-  <footer>TRUMMCARDS · EST. 2026 <span>CLOUD PRODUCTION · RELEASE VORSCHAU</span></footer>
+  <footer>TRUMMCARDS · EST. 2026 <span>CLOUD PRODUCTION · VERSION 1.0.0</span></footer>
 </div>
 </body>
 </html>
