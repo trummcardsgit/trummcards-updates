@@ -49,3 +49,46 @@ test('Feature branch keeps release 1.0 write gates and production deploy manifes
  assert.ok(mobile.includes('const WRITES_ENABLED=false;'));
  assert.ok(!read('.github/workflows/cloud-production-release.yml').includes('20261019000100_cloud_11_card_metadata.sql'));
 });
+
+test('Pokemon catalog is accessible from both apps and never auto-uploads third-party assets',()=>{
+ const source=read('cloud/features/tcgdex11.mjs');
+ const pkg=JSON.parse(read('cloud/desktop-production/package.json'));
+ for(const [html,app,base] of [
+  [wh,win,'cloud/desktop-production/src/'],
+  [mh,mobile,'cloud/mobile-production/web/']
+ ]){
+  for(const name of ['catalog11.js','catalog11-ui.js']){
+   assert.ok(html.includes(name),'missing '+name+' in html');
+   const browser=read(base+name);
+   assert.ok(browser.includes('TrummCatalog'),'browser helper missing');
+  }
+  for(const name of ['catalogSearchForm','catalogSearchResults','catalogSearchStatus','catalogSelected'])assert.ok(html.includes('id="'+name+'"'),name);
+  assert.ok(app.includes('catalog_card_id'),'selected catalog ID is stored');
+  assert.ok(app.includes('TrummCatalogUI11'),'picker connected');
+ }
+ assert.ok(wh.includes('https://api.tcgdex.net'),'desktop CSP allows public API only');
+ assert.ok(wh.includes('https://assets.tcgdex.net'),'desktop image preview allowed');
+ assert.ok(pkg.build.files.includes('src/catalog11.js'));
+ assert.ok(pkg.build.files.includes('src/catalog11-ui.js'));
+ assert.ok(source.includes('price:null'),'catalog module must not invent market prices');
+ const picker=read('cloud/mobile-production/web/catalog11-ui.js');
+ assert.ok(!picker.includes('sb.storage'),'third-party image must not auto-upload');
+ assert.ok(picker.includes('low.webp'),'preview uses supported TCGdex URL');
+});
+test('Finance dashboard & safe CSV export are wired to both Cloud apps',()=>{
+ const pkg=JSON.parse(read('cloud/desktop-production/package.json'));
+ for(const [html,app,base] of [
+  [wh,win,'cloud/desktop-production/src/'],
+  [mh,mobile,'cloud/mobile-production/web/']
+ ]){
+  for(const name of ['finance11.js','finance11-ui.js'])assert.ok(html.includes(name));
+  for(const id of ['financePeriod','financeSummary','financeMonths','financePlatforms','financeExport'])assert.ok(html.includes('id="'+id+'"'),id);
+  assert.ok(app.includes('TrummFinanceUI11'),'dashboard must subscribe to state');
+  assert.ok(app.includes('state.sales'),'finance from real synchronized sales');
+  assert.ok(read(base+'finance11-ui.js').includes('financeCsv'),'export button must use checked calculation');
+ }
+ assert.ok(pkg.build.files.includes('src/finance11.js'));
+ assert.ok(pkg.build.files.includes('src/finance11-ui.js'));
+ assert.ok(wh.includes('data-tab="finance"'));
+ assert.ok(mh.includes('data-go="finance"'));
+});
