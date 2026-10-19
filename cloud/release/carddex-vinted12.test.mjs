@@ -48,3 +48,32 @@ test('Desktop and PWA must expose dedicated KartenDex navigation entry',()=>{
  const pkg=JSON.parse(read('cloud/desktop-production/package.json'));
  for(const name of ['src/carddex12.js','src/vinted12.js'])assert.ok(pkg.build.files.includes(name));
 });
+
+test('KartenDex EUR quote recognizes valid standard and Holo trend prices without invented prices',()=>{
+ for(const root of clients){
+  const env={window:{},document:{}};
+  runInNewContext(read(root+'carddex12.js'),env);
+  const quote=env.window.TrummCardDex12.cardmarketValues;
+  const valid=quote({cardmarket:{unit:'EUR',trend:12.75,'trend-holo':18.55,updated:'2026-10-19T08:00:00Z'}});
+  assert.equal(valid.standard,12.75);
+  assert.equal(valid.holo,18.55);
+  assert.match(valid.updatedAt,/2026-10-19/);
+  assert.equal(quote({cardmarket:{unit:'USD',trend:100}}),null);
+  assert.equal(quote({cardmarket:{unit:'EUR',trend:0,'trend-holo':null}}),null);
+  assert.equal(quote({cardmarket:{unit:'EUR',trend:-10,'trend-holo':22}}).standard,null);
+  assert.equal(quote({cardmarket:{unit:'EUR',trend:-10,'trend-holo':22}}).holo,22);
+ }
+});
+test('KartenDex picture fallback uses same ID in English, keeps localized card data',()=>{
+ for(const root of clients){
+  const js=read(root+'carddex12.js');
+  assert.ok(js.includes("catalog.getPokemonCard({id,language:'en'})"));
+  assert.ok(js.includes("card.id===id"));
+  assert.ok(js.includes("Englisches Ersatzbild"));
+  assert.ok(js.includes('renderImage(img,notice,card,lang.value)'));
+  assert.ok(js.includes("renderImage(detailImage,imageNotice,card,lang.value,'high'"));
+  assert.ok(js.includes("detailMeta.append(renderPrice(card.pricing))"));
+  assert.ok(!js.includes('supabase.co'));
+  assert.ok(!js.includes('navigator.clipboard'));
+ }
+});
