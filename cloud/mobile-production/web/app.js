@@ -252,8 +252,10 @@ async function saveArticle(e){
     throw Error('Artikeldaten gespeichert, Bild jedoch nicht: '+errorText(err)+' Bitte im vorhandenen Artikel erneut versuchen.');
    }
   }
-  await refreshAll();resetArticle();showPage('home');
-  notice(editing?'Artikel und Bild aktualisiert.':'Artikel mit optionalem Bild gespeichert.','success');
+  const jumpToPurchase=!editing&&f(form,'after_save_purchase').checked;
+  await refreshAll();resetArticle();showPage(jumpToPurchase?'purchase':'home');
+  if(jumpToPurchase){f($('purchaseForm'),'product').value=id;updatePurchasePreview();}
+  notice(jumpToPurchase?'Karte gespeichert. Erfasse jetzt den Einkauf.':(editing?'Artikel und Bild aktualisiert.':'Artikel mit optionalem Bild gespeichert.'),'success');
  });
 }
 
