@@ -26,6 +26,7 @@
 <script src="./shipping11.js?v=0.9.0" defer></script>
 <script src="./shipping11-ui.js?v=0.9.0" defer></script>
 <script src="./carddex12.js?v=0.9.0" defer></script>
+<script src="./cardscan12.js?v=0.9.0" defer></script>
 <script src="./vinted12.js?v=0.9.0" defer></script>
 <script src="./app.js?v=0.9.0" defer></script>
 </head>
@@ -300,6 +301,26 @@
       </section>
       <section id="page-carddex" class="page" hidden><div class="panel dex-panel">
 <div class="dex-head"><div><span class="dex-eyebrow">POKÉMON KARTENKATALOG · TCGDEX</span><h2>KartenDex</h2><p>Karten und komplette Sets nachschlagen – unabhängig vom Lager, ohne einen Artikel anzulegen.</p></div></div>
+
+<div class="dex-scan-toolbar">
+ <button type="button" id="dexTakePhoto" class="dex-scan-primary"><span aria-hidden="true">📷</span> Karte scannen</button>
+ <button type="button" id="dexPickPhoto">Foto auswählen</button>
+</div>
+<input type="file" id="dexCameraFile" accept="image/*" capture="environment" hidden aria-label="Pokémon-Karte fotografieren">
+<input type="file" id="dexGalleryFile" accept="image/*" hidden aria-label="Kartenfoto auswählen">
+<div id="dexScanPanel" class="dex-scan-panel" hidden>
+ <div class="dex-scan-preview"><img id="dexScanPreview" alt="Aufgenommenes Pokémon-Kartenfoto" hidden></div>
+ <p id="dexScanStatus" role="status" aria-live="polite">Karte fotografieren und Name sowie Kartennummer überprüfen.</p>
+ <div class="dex-scan-fields">
+  <label>Erkannter Pokémon-Name<input id="dexScanName" type="text" maxlength="100" autocomplete="off" placeholder="z. B. Glurak VMAX"></label>
+  <label>Erkannte Kartennummer<input id="dexScanNumber" type="text" maxlength="30" autocomplete="off" placeholder="z. B. 74/73"></label>
+ </div>
+ <div class="dex-scan-actions">
+  <button type="button" id="dexScanSearch" class="dex-action">Mit diesen Angaben suchen</button>
+  <button type="button" id="dexScanClose">Schließen</button>
+ </div>
+ <p class="dex-status">Die Fotoerkennung läuft auf deinem Gerät. Beim ersten Scan werden die OCR-Software und Sprachdateien aus dem Internet geladen. Es wird kein Kartenfoto an TrummCards oder einen KI-Bilddienst hochgeladen. Erkennungen bitte kontrollieren.</p>
+</div>
 <form id="dexSearchForm" class="dex-form">
  <label>Pokémon / Kartenname<input id="dexQuery" type="search" maxlength="100" placeholder="z. B. Glurak-GX"></label>
  <label>Set-Name<input id="dexSearchSet" type="search" maxlength="100" placeholder="z. B. Verborgenes Schicksal"></label>
