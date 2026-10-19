@@ -297,3 +297,20 @@ main{width:min(100%,1000px);padding:21px 18px 24px;margin:0 auto;flex:1}.login-s
 .fee-rule strong{color:#eed192}.fee-rule span{overflow-wrap:anywhere}
 #feeSuggestStatus{font-size:12px;color:#aebece;margin:7px 0}
 @media(max-width:570px){.fee-profile-form .grid{grid-template-columns:1fr}.fee-rule{align-items:flex-start;flex-direction:column;gap:4px}}
+
+
+/* Cloud 1.1 Pokémon set browser: responsive, accessible, no proprietary images stored. */
+.catalog-set-browser{border-top:1px solid #53677d;margin-top:18px;padding-top:16px}
+.catalog-set-browser h3{font-size:1rem;margin:5px 0 12px}
+.catalog-set-results{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:9px;margin:12px 0}
+.catalog-set-choice{background:#172d47;border:1px solid #587595;color:#f0e7d6;min-height:55px;padding:11px;text-align:left;border-radius:10px;cursor:pointer;overflow-wrap:anywhere;line-height:1.4}
+.catalog-set-choice:hover,.catalog-set-choice:focus-visible{outline:2px solid #f5c987;outline-offset:2px}
+.catalog-set-detail{margin-top:15px;border:1px solid #52677d;padding:14px;border-radius:12px;background:#0d1c30}
+.catalog-set-detail[hidden]{display:none}
+.catalog-set-detail label{display:flex;flex-direction:column;gap:7px;max-width:500px}
+.catalog-set-detail input{width:100%;box-sizing:border-box;max-width:100%}
+.catalog-page-actions{display:flex;gap:10px;justify-content:space-between;align-items:center;flex-wrap:wrap}
+.catalog-page-actions span{font-size:12px}
+.catalog-page-actions button:disabled{opacity:.45;cursor:not-allowed}
+#catalogSetMore[hidden]{display:none}
+@media(max-width:570px){.catalog-set-results{grid-template-columns:repeat(2,minmax(0,1fr))}.catalog-set-choice{font-size:12px;padding:10px}.catalog-page-actions button{flex:1 1 35%;max-width:100%}}
