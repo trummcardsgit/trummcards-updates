@@ -25,6 +25,7 @@
      const id=form.elements.namedItem('catalog_card_id');
      if(!id?.value)return;
      id.value='';
+     window.TrummMarketInstance11?.reset();
      selected.hidden=true;$('catalogSelectedImage').hidden=true;
      $('catalogSelectedImage').removeAttribute('src');
      statusText('Kartendaten manuell geändert – Katalogzuordnung zurückgesetzt. Die Eingaben bleiben erhalten.');
