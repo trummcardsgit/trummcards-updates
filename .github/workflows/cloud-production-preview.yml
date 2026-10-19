@@ -23,6 +23,9 @@ jobs:
           node --check cloud/mobile-production/web/app.js
           node --check cloud/mobile-production/web/catalog11.js
           node --check cloud/mobile-production/web/catalog11-ui.js
+          node --check cloud/mobile-production/web/market11-ui.js
+          node --check cloud/mobile-production/web/fees11.js
+          node --check cloud/mobile-production/web/fees11-ui.js
           node --check cloud/mobile-production/web/finance11.js
           node --check cloud/mobile-production/web/finance11-ui.js
           node --check cloud/mobile-production/web/shipping11.js
