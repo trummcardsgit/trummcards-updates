@@ -12,6 +12,8 @@ test('TCGdex Cardmarket EUR quote includes clear variant, provider and observati
  assert.equal(euroMarketQuote(pricing,{variant:'Reverse Holo'}),null);
  assert.equal(euroMarketQuote(pricing,{variant:'Special Illustration Rare'}),null);
  assert.equal(euroMarketQuote(pricing,{variant:'',gradingCompany:'PSA'}),null);
+ assert.equal(euroMarketQuote(pricing,{variant:'Holo',condition:'Played'}),null);
+ assert.equal(euroMarketQuote(pricing,{variant:'Holo',condition:'Near Mint'}).value,34.9);
 });
 test('Never invent or relabel missing / USD / invalid or future cardmarket data',()=>{
  const good={unit:'EUR',trend:5,updated:'2026-10-01T12:00:00Z'};
