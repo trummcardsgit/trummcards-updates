@@ -39,7 +39,8 @@ try{
   'cloud/supabase/migrations/20261015000200_cloud_test_session.sql',
   'cloud/supabase/migrations/20261015000300_product_images.sql',
   'cloud/supabase/migrations/20261016000400_backup_snapshot.sql',
-  'cloud/release/sql/harden_product_images_owner.sql'
+  'cloud/release/sql/harden_product_images_owner.sql',
+  'cloud/supabase/migrations/20261019000100_cloud_11_card_metadata.sql'
  ];
  const client=new Client({connectionString:connection,connectionTimeoutMillis:10000});
  await client.connect();
