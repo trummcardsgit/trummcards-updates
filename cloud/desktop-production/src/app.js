@@ -82,7 +82,7 @@
     refreshing=true;setSync('Synchronisiere ...');
     try {
       const requests=[
-        sb.from('tc_products').select('id,sku,name,set_name,language,card_condition,card_number,rarity,card_variant,storage_location,grading_company,grading_grade,grading_certificate,catalog_card_id,market_price_eur,market_price_source,market_price_checked_at,note,created_at').order('name',{ascending:true}).limit(1000),
+        sb.from('tc_products').select('id,sku,name,set_name,language,card_condition,card_number,rarity,card_variant,storage_location,grading_company,grading_grade,grading_certificate,catalog_card_id,catalog_image_url,market_price_eur,market_price_source,market_price_checked_at,note,created_at').order('name',{ascending:true}).limit(1000),
         sb.from('tc_inventory').select('product_id,available_qty,remaining_cost').limit(1000),
         sb.from('tc_purchase_lots').select('id,product_id,bought_on,purchased_qty,available_qty,purchase_total,extra_cost,allocated_cost,source,note,created_at').order('bought_on',{ascending:true}).limit(1000),
         sb.from('tc_sales').select('id,product_id,sold_on,qty,price,shipping_income,shipping_cost,fees,other_cost,cogs_total,platform,note,status,created_at').order('created_at',{ascending:false}).limit(1000),
@@ -109,13 +109,17 @@
     const hero=state.productImages.find(i=>i.product_id===productId);
     if(hero)return hero.storage_path;
     const lotIds=new Set(state.lots.filter(l=>l.product_id===productId).map(l=>l.id));
-    return state.images.find(i=>lotIds.has(i.lot_id))?.storage_path||null;
+    const ownPhoto=state.images.find(i=>lotIds.has(i.lot_id))?.storage_path;
+    if(ownPhoto)return ownPhoto;
+    const catalog=selectedProduct(productId)?.catalog_image_url||'';
+    return /^https:\/\/assets\.tcgdex\.net\/[A-Za-z0-9/._-]+$/.test(catalog)?catalog:null;
   }
   function clearDesktopThumbnails(){
     if(desktopThumbObserver){desktopThumbObserver.disconnect();desktopThumbObserver=null;}
     desktopThumbCache.clear();
   }
-  async function productImageUrl(path){
+  async function productImageUrl(path,quality='low'){
+    if(/^https:\/\/assets\.tcgdex\.net\/[A-Za-z0-9/._-]+$/.test(path))return path+'/'+(quality==='high'?'high':'low')+'.webp';
     const cached=desktopThumbCache.get(path);
     if(cached&&cached.expires>Date.now())return cached.url;
     const {data,error}=await sb.storage.from('trummcards-lot-images').createSignedUrl(path,300);
@@ -151,7 +155,7 @@
   async function openDesktopProductImage(id){
     const path=productImagePath(id);if(!path)return;
     try{
-      const url=await productImageUrl(path);
+      const url=await productImageUrl(path,'high');
       $('desktopViewerImage').src=url;$('desktopViewerCaption').textContent=productName(id);
       if(!$('desktopImageViewer').open)$('desktopImageViewer').showModal();
     }catch(e){flash(L.apiError(e),'error');}
@@ -284,7 +288,7 @@
     const p=selectedProduct(id);if(!p)return;
     resetProductEdit();
     const form=$('productForm');
-    for(const k of ['name','sku','set_name','language','card_condition','card_number','rarity','card_variant','storage_location','grading_company','grading_grade','grading_certificate','catalog_card_id','note'])getForm(form,k).value=p[k]||'';
+    for(const k of ['name','sku','set_name','language','card_condition','card_number','rarity','card_variant','storage_location','grading_company','grading_grade','grading_certificate','catalog_card_id','catalog_image_url','note'])getForm(form,k).value=p[k]||'';
     marketUI11?.load(p);
     getForm(form,'edit_id').value=p.id;
     $('productFormTitle').textContent='Artikel bearbeiten';
@@ -294,7 +298,7 @@
   }
   function resetProductEdit(){
     stopProductCamera();
-    const form=$('productForm');form.reset();getForm(form,'edit_id').value='';getForm(form,'catalog_card_id').value='';
+    const form=$('productForm');form.reset();getForm(form,'edit_id').value='';getForm(form,'catalog_card_id').value='';getForm(form,'catalog_image_url').value='';
     catalogPicker11?.clear();setPicker11?.clear();marketUI11?.reset();
     previewProductPicture(null);
     $('productFormTitle').textContent='Artikel anlegen';
@@ -322,7 +326,7 @@
     e.preventDefault();if(!WRITES_ENABLED){flash(REQUIRE_GO_LIVE_MESSAGE,'error');return;}const form=e.currentTarget;
     await withSaving(async()=>{
       let id=getValue(form,'edit_id');
-      const fields={...marketUI11.values(),name:getValue(form,'name'),sku:getValue(form,'sku')||null,set_name:getValue(form,'set_name'),language:getValue(form,'language'),card_condition:getValue(form,'card_condition'),card_number:getValue(form,'card_number'),rarity:getValue(form,'rarity'),card_variant:getValue(form,'card_variant'),storage_location:getValue(form,'storage_location'),grading_company:getValue(form,'grading_company'),grading_grade:getValue(form,'grading_grade'),grading_certificate:getValue(form,'grading_certificate'),catalog_card_id:getValue(form,'catalog_card_id'),note:getValue(form,'note')};
+      const fields={...marketUI11.values(),name:getValue(form,'name'),sku:getValue(form,'sku')||null,set_name:getValue(form,'set_name'),language:getValue(form,'language'),card_condition:getValue(form,'card_condition'),card_number:getValue(form,'card_number'),rarity:getValue(form,'rarity'),card_variant:getValue(form,'card_variant'),storage_location:getValue(form,'storage_location'),grading_company:getValue(form,'grading_company'),grading_grade:getValue(form,'grading_grade'),grading_certificate:getValue(form,'grading_certificate'),catalog_card_id:getValue(form,'catalog_card_id'),catalog_image_url:getValue(form,'catalog_image_url'),note:getValue(form,'note')};
       if(!fields.name)throw Error('Bitte Artikelname eingeben.');
       if(fields.sku&&state.products.some(p=>p.id!==id&&String(p.sku||'').trim().toLowerCase()===fields.sku.trim().toLowerCase()))throw Error('Artikelnummer bereits verwendet, bitte andere waehlen.');
       const editing=Boolean(id);
