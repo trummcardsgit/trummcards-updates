@@ -40,6 +40,7 @@ jobs:
           node --check cloud/release/check-go-live.mjs
           node --test cloud/release/check-go-live.test.mjs
           node --test cloud/release/release-safety.test.mjs
+          node --test cloud/release/feature-11.test.mjs
       - name: Windows Cloud Source und Business-Logik pruefen
         working-directory: cloud/desktop-production
         run: |
