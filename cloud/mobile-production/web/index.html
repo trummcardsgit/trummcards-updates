@@ -16,6 +16,8 @@
 <script src="./catalog11.js?v=0.9.0" defer></script>
 <script src="./catalog11-ui.js?v=0.9.0" defer></script>
 <script src="./market11-ui.js?v=0.9.0" defer></script>
+<script src="./fees11.js?v=0.9.0" defer></script>
+<script src="./fees11-ui.js?v=0.9.0" defer></script>
 <script src="./finance11.js?v=0.9.0" defer></script>
 <script src="./finance11-ui.js?v=0.9.0" defer></script>
 <script src="./shipping11.js?v=0.9.0" defer></script>
@@ -167,7 +169,7 @@
                 <div class="field"><label for="saleShippingCost">Versandkosten</label><div class="money-input"><input id="saleShippingCost" name="shippingCost" type="text" inputmode="decimal" value="0,00" autocomplete="off"><span aria-hidden="true">€</span></div></div>
                 <div class="field"><label for="saleFees">Plattform-Gebühren</label><div class="money-input"><input id="saleFees" name="fees" type="text" inputmode="decimal" value="0,00" autocomplete="off"><span aria-hidden="true">€</span></div></div>
                 <div class="field"><label for="saleOther">Weitere Kosten</label><div class="money-input"><input id="saleOther" name="other" type="text" inputmode="decimal" value="0,00" autocomplete="off"><span aria-hidden="true">€</span></div></div>
-              </div>
+              </div><button type="button" class="secondary full" id="feeSuggest">Gebühren aus Profil berechnen</button><p class="subtle" id="feeSuggestStatus" role="status"></p>
             </fieldset>
             <fieldset class="booking-group">
               <legend><span class="group-number">03</span> Weitere Angaben</legend>
@@ -219,6 +221,19 @@
           <div class="micro-label">VERKAUF & FINANZEN</div><h2>Finanzcenter</h2>
           <p class="subtle">Umsatz, Gebühren und FIFO-Gewinn. Buchung und Zahlung sind steuerlich nicht immer dasselbe.</p>
           <div class="field"><label for="financePeriod">Zeitraum</label><select id="financePeriod"><option value="all">Gesamter Zeitraum</option><option value="year">Dieses Jahr</option><option value="month">Dieser Monat</option></select></div>
+<div class="panel fee-panel" id="feePanel">
+<h3>Gebührenprofile für Verkaufsplattformen</h3>
+<p class="small muted">Eigene Schätzwerte eintragen; keine offiziellen Gebührensätze vorausgesetzt. Beim Verkauf wird der Vorschlag nur nach Klick übernommen und bleibt bearbeitbar.</p>
+<form id="feeProfileForm" class="fee-profile-form">
+<div class="grid">
+<label>Plattform <select name="platform"><option>eBay</option><option>Cardmarket</option><option>Vinted</option><option>Whatnot</option><option>Privat</option><option>Willhaben</option><option>Sonstige</option></select></label>
+<label>Prozent auf Verkauf (und optional Versand) <input name="percent_rate" inputmode="decimal" value="0,00"></label>
+<label>Fixgebühr EUR <input name="fixed_eur" inputmode="decimal" value="0,00"></label>
+<label><input name="include_shipping" type="checkbox" checked> Versand-Einnahmen bei Prozenten mitrechnen</label>
+</div>
+<button type="submit" id="feeProfileSave" class="secondary">Gebührenprofil speichern</button>
+<p id="feeProfileStatus" role="status" aria-live="polite"></p>
+</form><div id="feeProfileList" class="fee-profile-list"></div></div>
           <div id="financeSummary" class="finance-metrics"></div>
           <p id="financeStatus" class="subtle" role="status" aria-live="polite"></p>
           <h3>Umsatz je Monat</h3><div id="financeMonths" class="finance-bars"></div>
