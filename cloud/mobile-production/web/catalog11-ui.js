@@ -75,7 +75,7 @@
        form.elements.namedItem('name')?.focus();
      }catch(err){if(request!==revision||err.name==='AbortError')return;statusText('Kartendetails konnten nicht geladen werden: '+String(err.message||err));}
    }
-   return Object.freeze({clear});
+   return Object.freeze({clear,selectCard});
  }
  window.TrummCatalogUI11=Object.freeze({bind});
 })();
