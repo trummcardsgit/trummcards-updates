@@ -129,11 +129,26 @@ test('KartenDex shows canonical set name then separate card number in every resu
   assert.match(html,/id="dexSearchSet"/);
   assert.match(html,/id="dexSearchNumber"/);
   assert.match(js,/catalog\.getPokemonCard\(\{id:card\.id,language\}\)/);
-  assert.match(js,/label\.textContent=value\|\|'Set nicht verfügbar'/);
+  assert.match(js,/label\.textContent=value\.name\|\|'Set nicht verfügbar'/);
   assert.match(js,/card\.setName\|\|'Set wird geladen/);
   assert.match(js,/number\.textContent='Kartennummer: '/);
+  assert.match(js,/card\.setOfficial>0/);
+  assert.match(js,/setOfficial:selectedSet\.officialCount/);
   assert.match(js,/setName:selectedSet\.name/);
   assert.match(js,/searchFilters=\{\.\.\.filters\}/);
   assert.match(js,/loadCards\(currentPage\+1,searchFilters,searchLang\)/);
+ }
+});
+
+test('KartenDex card details include real set total for printed number, when supplied',async()=>{
+ for(const root of clients){
+  const env={window:{},URLSearchParams};
+  runInNewContext(read(root+'catalog11.js'),env);
+  const mock=async()=>({ok:true,json:async()=>({
+   id:'sv03.5-9',name:'Glurak',localId:'9',set:{id:'sv03.5',name:'151',cardCount:{official:165}}
+  })});
+  const result=await env.window.TrummCatalog11.getPokemonCard({id:'sv03.5-9',language:'de',fetchImpl:mock});
+  assert.equal(result.setName,'151');
+  assert.equal(result.setOfficial,165);
  }
 });
