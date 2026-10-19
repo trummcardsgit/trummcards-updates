@@ -70,10 +70,10 @@ test('KartenDex picture fallback uses same ID in English, keeps localized card d
   assert.ok(js.includes("catalog.getPokemonCard({id,language:'en'})"));
   assert.ok(js.includes("card.id===id"));
   assert.ok(js.includes("Englisches Ersatzbild"));
-  assert.ok(js.includes("if(b.isConnected)renderImage(img,notice,card,lang.value,'low'"));
+  assert.ok(js.includes("if(b.isConnected)renderImage(img,notice,card,card.catalogLanguage||lang.value,'low'"));
   assert.ok(js.includes('queueMicrotask(()=>{'));
   assert.ok(js.indexOf('queueMicrotask(()=>{')>js.indexOf('b.append(img,notice);'));
-  assert.ok(js.includes("renderImage(detailImage,imageNotice,card,lang.value,'high'"));
+  assert.ok(js.includes("renderImage(detailImage,imageNotice,card,detailLanguage,'high'"));
   assert.ok(js.includes("detailMeta.append(renderPrice(card.pricing,card.variants))"));
   assert.ok(!js.includes('supabase.co'));
   assert.ok(!js.includes('navigator.clipboard'));
@@ -91,7 +91,7 @@ test('KartenDex combines Pokémon name, set name and card number in TCGdex pagin
    return {ok:true,json:async()=>[{id:'sv03.5-9',name:'Glurak',localId:'9',image:null}]};
   };
   const cards=await env.window.TrummCatalog11.searchPokemonCards({
-   query:'Glurak',set:'151',cardNumber:'009/165',language:'de',page:2,limit:20,fetchImpl:api
+   query:'Glurak',set:'151',cardNumber:'009',language:'de',page:2,limit:20,fetchImpl:api
   });
   assert.equal(cards.length,1);
   const params=calls[0].searchParams;
@@ -119,7 +119,7 @@ test('KartenDex retries printed leading-zero number if catalog uses original ide
    requested.push(number);
    return {ok:true,json:async()=>number==='eq:009'?[{id:'abc-009',localId:'009',name:'Glurak'}]:[]};
   };
-  const cards=await env.window.TrummCatalog11.searchPokemonCards({set:'XY',cardNumber:'009/147',fetchImpl:api});
+  const cards=await env.window.TrummCatalog11.searchPokemonCards({set:'XY',cardNumber:'009',fetchImpl:api});
   assert.equal(cards[0].localId,'009');
   assert.deepEqual(requested,['eq:9','eq:009']);
  }
@@ -239,5 +239,65 @@ test('Missing preview image fetches English image after search card is mounted',
   assert.ok(picture.isConnected);
   assert.equal(picture.src,'https://assets.tcgdex.net/en/base/base5/21/low.webp');
   assert.match(label.textContent,/Englisches Ersatzbild/);
+ }
+});
+
+
+test('A printed number 2/132 resolves Gym Challenge Blaine\'s Charizard in English even if German catalog omits it',async()=>{
+ for(const root of clients){
+  const env={window:{},URLSearchParams};
+  runInNewContext(read(root+'catalog11.js'),env,{filename:'catalog11.js'});
+  const calls=[];
+  const fetchImpl=async url=>{
+   const u=new URL(url);calls.push(u);
+   if(u.pathname==='/v2/en/sets')return {ok:true,json:async()=>[
+    {id:'wrong-set',name:'Other set',cardCount:{official:135}},
+    {id:'gym2',name:'Gym Challenge',cardCount:{official:132}}
+   ]};
+   if(u.pathname==='/v2/en/sets/gym2')return {ok:true,json:async()=>({
+    id:'gym2',name:'Gym Challenge',cardCount:{official:132},
+    cards:[{id:'gym2-2',name:"Blaine's Charizard",localId:'2',image:'https://assets.tcgdex.net/en/gym/gym2/2'},
+           {id:'gym2-31',name:"Blaine's Charmeleon",localId:'31'}]
+   })};
+   if(u.pathname==='/v2/de/cards/gym2-2')return {ok:false,status:404,json:async()=>({})};
+   if(u.pathname==='/v2/en/cards/gym2-2')return {ok:true,json:async()=>({
+    id:'gym2-2',name:"Blaine's Charizard",localId:'2',set:{id:'gym2',name:'Gym Challenge',cardCount:{official:132}}
+   })};
+   throw Error('Unexpected URL '+url);
+  };
+  const results=await env.window.TrummCatalog11.searchPokemonCards({cardNumber:'2/132',language:'de',fetchImpl});
+  assert.equal(results.length,1);
+  assert.equal(results[0].id,'gym2-2');
+  assert.equal(results[0].setName,'Gym Challenge');
+  assert.equal(results[0].setOfficial,132);
+  assert.equal(results[0].catalogLanguage,'en');
+  assert.equal(results[0].localId,'2');
+  assert.equal((await env.window.TrummCatalog11.searchPokemonCards({cardNumber:'002/132',language:'de',fetchImpl}))[0].id,'gym2-2');
+  const second=await env.window.TrummCatalog11.searchPokemonCards({cardNumber:'2/132',language:'de',page:2,fetchImpl});
+  assert.equal(second.length,0);
+  assert.ok(calls.some(c=>c.pathname==='/v2/en/sets/gym2'));
+  assert.ok(!calls.some(c=>c.pathname==='/v2/en/sets/wrong-set'));
+  const detail=await env.window.TrummCatalog11.getPokemonCard({id:results[0].id,language:results[0].catalogLanguage,fetchImpl});
+  assert.equal(detail.name,"Blaine's Charizard");
+ }
+});
+test('Official set size can find a vintage match on a later page of the set catalog',async()=>{
+ for(const root of clients){
+  const env={window:{},URLSearchParams};
+  runInNewContext(read(root+'catalog11.js'),env);
+  const fetchImpl=async url=>{
+   const u=new URL(url);
+   if(u.pathname==='/v2/en/sets'){
+    const page=Number(u.searchParams.get('pagination:page'));
+    const sets=page===1?Array.from({length:100},(_,i)=>({id:'new-'+i,name:'Recent '+i,cardCount:{official:150}}))
+      :[{id:'gym2',name:'Gym Challenge',cardCount:{official:132}}];
+    return {ok:true,json:async()=>sets};
+   }
+   if(u.pathname==='/v2/en/sets/gym2')return {ok:true,json:async()=>({name:'Gym Challenge',cards:[{id:'gym2-2',localId:'2',name:"Blaine's Charizard"}]})};
+   if(u.pathname==='/v2/de/cards/gym2-2')return {ok:false,status:404};
+   throw Error(url);
+  };
+  const result=await env.window.TrummCatalog11.searchPokemonCards({cardNumber:'2/132',fetchImpl});
+  assert.equal(result[0].id,'gym2-2');
  }
 });
