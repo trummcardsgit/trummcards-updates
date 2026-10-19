@@ -50,7 +50,7 @@ function fifoPreview(productId,quantity){const list=state.lots.filter(l=>l.produ
 function profit(s){return money(Number(s.price||0)+Number(s.shipping_income||0)-Number(s.shipping_cost||0)-Number(s.fees||0)-Number(s.other_cost||0)-Number(s.cogs_total||0));}
 function updateOptions(element,rows,makeLabel,placeholder){const chosen=element.value;const sig=JSON.stringify(rows.map(p=>[p.id,makeLabel(p)]));if(element.dataset.signature===sig)return;element.dataset.signature=sig;element.replaceChildren();const opt=document.createElement('option');opt.value='';opt.textContent=placeholder;element.append(opt);for(const p of rows){const option=document.createElement('option');option.value=p.id;option.textContent=makeLabel(p);element.append(option);}if(rows.some(r=>r.id===chosen))element.value=chosen;}
 async function refreshAll(opts={}){if(!session||loading||document.visibilityState==='hidden')return;loading=true;connected('Synchronisiere …');try{const [products,inventory,lots,sales,images,productImages]=await Promise.all([
- tableGet('tc_products','select=id,sku,name,set_name,language,card_condition,note,created_at&order=name.asc&limit=1000'),
+ tableGet('tc_products','select=id,sku,name,set_name,language,card_condition,card_number,rarity,card_variant,storage_location,grading_company,grading_grade,grading_certificate,note,created_at&order=name.asc&limit=1000'),
  tableGet('tc_inventory','select=product_id,available_qty,remaining_cost&limit=1000'),
  tableGet('tc_purchase_lots','select=id,product_id,bought_on,purchased_qty,available_qty,purchase_total,extra_cost,allocated_cost,source,note,created_at&order=bought_on.asc&limit=1000'),
  tableGet('tc_sales','select=id,product_id,sold_on,qty,price,shipping_income,shipping_cost,fees,other_cost,cogs_total,platform,note,status,created_at&order=created_at.desc&limit=1000'),
@@ -68,15 +68,45 @@ function imagePathForProduct(productId){
  const lotIds=new Set(state.lots.filter(l=>l.product_id===productId).map(l=>l.id));
  return state.images.find(i=>lotIds.has(i.lot_id))?.storage_path||null;
 }
+function filteredInventory11(){
+ const term=$('search').value.trim().toLocaleLowerCase('de');
+ const langFilter=$('inventoryLanguageFilter');
+ const langs=[...new Set(state.products.map(p=>p.language).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'de'));
+ const sig=JSON.stringify(langs);
+ if(langFilter.dataset.optionsSignature!==sig){
+  const old=langFilter.value;langFilter.replaceChildren();
+  const all=document.createElement('option');all.value='';all.textContent='Alle Sprachen';langFilter.append(all);
+  for(const value of langs){const option=document.createElement('option');option.value=value;option.textContent=value;langFilter.append(option);}
+  langFilter.value=langs.includes(old)?old:'';
+  langFilter.dataset.optionsSignature=sig;
+ }
+ const language=langFilter.value,stock=$('inventoryStockFilter').value,sort=$('inventorySort').value;
+ const products=state.products.filter(p=>{
+  const qty=available(p.id);
+  if(language&&p.language!==language)return false;
+  if(stock==='available'&&qty<=0)return false;
+  if(stock==='empty'&&qty>0)return false;
+  const content=['name','sku','set_name','card_number','rarity','card_variant','storage_location','card_condition','grading_company','grading_grade','grading_certificate'].map(k=>p[k]||'').join(' ').toLocaleLowerCase('de');
+  return !term||term.split(/\\s+/).every(t=>content.includes(t));
+ });
+ products.sort((a,b)=>{
+  if(sort==='stock')return available(b.id)-available(a.id)||a.name.localeCompare(b.name,'de');
+  if(sort==='set')return (a.set_name||'').localeCompare(b.set_name||'','de')||a.name.localeCompare(b.name,'de');
+  if(sort==='location')return (a.storage_location||'').localeCompare(b.storage_location||'','de')||a.name.localeCompare(b.name,'de');
+  return a.name.localeCompare(b.name,'de');
+ });
+ $('inventoryFilterCount').textContent=products.length+' von '+state.products.length+' Artikeln';
+ return products;
+}
 function renderProducts(){
- const list=$('productsList'),term=$('search').value.toLocaleLowerCase('de');
- const ps=state.products.filter(p=>(p.name+' '+(p.sku||'')+' '+(p.set_name||'')).toLocaleLowerCase('de').includes(term));
+ const list=$('productsList');
+ const ps=filteredInventory11();
  list.innerHTML=ps.length?ps.map(p=>{
   const inv=state.inventory.find(x=>x.product_id===p.id);
   const thumb=imagePathForProduct(p.id)?
    '<button type="button" class="list-image-button" data-photo-open="'+p.id+'" title="Artikelbild vergrößern"><img data-thumb="'+p.id+'" alt="Bild von '+esc(p.name)+'" loading="eager" decoding="async" width="64" height="74" hidden><span class="image-placeholder" aria-hidden="true">▧</span></button>':
    '<div class="list-image-button" aria-label="Noch kein Artikelbild"><span class="image-placeholder">▧</span></div>';
-  return '<div class="list-card">'+thumb+'<div class="item-main"><strong>'+esc(p.name)+'</strong><small>'+esc(p.set_name||'Ohne Set')+' · '+esc(p.sku||'ohne SKU')+'</small><button type="button" class="tiny-btn" data-edit="'+p.id+'">Bearbeiten</button></div><div class="item-end"><b>'+Number(inv?.available_qty||0)+' Stk.</b><small>'+euro(inv?.remaining_cost||0)+'</small></div></div>';
+  return '<div class="list-card">'+thumb+'<div class="item-main"><strong>'+esc(p.name)+'</strong><small>'+esc(p.set_name||'Ohne Set')+(p.card_number?' · Nr. '+esc(p.card_number):'')+' · '+esc(p.sku||'ohne SKU')+'</small>'+(p.storage_location?'<small>📦 '+esc(p.storage_location)+'</small>':'')+'<button type="button" class="tiny-btn" data-edit="'+p.id+'">Bearbeiten</button></div><div class="item-end"><b>'+Number(inv?.available_qty||0)+' Stk.</b><small>'+euro(inv?.remaining_cost||0)+'</small></div></div>';
  }).join(''):'<div class="empty">Keine Artikel gefunden. Erfasse deinen ersten Testartikel.</div>';
  prepareInventoryThumbnails();
 }
@@ -187,7 +217,7 @@ function resetArticle(){
 function editArticle(id){
  const p=productById(id);if(!p)return;
  navigate('article');
- for(const field of ['id','name','sku','set_name','language','card_condition','note'])f($('articleForm'),field).value=p[field]||'';
+ for(const field of ['id','name','sku','set_name','language','card_condition','card_number','rarity','card_variant','storage_location','grading_company','grading_grade','grading_certificate','note'])f($('articleForm'),field).value=p[field]||'';
  $('articleTitle').textContent='Artikel bearbeiten';
  $('articleSubmit').textContent='Änderungen speichern';
  if(imagePathForProduct(id))$('articleImageSelection').textContent='Bild vorhanden. Optional neues Bild wählen, um es zu ersetzen.';
@@ -203,7 +233,7 @@ async function saveArticle(e){
  e.preventDefault();if(!WRITES_ENABLED){notice(NO_WRITES,'error');return;}const form=e.currentTarget;
  await withBusy(async()=>{
   let id=val(form,'id');
-  const fields={name:val(form,'name'),sku:val(form,'sku')||null,set_name:val(form,'set_name'),language:val(form,'language'),card_condition:val(form,'card_condition'),note:val(form,'note')};
+  const fields={name:val(form,'name'),sku:val(form,'sku')||null,set_name:val(form,'set_name'),language:val(form,'language'),card_condition:val(form,'card_condition'),card_number:val(form,'card_number'),rarity:val(form,'rarity'),card_variant:val(form,'card_variant'),storage_location:val(form,'storage_location'),grading_company:val(form,'grading_company'),grading_grade:val(form,'grading_grade'),grading_certificate:val(form,'grading_certificate'),note:val(form,'note')};
   if(!fields.name)throw Error('Bitte Artikelname eingeben.');
   if(fields.sku&&state.products.some(p=>p.id!==id&&String(p.sku||'').toLocaleLowerCase('de')===fields.sku.toLocaleLowerCase('de')))throw Error('Artikelnummer bereits verwendet bitte andere wählen.');
   const editing=Boolean(id);
@@ -250,7 +280,7 @@ function bind(){
  $('purchaseForm').addEventListener('submit',savePurchase);
  $('saleForm').addEventListener('submit',saveSale);
  $('photoForm').addEventListener('submit',savePhoto);
- $('search').addEventListener('input',renderProducts);
+ for(const id of ['search','inventoryLanguageFilter','inventoryStockFilter','inventorySort'])$(id).addEventListener(id==='search'?'input':'change',renderProducts);
  document.addEventListener('click',async e=>{const go=e.target.closest('[data-go]');if(go){navigate(go.dataset.go);return;}const thumb=e.target.closest('[data-photo-open]');if(thumb){await openProductImage(thumb.dataset.photoOpen);return;}const edit=e.target.closest('[data-edit]');if(edit){editArticle(edit.dataset.edit);return;}const del=e.target.closest('[data-void]');if(del){await cancelSale(del.dataset.void);}});
  for(const n of ['qty','unit','total'])f($('purchaseForm'),n).addEventListener('input',()=>syncPurchase(n));
  for(const n of ['product','qty','price','shippingIncome','shippingCost','fees','other'])f($('saleForm'),n).addEventListener(n==='product'?'change':'input',updateSalePreview);
