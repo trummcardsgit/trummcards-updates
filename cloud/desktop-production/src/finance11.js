@@ -6,7 +6,7 @@ const round=n=>Math.round((n+Number.EPSILON)*100)/100;
 const csvCell=value=>{
  let s=String(value??'');
  // Prevent spreadsheet formula injection in free text when opened as a spreadsheet.
- if(/^[\s]*[=+@\-\t\r]/.test(s))s="'"+s;
+ if(/^[\s]*[=+@\-\t\r]/.test(s)&&!/^[-]?\d+(?:,\d{1,2})?$/.test(s))s="'"+s;
  return '"'+s.replaceAll('"','""')+'"';
 };
 const moneyCell=n=>amount(n).toFixed(2).replace('.',',');
