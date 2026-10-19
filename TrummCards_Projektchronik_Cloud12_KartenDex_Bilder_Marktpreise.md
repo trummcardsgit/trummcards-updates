@@ -49,3 +49,11 @@ Version 1.2 TEST mit eigenem KartenDex-Menü, Pokémon-Namenssuche mit Blättern
 - Ein allgemeiner Trendwert ist keine Garantie für den richtigen Zustand, die konkrete Sprache, die Variante oder den Verkaufspreis; die externe TCGdex-Preiszuordnung kann selbst fehlerhaft sein.
 - Neue Regressionstests decken exakt die Glurak-VMAX-Situation, Karten mit bestätigten zwei Varianten und Karten ohne Variantendaten ab.
 - Nur die isolierte TEST-Version wurde geändert; die Produktionsdatenbank und Produktivversion 1.1 bleiben unverändert.
+
+## 19.10.2026 – Fix für englische Ersatzbilder direkt in Kartensuchtreffern (TEST 1.2.0-test.5)
+- Fehlerbild: Ein Kartenbild war in der Detailansicht vorhanden, aber das gleiche englische Ersatzbild erschien nicht in der Suchergebnisübersicht.
+- Ursache: Die Funktion zur Bildauflösung überprüft `img.isConnected`; bisher wurde sie aufgerufen, während sich die Trefferkarte noch nicht im DOM befand. Bei fehlendem direkten Bild-URL wurde deshalb die Fallback-Anfrage sofort beendet.
+- Korrektur: Bildabruf auf die nächste Microtask nach dem Einfügen der Trefferkarte verschoben und mit einer Prüfung auf aktive Suchergebnisgeneration ergänzt; betrifft Windows und PWA.
+- Regressionstest simuliert eine Karte ohne deutsches Bild, fügt den Suchtreffer ins DOM ein und prüft das Laden desselben englischen TCGdex-Kartenbilds.
+- Die TEST-Buildkennung wurde auf `1.2.0-test.5`, die Service-Worker-Kennung auf `trummcards-mobile-test12-shell-v1-1205` erhöht. Produktivdaten und Version 1.1 bleiben unverändert.
+- Neue Funktionsidee im Gespräch: Per Smartphone-Kamera aufgenommene Einzelkarte über Texterkennung von Pokémon-Name, Kartennummer und Set suchen; keine Barcode-Pflicht und vor einer automatischen Zuordnung Treffer bestätigen lassen. Noch nicht implementiert.
