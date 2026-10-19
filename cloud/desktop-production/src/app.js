@@ -17,7 +17,7 @@
   let lastPurchasePrice='unit';
   let lastSyncAt=0;
   let productPhotoFile=null,productPreviewUrl=null,cameraStream=null,desktopThumbObserver=null,productPreviewGeneration=0;
-  let catalogPicker11=null;
+  let catalogPicker11=null,financeUI11=null;
   const desktopThumbCache=new Map();
 
   const getForm = (form,name) => form.elements.namedItem(name);
@@ -205,6 +205,7 @@
     }).join('')||'<tr><td colspan="8" class="empty">Noch keine Verkaeufe in Production.</td></tr>';
     $('lotsRows').innerHTML=state.lots.map(l=>`<tr><td>${escapeHtml(l.bought_on)}</td><td>${escapeHtml(productName(l.product_id))}</td><td>${Number(l.purchased_qty)}</td><td>${Number(l.available_qty)}</td><td>${L.euro(Number(l.purchase_total)+Number(l.extra_cost))}</td><td>${escapeHtml(l.source||'-')}</td></tr>`).join('')||'<tr><td colspan="6" class="empty">Noch keine Einkaufschargen.</td></tr>';
     renderPending(); updateSaleHint(); updatePurchaseHint();
+    financeUI11?.render();
     if(activeTab==='photos')renderImages().catch(e=>console.error('Picture display:',e));
   }
   function switchTab(name) {
@@ -213,6 +214,7 @@
     document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('active',b.dataset.tab===name));
     window.scrollTo({top:0,behavior:'smooth'});
     if(name==='photos')renderImages().catch(err=>flash(L.apiError(err),'error'));
+    if(name==='finance')financeUI11?.render();
   }
 
   function stopProductCamera(){
@@ -518,6 +520,7 @@
     $('tabs').addEventListener('click',e=>{const b=e.target.closest('button[data-tab]');if(b)switchTab(b.dataset.tab);});
     void initializeCloudUpdater();
     catalogPicker11=window.TrummCatalogUI11?.bind();
+    financeUI11=window.TrummFinanceUI11?.bind(()=>({sales:state.sales,lots:state.lots,products:state.products}));
     $('productForm').addEventListener('submit',saveProduct);
     getForm($('productForm'),'productPicture').addEventListener('change',e=>{stopProductCamera();previewProductPicture(e.target.files?.[0]||null);});
     $('cameraStart').addEventListener('click',()=>{void startProductCamera();});
