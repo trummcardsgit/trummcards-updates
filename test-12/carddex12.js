@@ -19,7 +19,7 @@ function cardmarketValues(pricing){
 function bind({onUseCard}={}){
  const catalog=window.TrummCatalog11;
  if(!catalog)throw Error('KartenDex benötigt den vorhandenen TCGdex-Katalog.');
- const query=$('dexQuery'),lang=$('dexLanguage'),results=$('dexResults'),searchStatus=$('dexSearchStatus');
+ const query=$('dexQuery'),setInput=$('dexSearchSet'),numberInput=$('dexSearchNumber'),lang=$('dexLanguage'),results=$('dexResults'),searchStatus=$('dexSearchStatus');
  const prev=$('dexPrev'),next=$('dexNext'),pageLabel=$('dexPageLabel');
  const setQuery=$('dexSetQuery'),setsBox=$('dexSets'),more=$('dexMoreSets'),setStatus=$('dexSetStatus');
  const cardsBox=$('dexSetCards'),setCardsStatus=$('dexSetCardsStatus'),setPrev=$('dexSetPrev'),setNext=$('dexSetNext');
@@ -103,30 +103,51 @@ function bind({onUseCard}={}){
  }
 
  let searchAbort=null,setsAbort=null,detailAbort=null,setCardsAbort=null;
- let currentPage=0,lastCount=0,searchTerm='',searchLang='',setPage=0,sets=[],selectedSet=null,cardPage=1,selectedCard=null;
+ let currentPage=0,lastCount=0,searchFilters={query:'',set:'',cardNumber:''},searchLang='',setPage=0,sets=[],selectedSet=null,cardPage=1,selectedCard=null;
+ const setNameCache=new Map();
  function setPaging(){
   pageLabel.textContent=currentPage?'Seite '+currentPage:'Noch keine Suche';
   prev.disabled=currentPage<=1;next.disabled=currentPage<1||lastCount<PAGE||currentPage>=100;
  }
  function clearDetail(){detailGeneration++;detailAbort?.abort();selectedCard=null;detail.hidden=true;detailImage.hidden=true;detailImage.removeAttribute('src');detailMeta.replaceChildren();}
- function cardButton(card){
+ async function lookUpSetName(card,language,label,revision){
+  if(!card.id||!label.isConnected)return;
+  const key=language+'/'+card.id;
+  if(!setNameCache.has(key)){
+   const task=limitLookup(async()=>{
+    try{const detail=await catalog.getPokemonCard({id:card.id,language});return detail.setName||'';}catch{return '';}
+   });
+   if(setNameCache.size>500)setNameCache.clear();
+   setNameCache.set(key,task);
+  }
+  const value=await setNameCache.get(key);
+  if(label.isConnected&&revision===searchGeneration)label.textContent=value||'Set nicht verfügbar';
+ }
+ function cardButton(card,revision=null){
   const b=document.createElement('button');b.type='button';b.className='dex-card';
   const img=document.createElement('img');img.alt='Pokémon-Kartenbild';img.loading='lazy';img.className='dex-card-picture';
   const notice=document.createElement('small');notice.className='dex-image-status';
   b.append(img,notice);
   renderImage(img,notice,card,lang.value);
-  const label=document.createElement('span');label.textContent=card.name+(card.localId?' · Nr. '+card.localId:'');
-  b.append(label);b.addEventListener('click',()=>{void selectCard(card.id);});return b;
+  const name=document.createElement('strong');name.className='dex-card-name';name.textContent=card.name;
+  const setLabel=document.createElement('span');setLabel.className='dex-card-set';
+  setLabel.textContent=card.setName||'Set wird geladen …';
+  const number=document.createElement('span');number.className='dex-card-number';
+  number.textContent='Kartennummer: '+(card.localId||'Nicht verfügbar');
+  b.append(name,setLabel,number);
+  b.addEventListener('click',()=>{void selectCard(card.id);});
+  if(!card.setName&&revision!==null)void lookUpSetName(card,lang.value,setLabel,revision);
+  return b;
  }
- async function loadCards(page,term,language){
+ async function loadCards(page,filters,language){
   const current=++searchGeneration;searchAbort?.abort();searchAbort=new AbortController();
   prev.disabled=true;next.disabled=true;searchStatus.textContent='Lade Karten – Seite '+page+' …';
   try{
-   const cards=await catalog.searchPokemonCards({query:term,language,page,limit:PAGE,signal:searchAbort.signal});
+   const cards=await catalog.searchPokemonCards({...filters,language,page,limit:PAGE,signal:searchAbort.signal});
    if(current!==searchGeneration)return;
    if(!cards.length&&page>1){searchStatus.textContent='Keine weiteren Treffer.';setPaging();return;}
-   currentPage=page;lastCount=cards.length;searchTerm=term;searchLang=language;results.replaceChildren();
-   for(const c of cards)results.append(cardButton(c));
+   currentPage=page;lastCount=cards.length;searchFilters={...filters};searchLang=language;results.replaceChildren();
+   for(const c of cards)results.append(cardButton(c,current));
    setPaging();searchStatus.textContent=cards.length?cards.length+' Treffer auf Seite '+page+'. Karte für Details anklicken.':'Keine Karten gefunden.';
   }catch(e){if(current===searchGeneration&&e.name!=='AbortError'){searchStatus.textContent='Suche fehlgeschlagen: '+String(e.message||e);setPaging();}}
  }
@@ -174,7 +195,7 @@ function bind({onUseCard}={}){
  function showSetCards(){
   if(!selectedSet)return;
   const start=(cardPage-1)*PAGE,all=selectedSet.cards;
-  cardsBox.replaceChildren();for(const card of all.slice(start,start+PAGE))cardsBox.append(cardButton(card));
+  cardsBox.replaceChildren();for(const card of all.slice(start,start+PAGE))cardsBox.append(cardButton({...card,setName:selectedSet.name}));
   setPrev.disabled=cardPage===1;setNext.disabled=cardPage*PAGE>=all.length;
   setCardsStatus.textContent=selectedSet.name+' · '+all.length+' Karten · Seite '+cardPage+' von '+Math.max(1,Math.ceil(all.length/PAGE));
  }
@@ -188,10 +209,21 @@ function bind({onUseCard}={}){
    selectedSet=found;cardPage=1;showSetCards();
   }catch(e){if(request===setCardsGeneration&&e.name!=='AbortError')setCardsStatus.textContent='Set konnte nicht geladen werden: '+String(e.message||e);}
  }
- $('dexSearchForm').addEventListener('submit',e=>{e.preventDefault();clearDetail();void loadCards(1,query.value.trim(),lang.value);});
- prev.addEventListener('click',()=>{if(currentPage>1)void loadCards(currentPage-1,searchTerm,searchLang);});
- next.addEventListener('click',()=>{if(currentPage&&lastCount===PAGE)void loadCards(currentPage+1,searchTerm,searchLang);});
- query.addEventListener('input',()=>{searchGeneration++;searchAbort?.abort();prev.disabled=true;next.disabled=true;});
+ $('dexSearchForm').addEventListener('submit',e=>{
+  e.preventDefault();
+  const filters={query:query.value.trim(),set:setInput.value.trim(),cardNumber:numberInput.value.trim()};
+  if(!filters.query&&!filters.set&&!filters.cardNumber){
+   searchStatus.textContent='Bitte mindestens einen Suchwert eingeben: Name, Set oder Kartennummer.';
+   return;
+  }
+  clearDetail();void loadCards(1,filters,lang.value);
+ });
+ prev.addEventListener('click',()=>{if(currentPage>1)void loadCards(currentPage-1,searchFilters,searchLang);});
+ next.addEventListener('click',()=>{if(currentPage&&lastCount===PAGE)void loadCards(currentPage+1,searchFilters,searchLang);});
+ for(const field of [query,setInput,numberInput])field.addEventListener('input',()=>{
+  searchGeneration++;searchAbort?.abort();prev.disabled=true;next.disabled=true;
+  if(currentPage)searchStatus.textContent='Suchfilter geändert. Bitte erneut auf „Karten suchen“ klicken.';
+ });
  lang.addEventListener('change',()=>{
   searchGeneration++;searchAbort?.abort();setsGeneration++;setsAbort?.abort();
   detailGeneration++;detailAbort?.abort();clearDetail();results.replaceChildren();
