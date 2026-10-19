@@ -11,7 +11,7 @@ const NO_WRITES='Produktionsvorschau: Echtdaten und Buchungen bleiben bis zur Re
 let ROOT='',KEY='',session=null,authCheckPromise=null,refreshPromise=null,loading=false,busy=false,activePage='home',lastPurchaseEntry='unit',pendingImage=null,imageObjects=[];
 let state={products:[],inventory:[],lots:[],sales:[],images:[],productImages:[],shipments:[]};
 let articleImageFile=null,articleImagePreviewUrl=null,thumbnailObserver=null;
-let catalogPicker11=null,financeUI11=null,shippingUI11=null;
+let catalogPicker11=null,financeUI11=null,shippingUI11=null,marketUI11=null;
 const thumbnailCache=new Map(),thumbnailLoading=new Map();
 const API_HEADERS={'Content-Type':'application/json'};
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&quot;',"'":'&#39;'}[c]));
@@ -51,7 +51,7 @@ function fifoPreview(productId,quantity){const list=state.lots.filter(l=>l.produ
 function profit(s){return money(Number(s.price||0)+Number(s.shipping_income||0)-Number(s.shipping_cost||0)-Number(s.fees||0)-Number(s.other_cost||0)-Number(s.cogs_total||0));}
 function updateOptions(element,rows,makeLabel,placeholder){const chosen=element.value;const sig=JSON.stringify(rows.map(p=>[p.id,makeLabel(p)]));if(element.dataset.signature===sig)return;element.dataset.signature=sig;element.replaceChildren();const opt=document.createElement('option');opt.value='';opt.textContent=placeholder;element.append(opt);for(const p of rows){const option=document.createElement('option');option.value=p.id;option.textContent=makeLabel(p);element.append(option);}if(rows.some(r=>r.id===chosen))element.value=chosen;}
 async function refreshAll(opts={}){if(!session||loading||document.visibilityState==='hidden')return;loading=true;connected('Synchronisiere …');try{const [products,inventory,lots,sales,images,productImages,shipments]=await Promise.all([
- tableGet('tc_products','select=id,sku,name,set_name,language,card_condition,card_number,rarity,card_variant,storage_location,grading_company,grading_grade,grading_certificate,catalog_card_id,note,created_at&order=name.asc&limit=1000'),
+ tableGet('tc_products','select=id,sku,name,set_name,language,card_condition,card_number,rarity,card_variant,storage_location,grading_company,grading_grade,grading_certificate,catalog_card_id,market_price_eur,market_price_source,market_price_checked_at,note,created_at&order=name.asc&limit=1000'),
  tableGet('tc_inventory','select=product_id,available_qty,remaining_cost&limit=1000'),
  tableGet('tc_purchase_lots','select=id,product_id,bought_on,purchased_qty,available_qty,purchase_total,extra_cost,allocated_cost,source,note,created_at&order=bought_on.asc&limit=1000'),
  tableGet('tc_sales','select=id,product_id,sold_on,qty,price,shipping_income,shipping_cost,fees,other_cost,cogs_total,platform,note,status,created_at&order=created_at.desc&limit=1000'),
@@ -212,7 +212,7 @@ function renderHistory(){const sales=state.sales.slice(0,70),lots=state.lots.sli
 
 function resetArticle(){
  $('articleForm').reset();f($('articleForm'),'id').value='';f($('articleForm'),'catalog_card_id').value='';
- catalogPicker11?.clear();
+ catalogPicker11?.clear();marketUI11?.reset();
  previewArticlePhoto(null);
  $('articleTitle').textContent='Artikel anlegen';
  $('articleSubmit').textContent='Artikel und Bild speichern';
@@ -221,6 +221,7 @@ function editArticle(id){
  const p=productById(id);if(!p)return;
  navigate('article');
  for(const field of ['id','name','sku','set_name','language','card_condition','card_number','rarity','card_variant','storage_location','grading_company','grading_grade','grading_certificate','catalog_card_id','note'])f($('articleForm'),field).value=p[field]||'';
+ marketUI11?.load(p);
  $('articleTitle').textContent='Artikel bearbeiten';
  $('articleSubmit').textContent='Änderungen speichern';
  if(imagePathForProduct(id))$('articleImageSelection').textContent='Bild vorhanden. Optional neues Bild wählen, um es zu ersetzen.';
@@ -236,7 +237,7 @@ async function saveArticle(e){
  e.preventDefault();if(!WRITES_ENABLED){notice(NO_WRITES,'error');return;}const form=e.currentTarget;
  await withBusy(async()=>{
   let id=val(form,'id');
-  const fields={name:val(form,'name'),sku:val(form,'sku')||null,set_name:val(form,'set_name'),language:val(form,'language'),card_condition:val(form,'card_condition'),card_number:val(form,'card_number'),rarity:val(form,'rarity'),card_variant:val(form,'card_variant'),storage_location:val(form,'storage_location'),grading_company:val(form,'grading_company'),grading_grade:val(form,'grading_grade'),grading_certificate:val(form,'grading_certificate'),catalog_card_id:val(form,'catalog_card_id'),note:val(form,'note')};
+  const fields={...marketUI11.values(),name:val(form,'name'),sku:val(form,'sku')||null,set_name:val(form,'set_name'),language:val(form,'language'),card_condition:val(form,'card_condition'),card_number:val(form,'card_number'),rarity:val(form,'rarity'),card_variant:val(form,'card_variant'),storage_location:val(form,'storage_location'),grading_company:val(form,'grading_company'),grading_grade:val(form,'grading_grade'),grading_certificate:val(form,'grading_certificate'),catalog_card_id:val(form,'catalog_card_id'),note:val(form,'note')};
   if(!fields.name)throw Error('Bitte Artikelname eingeben.');
   if(fields.sku&&state.products.some(p=>p.id!==id&&String(p.sku||'').toLocaleLowerCase('de')===fields.sku.toLocaleLowerCase('de')))throw Error('Artikelnummer bereits verwendet bitte andere wählen.');
   const editing=Boolean(id);
@@ -302,6 +303,7 @@ function bind(){
  for(const field of ['articleCamera','articleGallery'])f($('articleForm'),field).addEventListener('change',e=>previewArticlePhoto(e.target.files?.[0]||null));
  $('closeImageViewer').addEventListener('click',()=>$('imageViewer').close());
  $('imageViewer').addEventListener('click',e=>{if(e.target===$('imageViewer'))$('imageViewer').close();});
+ marketUI11=window.TrummMarketUI11?.bind();window.TrummMarketInstance11=marketUI11;
  catalogPicker11=window.TrummCatalogUI11?.bind();
  financeUI11=window.TrummFinanceUI11?.bind(()=>({sales:state.sales,lots:state.lots,products:state.products}));
  shippingUI11=window.TrummShippingUI11?.bind({getSales:()=>state.sales,getShipments:()=>state.shipments,productName,save:saveShipment11});
