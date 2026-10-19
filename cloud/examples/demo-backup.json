@@ -1,0 +1,13 @@
+{
+  "version": 2,
+  "exportedAt": "2026-10-14T10:00:00.000Z",
+  "lots": [
+    {"id":"old-lot-1","name":"Delta Herrschaft","set":"Beispiel","language":"Deutsch","condition":"Near Mint","sku":"DELTA-001","date":"2026-10-01","qty":2,"total":200,"extra":0,"unitCost":100,"source":"Test","note":"Nur Beispieldaten"},
+    {"id":"old-lot-2","name":"Delta Herrschaft","set":"Beispiel","language":"Deutsch","condition":"Near Mint","sku":"DELTA-001","date":"2026-10-03","qty":3,"total":330,"extra":0,"unitCost":110,"source":"Test","note":"Zweite Charge"},
+    {"id":"old-lot-3","name":"Stahlos","set":"Mega Brave","language":"Japanisch","condition":"Near Mint","sku":"STA-001","date":"2026-10-04","qty":1,"total":9.90,"extra":0,"unitCost":9.90,"source":"Test","note":""}
+  ],
+  "sales": [
+    {"id":"old-sale-1","date":"2026-10-06","itemKey":"delta herrschaft|beispiel|deutsch|near mint|delta-001","itemName":"Delta Herrschaft","set":"Beispiel","language":"Deutsch","condition":"Near Mint","sku":"DELTA-001","qty":3,"price":450,"shippingIncome":5,"shippingCost":5,"fees":22.50,"other":0,"platform":"eBay","note":"","cost":310,"allocations":[{"lotId":"old-lot-1","qty":2,"unitCost":100},{"lotId":"old-lot-2","qty":1,"unitCost":110}]}
+  ],
+  "images": []
+}
