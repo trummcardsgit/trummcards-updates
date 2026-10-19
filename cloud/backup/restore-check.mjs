@@ -7,7 +7,7 @@ import os from 'node:os';
 import {fileURLToPath} from 'node:url';
 import pg from 'pg';
 import {decryptLines} from './secure-archive.mjs';
-import {createVerifier,validateSnapshot,sha256,TABLES} from './validate.mjs';
+import {createVerifier,validateSnapshot,sha256,tablesForSnapshot} from './validate.mjs';
 
 const {Client}=pg,archive=process.argv[2],passphrase=process.env.TC_BACKUP_PASSPHRASE;
 const connection=process.env.PG_RESTORE_URL;
@@ -41,7 +41,8 @@ try{
   'cloud/supabase/migrations/20261016000400_backup_snapshot.sql',
   'cloud/release/sql/harden_product_images_owner.sql',
   'cloud/supabase/migrations/20261019000100_cloud_11_card_metadata.sql',
-  'cloud/release/sql/cloud11_sale_shipments_staging.sql'
+  'cloud/release/sql/cloud11_sale_shipments_staging.sql',
+  'cloud/release/sql/cloud11_backup_snapshot_v2_staging.sql'
  ];
  const client=new Client({connectionString:connection,connectionTimeoutMillis:10000});
  await client.connect();
@@ -53,7 +54,7 @@ try{
   await client.query('INSERT INTO auth.users(id) VALUES ($1)',[snapshot.owner_id]);
   await client.query('INSERT INTO trummcards_private.owner_guard(user_id) VALUES ($1)',[snapshot.owner_id]);
 
-  for(const name of TABLES){
+  for(const name of tablesForSnapshot(snapshot)){
    for(const row of snapshot.tables[name]){
     const columns=Object.keys(row);
     if(columns.some(k=>!/^[a-z][a-z0-9_]*$/.test(k)))throw Error('Ungültiger Spaltenname.');
@@ -73,7 +74,7 @@ try{
      [meta.id,'trummcards-lot-images',imagePath,value.hash,value.size]);
   }
   const {counts}=validateSnapshot(snapshot);
-  for(const name of TABLES){
+  for(const name of tablesForSnapshot(snapshot)){
    const r=await client.query('SELECT count(*)::int AS n FROM public."'+name+'"');
    if(r.rows[0].n!==counts[name])throw Error('Restore zählt falsche Datensätze in '+name);
   }
@@ -83,7 +84,7 @@ try{
   const expected=snapshot.tables.tc_purchase_lots.reduce((s,r)=>s+Number(r.available_qty),0);
   if(Number(actual.rows[0].pieces)!==expected)throw Error('Bestandsmenge nach Restore abweichend.');
   await client.query('COMMIT');
-  console.log('LOKALER PostgreSQL-17-RESTORE OK: '+TABLES.length+' Tabellen, '+saved.size+' Bilder, '+expected+' lagernde Stück; PROD/TEST unverändert.');
+  console.log('LOKALER PostgreSQL-17-RESTORE OK: '+tablesForSnapshot(snapshot).length+' Tabellen, '+saved.size+' Bilder, '+expected+' lagernde Stück; PROD/TEST unverändert.');
  }catch(e){await client.query('ROLLBACK').catch(()=>{});throw e;}
  finally{await client.end();}
 }finally{await fsp.rm(directory,{recursive:true,force:true});}
