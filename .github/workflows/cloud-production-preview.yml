@@ -47,6 +47,7 @@ jobs:
           node --test cloud/release/feature-11.test.mjs
           node --test cloud/release/finance11.test.mjs
           node --test cloud/release/tcgdex11.test.mjs
+          node --test cloud/release/shipping11.test.mjs
       - name: Windows Cloud Source und Business-Logik pruefen
         working-directory: cloud/desktop-production
         run: |
