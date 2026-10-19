@@ -12,6 +12,8 @@
 <script defer src="catalog11-ui.js"></script>
 <script defer src="finance11.js"></script>
 <script defer src="finance11-ui.js"></script>
+<script defer src="shipping11.js"></script>
+<script defer src="shipping11-ui.js"></script>
 <script defer src="app.js"></script>
 </head>
 <body>
@@ -153,6 +155,23 @@
     <section class="tab" id="tab-bookings" hidden>
       <div class="panel"><h2>Verkaeufe</h2><p class="small muted">Buchungen koennen storniert werden. Ein Storno stellt den Lagerbestand wieder her, entfernt die Historie aber nicht.</p>
       <div class="table-wrap"><table><thead><tr><th>Datum</th><th>Artikel</th><th>Stk.</th><th>Preis</th><th>Einstand</th><th>Gewinn</th><th>Status</th><th>Aktion</th></tr></thead><tbody id="salesRows"></tbody></table></div></div>
+      <div class="panel shipment-panel" id="shipmentPanel">
+  <h2>Versandverwaltung</h2>
+  <p class="small muted">Versanddaten werden getrennt von der FIFO-Verkaufsbuchung gespeichert und zwischen Windows und Handy synchronisiert. Keine Käuferadresse erforderlich.</p>
+  <form id="shipmentForm">
+    <div class="grid shipment-grid">
+      <label>Verkauf * <select id="shipmentSale" name="sale_id" required><option value="">Gebuchten Verkauf auswählen</option></select></label>
+      <label>Status <select name="shipping_status"><option value="offen">Offen</option><option value="verpackt">Verpackt</option><option value="versendet">Versendet</option><option value="zugestellt">Zugestellt</option></select></label>
+      <label>Versanddienstleister <input name="carrier" maxlength="100" placeholder="z.B. Österreichische Post"></label>
+      <label>Sendungsnummer <input name="tracking_number" maxlength="150"></label>
+      <label>Bestellnummer / Referenz <input name="order_reference" maxlength="150"></label>
+      <label>Versanddatum <input name="shipped_on" type="date"></label>
+      <label>Sendungsverfolgungslink (HTTPS) <input name="tracking_url" type="url" maxlength="500" placeholder="https://..."></label>
+    </div>
+    <div class="actions"><button id="shipmentSave" class="primary" type="submit">Versanddaten speichern</button></div>
+    <p id="shipmentStatus" class="small muted" role="status" aria-live="polite"></p>
+  </form>
+</div>
       <div class="panel"><h2>Einkaufschargen</h2><div class="table-wrap"><table><thead><tr><th>Datum</th><th>Artikel</th><th>Gekauft</th><th>Verfuegbar</th><th>Gesamtkosten</th><th>Quelle</th></tr></thead><tbody id="lotsRows"></tbody></table></div></div>
     </section>
 
