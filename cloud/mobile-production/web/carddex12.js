@@ -111,7 +111,7 @@ function bind({onUseCard}={}){
  }
  function clearDetail(){detailGeneration++;detailAbort?.abort();selectedCard=null;detail.hidden=true;detailImage.hidden=true;detailImage.removeAttribute('src');detailMeta.replaceChildren();}
  async function lookUpSetName(card,language,label,revision){
-  if(!card.id||!label.isConnected)return;
+  if(!card.id)return;
   const key=language+'/'+card.id;
   if(!setNameCache.has(key)){
    const task=limitLookup(async()=>{
