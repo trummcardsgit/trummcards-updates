@@ -86,10 +86,16 @@ try{
  await assert.rejects(()=>c.query("insert into public.tc_sale_shipments (sale_id,owner_id) values ($1,$2)",['723e4567-e89b-12d3-a456-426614174999',owner]),/foreign key/);
  const bookedAfterShipping=(await c.query('select qty,cogs_total,status from public.tc_sales where id=$1',[saleId])).rows[0];
  assert.deepEqual(bookedAfterShipping,{qty:4,cogs_total:'55.00',status:'booked'});
+ // Platform commission profiles are separate user-specific configuration, not ledger mutations.
+ const feeProfile=(await c.query("insert into public.tc_platform_fee_profiles(owner_id,platform,percent_rate,fixed_eur,include_shipping) values($1,'eBay',10.00,0.35,true) returning id",[owner])).rows[0].id;
+ await c.query('update public.tc_platform_fee_profiles set fixed_eur=0.50 where id=$1',[feeProfile]);
+ assert.equal(Number((await c.query('select fixed_eur from public.tc_platform_fee_profiles where id=$1',[feeProfile])).rows[0].fixed_eur),0.5);
  const cloudBackupV2=(await c.query('select public.tc_backup_snapshot() as snapshot')).rows[0].snapshot;
  assert.equal(cloudBackupV2.format,'trummcards-cloud-backup-v2','Shipping backup must be v2');
  assert.equal(cloudBackupV2.tables.tc_sale_shipments.length,1,'Shipping included in encrypted backup source');
  assert.equal(cloudBackupV2.tables.tc_sale_shipments[0].tracking_number,'TEST-123');
+ assert.equal(cloudBackupV2.tables.tc_platform_fee_profiles.length,1,'Private platform fee rules included in backup v2');
+ assert.equal(cloudBackupV2.tables.tc_platform_fee_profiles[0].platform,'eBay');
  const left=await c.query('select id,available_qty,allocated_cost from public.tc_purchase_lots where product_id=$1',[product]);
  const map=new Map(left.rows.map(row=>[row.id,row]));
  assert.equal(toNum(map.get(lot1).available_qty),0);
@@ -120,13 +126,15 @@ try{
  // A different authenticated account is not allowed to inspect/write even with the valid IDs.
  await c.query("select set_config('request.jwt.claim.sub',$1,false)",[stranger]);
  assert.equal((await c.query('select public.tc_is_authorized() as authorized')).rows[0].authorized,false);
- for(const name of ['tc_products','tc_purchase_lots','tc_sales','tc_sale_shipments','tc_product_images']){
+ for(const name of ['tc_products','tc_purchase_lots','tc_sales','tc_sale_shipments','tc_platform_fee_profiles','tc_product_images']){
    const res=await c.query('select count(*)::int as n from public.'+name);
    assert.equal(res.rows[0].n,0,'Foreign account leaked '+name);
  }
  assert.equal((await c.query('select count(*)::int as n from storage.objects')).rows[0].n,0);
  await assert.rejects(()=>c.query("insert into public.tc_sale_shipments(sale_id,owner_id) values ($1,$2)",[saleId,stranger]),/row-level security|permission denied|foreign key/i,'Foreign account cannot add shipment to owner sale');
  assert.equal((await c.query("update public.tc_sale_shipments set shipping_status='zugestellt' where sale_id=$1 returning sale_id",[saleId])).rowCount,0,'Foreign account cannot edit shipment');
+ await assert.rejects(()=>c.query("insert into public.tc_platform_fee_profiles(owner_id,platform,percent_rate) values($1,'eBay',99)",[stranger]),/row-level security|permission denied/i);
+ assert.equal((await c.query("update public.tc_platform_fee_profiles set percent_rate=99 where id=$1 returning id",[feeProfile])).rowCount,0,'Foreign account cannot change fees');
  await assert.rejects(()=>purchase('2026-10-13',1,'10.00','623e4567-e89b-12d3-a456-426614174777'),/Nicht autorisiert/);
  await c.query('reset role');
  const totals=await c.query('select (select count(*) from public.tc_products) products,(select count(*) from public.tc_purchase_lots) lots,(select count(*) from public.tc_sales) sales');
