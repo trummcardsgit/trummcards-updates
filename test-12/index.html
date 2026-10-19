@@ -1,0 +1,370 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#101828">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="TrummCards Cloud">
+<meta name="description" content="TrummCards Cloud TEST 1.2 – synchronisierte Pokémon-Karten-Lagerverwaltung auf Windows, iPhone und Android.">
+<title>TrummCards · Cloud TEST 1.2</title>
+<link rel="icon" type="image/webp" href="./logo.webp">
+<link rel="apple-touch-icon" href="./icon-180.png">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="stylesheet" href="./styles.css?v=1.2.0-test.1">
+<script src="./catalog11.js?v=1.2.0-test.1" defer></script>
+<script src="./catalog11-ui.js?v=1.2.0-test.1" defer></script>
+<script src="./sets11-ui.js?v=1.2.0-test.1" defer></script>
+<script src="./market11-ui.js?v=1.2.0-test.1" defer></script>
+<script src="./fees11.js?v=1.2.0-test.1" defer></script>
+<script src="./fees11-ui.js?v=1.2.0-test.1" defer></script>
+<script src="./finance11.js?v=1.2.0-test.1" defer></script>
+<script src="./finance11-ui.js?v=1.2.0-test.1" defer></script>
+<script src="./cash11.js?v=1.2.0-test.1" defer></script>
+<script src="./cash11-ui.js?v=1.2.0-test.1" defer></script>
+<script src="./shipping11.js?v=1.2.0-test.1" defer></script>
+<script src="./shipping11-ui.js?v=1.2.0-test.1" defer></script>
+<script src="./carddex12.js?v=1.2.0-test.1" defer></script>
+<script src="./vinted12.js?v=1.2.0-test.1" defer></script>
+<script src="./app.js?v=1.2.0-test.1" defer></script>
+</head>
+<body>
+<div id="shell">
+  <header class="topbar">
+    <div class="brand"><img class="brand-logo" src="./logo.webp" width="60" height="60" alt="TrummCards Logo"><div class="wordmark"><b>TrummCards</b><small>CLOUD <span>TEST 1.2</span> · EST. 2026</small></div></div>
+    <div class="connection"><span id="connDot" class="dot idle"></span><span id="connLabel">Verbinde …</span></div>
+  </header>
+  <main>
+    <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+    <section id="loginScreen" class="login-screen" hidden>
+      <div class="login-art"><img class="login-logo" src="./logo.webp" alt="TrummCards"><strong>Dein Lager.<br>Überall.</strong><p>Ein Bestand für PC, iPhone und Android.</p></div>
+      <div class="panel auth-panel">
+        <div class="micro-label">TRUMMCARDS CLOUD</div>
+        <h1>Willkommen zurück</h1>
+        <p class="subtle">Melde dich mit deinem TrummCards-TEST-Konto an. Lagerdaten werden später zwischen Windows und PWA synchronisiert. Aktuell sind Buchungen zum Schutz deiner Daten gesperrt.</p>
+        <form id="loginForm" autocomplete="on">
+          <label for="email">E-Mail-Adresse</label><input type="email" id="email" name="email" autocomplete="username" inputmode="email" required placeholder="name@beispiel.at">
+          <label for="password">Passwort</label><input type="password" id="password" name="password" autocomplete="current-password" required placeholder="Dein Supabase-Passwort">
+          <button class="primary full" type="submit" id="signInBtn">Sicher anmelden <span>→</span></button>
+        </form>
+        <p class="tiny"><a href="./reset-password.html" style="color:#f3d28e">Passwort vergessen? Hier zurücksetzen</a></p>
+        <p class="tiny">Nur das für TrummCards freigeschaltete Konto erhält Zugriff. Keine Registrierung in dieser TEST-Version.</p>
+      </div>
+    </section>
+    <div id="appScreen" hidden>
+      <div class="test-note production-preview"><span>PRODUKTIONSVORSCHAU 1.2.0-test.1</span> Die PWA verbindet sich ausschließlich mit der neuen leeren Datenbank <b>TrummCards Production</b>. Artikelanlage, Ein- und Verkäufe sowie Bilduploads bleiben bis zur Freigabe gesperrt.</div>
+      <div class="topactions"><div><span class="eyebrow" id="welcomeText">DEINE SAMMLUNG</span><h1 id="screenTitle">Übersicht</h1></div><button class="icon-btn" id="refreshBtn" aria-label="Jetzt synchronisieren" title="Synchronisieren">↻</button></div>
+      <div id="pendingBanner" class="pending" hidden></div>
+
+      <section id="page-home" class="page">
+        <div class="stats-grid">
+          <div class="stat"><span>Artikel</span><strong id="statProducts">0</strong><small>erfasst</small></div>
+          <div class="stat"><span>Lagerbestand</span><strong id="statPieces">0</strong><small>Stück verfügbar</small></div>
+          <div class="stat"><span>Lagerwert</span><strong id="statValue">0,00 €</strong><small>FIFO-Restwert</small></div>
+          <div class="stat"><span>Gewinn</span><strong id="statProfit">0,00 €</strong><small>gebuchte Verkäufe</small></div>
+        </div>
+        <div class="sectionhead"><h2>Dein Lager</h2><button class="text-button" data-go="article">+ Artikel</button></div>
+        <label class="searchbox"><span>⌕</span><input id="search" aria-label="Artikel suchen" placeholder="Karte, Set, Nummer, Lagerplatz suchen …" autocomplete="off" type="search"></label>
+        <div class="two-fields inventory-filters" role="search" aria-label="Lagerfilter">
+          <div class="field"><label for="inventoryLanguageFilter">Sprache</label><select id="inventoryLanguageFilter"><option value="">Alle Sprachen</option></select></div>
+          <div class="field"><label for="inventoryStockFilter">Bestand</label><select id="inventoryStockFilter"><option value="all">Alle</option><option value="available">Auf Lager</option><option value="empty">Nicht auf Lager</option></select></div>
+          <div class="field"><label for="inventorySort">Sortierung</label><select id="inventorySort"><option value="name">Name A–Z</option><option value="set">Set A–Z</option><option value="stock">Meiste Stück</option><option value="location">Lagerplatz</option></select></div>
+        </div>
+        <p class="subtle" id="inventoryFilterCount" aria-live="polite"></p>
+        <div id="productsList" class="stack"></div>
+      </section>
+
+      <section id="page-article" class="page" hidden>
+        <div class="panel catalog-panel"><div class="micro-label">POKÉMON KATALOG · TCGDEX</div>
+          <h2>Karte automatisch suchen</h2>
+          <form id="catalogSearchForm" class="catalog-search-form">
+            <div class="field"><label for="catalogSearchQuery">Pokémon / Kartenname</label><input id="catalogSearchQuery" type="search" minlength="2" maxlength="100" required placeholder="z.B. Pikachu"></div>
+            <div class="field"><label for="catalogSearchLanguage">Sprache</label><select id="catalogSearchLanguage"><option value="de">Deutsch</option><option value="en">Englisch</option><option value="ja">Japanisch</option><option value="it">Italienisch</option></select></div>
+            <button class="secondary full" type="submit">Pokémon-Karte suchen</button>
+          </form>
+          <section class="catalog-set-browser" aria-label="Pokémon-Sets durchsuchen">
+  <h3>Oder direkt ein Pokémon-Set auswählen</h3>
+  <form id="catalogSetsForm" class="catalog-search-form">
+    <label>Set-Name (optional) <input id="catalogSetQuery" type="search" maxlength="100" placeholder="z.B. 151, Basis-Set"></label>
+    <button type="submit">Sets anzeigen</button>
+  </form>
+  <p id="catalogSetStatus" class="small muted" role="status" aria-live="polite">Wähle oben eine Katalogsprache und klicke auf „Sets anzeigen“.</p>
+  <div id="catalogSetResults" class="catalog-set-results"></div>
+  <button id="catalogSetMore" type="button" hidden>Weitere Sets laden</button>
+  <section id="catalogSetDetail" class="catalog-set-detail" hidden aria-label="Karten des ausgewählten Sets">
+    <h3 id="catalogSetTitle">Karten im Set</h3>
+    <label>Karte im Set suchen <input id="catalogSetCardFilter" type="search" maxlength="100" placeholder="Name oder Kartennummer"></label>
+    <p id="catalogSetCardStatus" class="small muted" role="status" aria-live="polite"></p>
+    <div id="catalogSetCards" class="catalog-results"></div>
+    <div class="catalog-page-actions">
+      <button id="catalogSetPrev" type="button" disabled>Vorherige Karten</button>
+      <span id="catalogSetPageLabel" aria-live="polite"></span>
+      <button id="catalogSetNext" type="button" disabled>Weitere Karten</button>
+    </div>
+  </section>
+</section>
+          <p class="subtle">Wähle einen Treffer, um Set, Nummer und Seltenheit einzutragen. Das Katalogbild wird beim Import automatisch verknüpft und im Lager angezeigt. Eigene Fotos haben Vorrang und bleiben privat.</p>
+          <p id="catalogSearchStatus" class="subtle" role="status" aria-live="polite"></p>
+          <div id="catalogSearchResults" class="catalog-results"></div>
+          <div class="catalog-page-actions" aria-label="Weitere Pokémon-Suchtreffer">
+            <button type="button" id="catalogSearchPrev" disabled>← Vorherige Treffer</button>
+            <span id="catalogSearchPageLabel" aria-live="polite">Noch keine Suche</span>
+            <button type="button" id="catalogSearchNext" disabled>Weitere 20 Treffer →</button>
+          </div>
+          <div id="catalogSelected" class="catalog-selected" hidden><img id="catalogSelectedImage" alt="Katalogbild-Vorschau" hidden><span id="catalogSelectedInfo"></span></div>
+        </div>
+        <div class="panel"><div class="micro-label">KARTENVERWALTUNG</div><h2 id="articleTitle">Artikel anlegen</h2>
+          <form id="articleForm"><input type="hidden" name="id"><input type="hidden" name="catalog_card_id"><input type="hidden" name="catalog_image_url">
+            <div class="field"><label>Artikelname *</label><input name="name" required maxlength="300" placeholder="z. B. Delta Herrschaft"></div>
+            <div class="two-fields"><div class="field"><label>Artikelnummer / SKU</label><input name="sku" maxlength="120" placeholder="z. B. PKM-001"></div><div class="field"><label>Set</label><input name="set_name" maxlength="150" placeholder="z. B. Promokarte"></div></div>
+            <div class="two-fields"><div class="field"><label>Sprache</label><select name="language"><option>Deutsch</option><option>Englisch</option><option>Japanisch</option><option>Italienisch</option><option>Andere</option></select></div><div class="field"><label>Zustand</label><select name="card_condition"><option value="">Bitte wählen</option><option>Near Mint</option><option>Excellent</option><option>Good</option><option>Played</option><option>Poor</option><option>Sealed</option></select></div></div>
+            <div class="two-fields"><div class="field"><label>Kartennummer</label><input name="card_number" maxlength="60" placeholder="025/165"></div><div class="field"><label>Seltenheit</label><input name="rarity" maxlength="100" placeholder="Illustration Rare"></div></div>
+            <div class="two-fields"><div class="field"><label>Variante</label><select name="card_variant"><option value="">Standard</option><option>Holo</option><option>Reverse Holo</option><option>Full Art</option><option>Illustration Rare</option><option>Special Illustration Rare</option><option>1st Edition</option><option>Sonstige</option></select></div><div class="field"><label>Lagerplatz</label><input name="storage_location" maxlength="160" placeholder="Box 2 / Fach 4"></div></div>
+            <div class="two-fields"><div class="field"><label>Grading</label><select name="grading_company"><option value="">Nicht gegradet</option><option>PSA</option><option>CGC</option><option>BGS</option><option>ACE</option><option>Andere</option></select></div><div class="field"><label>Bewertung</label><input name="grading_grade" maxlength="30" placeholder="9.5"></div></div>
+            <div class="field"><label>Zertifikatsnummer</label><input name="grading_certificate" maxlength="120" placeholder="Optional"></div>
+            <div class="field"><label>Marktwert-Richtwert (EUR)</label><input name="market_price_eur" inputmode="decimal" placeholder="z.B. 14,90"></div>
+            <input type="hidden" name="market_price_source"><input type="hidden" name="market_price_checked_at">
+            <p class="subtle" id="marketPriceStatus" role="status" aria-live="polite">Noch kein Marktpreis.</p>
+            <div class="field"><label>Notiz</label><textarea name="note" rows="2" maxlength="2000" placeholder="Optional"></textarea></div>
+            <div class="article-photo-field">
+              <div class="micro-label">ARTIKELBILD · OPTIONAL</div>
+              <p class="subtle">Fotografiere die Karte direkt oder wähle ein Bild. Das Bild wird beim Speichern mit dem Artikel im privaten Cloud-Speicher gesichert – auch ohne Einkauf.</p>
+              <div class="two-fields photo-buttons">
+                <label class="file-button">📷 Kamera öffnen<input type="file" name="articleCamera" accept="image/*" capture="environment"></label>
+                <label class="file-button">▧ Bild auswählen<input type="file" name="articleGallery" accept="image/*"></label>
+              </div>
+              <div class="article-photo-preview"><img id="articleImagePreview" alt="Vorschau des Artikelbildes" hidden><span id="articleImageSelection">Noch kein neues Bild ausgewählt.</span></div>
+            </div>
+            <label class="quick-entry-option"><input type="checkbox" name="after_save_purchase"> Direkt danach den Einkauf für diese Karte erfassen</label>
+            <button type="submit" class="primary full" id="articleSubmit">Artikel und Bild speichern</button>
+            <button type="button" class="secondary full" data-go="home">Zurück zum Lager</button>
+          </form>
+        </div>
+      </section>
+
+      <section id="page-purchase" class="page" hidden>
+        <div class="panel booking-panel"><div class="micro-label">EINGANG · TEST 1.2 · VORSCHAU 1.2.0-test.1</div><h2>Einkauf erfassen</h2>
+          <p class="subtle">Erfasse deinen Einkauf. Einzel- und Gesamtpreis werden automatisch berechnet.</p>
+          <form id="purchaseForm" class="booking-form">
+            <fieldset class="booking-group">
+              <legend><span class="group-number">01</span> Artikel &amp; Menge</legend>
+              <div class="field"><label for="purchaseProduct">Artikel *</label><select id="purchaseProduct" name="product" required><option value="">Artikel wählen</option></select></div>
+              <div class="booking-grid booking-grid-primary">
+                <div class="field"><label for="purchaseDate">Datum *</label><input id="purchaseDate" name="date" type="date" required></div>
+                <div class="field"><label for="purchaseQty">Stückzahl *</label><input id="purchaseQty" name="qty" inputmode="numeric" type="number" step="1" min="1" max="1000000" required value="1"></div>
+              </div>
+            </fieldset>
+            <fieldset class="booking-group">
+              <legend><span class="group-number">02</span> Einkaufspreis</legend>
+              <div class="booking-grid booking-grid-money">
+                <div class="field"><label for="purchaseUnit">Einzelpreis *</label><div class="money-input"><input id="purchaseUnit" name="unit" type="text" inputmode="decimal" value="0,00" required autocomplete="off"><span aria-hidden="true">€</span></div></div>
+                <div class="field"><label for="purchaseTotal">Gesamtpreis *</label><div class="money-input"><input id="purchaseTotal" name="total" type="text" inputmode="decimal" value="0,00" required autocomplete="off"><span aria-hidden="true">€</span></div></div>
+              </div>
+              <div class="field"><label for="purchaseExtra">Zusatzkosten gesamt</label><div class="money-input"><input id="purchaseExtra" name="extra" type="text" inputmode="decimal" value="0,00" autocomplete="off"><span aria-hidden="true">€</span></div></div>
+            </fieldset>
+            <fieldset class="booking-group">
+              <legend><span class="group-number">03</span> Weitere Angaben</legend>
+              <div class="field"><label for="purchaseSource">Bezugsquelle</label><input id="purchaseSource" name="source" placeholder="z. B. Cardmarket oder eBay" autocomplete="off"></div>
+              <div class="field"><label for="purchaseNote">Notiz</label><input id="purchaseNote" name="note" placeholder="Optional" autocomplete="off"></div>
+            </fieldset>
+            <div id="purchasePreview" class="preview">Stückzahl und Preise eingeben.</div>
+            <button class="primary full booking-submit" type="submit">Einkauf buchen <span>→</span></button>
+          </form>
+        </div>
+      </section>
+
+      <section id="page-sale" class="page" hidden>
+        <div class="panel booking-panel"><div class="micro-label">VERKAUF · TEST 1.2 · VORSCHAU 1.2.0-test.1</div><h2>Verkauf erfassen</h2>
+          <p class="subtle">Der Lagerbestand und FIFO-Einstand werden nach der Buchung automatisch aktualisiert.</p>
+          <form id="saleForm" class="booking-form">
+            <fieldset class="booking-group">
+              <legend><span class="group-number">01</span> Artikel &amp; Menge</legend>
+              <div class="field"><label for="saleProduct">Artikel mit Bestand *</label><select id="saleProduct" name="product" required><option value="">Artikel mit Bestand wählen</option></select></div>
+              <div class="booking-grid booking-grid-primary">
+                <div class="field"><label for="saleDate">Datum *</label><input id="saleDate" name="date" type="date" required></div>
+                <div class="field sale-qty-field"><label for="saleQty">Stückzahl *</label>
+                  <div class="qty-stepper">
+                    <button id="saleQtyMinus" type="button" aria-label="Stückzahl verringern">−</button>
+                    <input id="saleQty" name="qty" type="number" step="1" min="1" max="1000000" inputmode="numeric" required value="1">
+                    <button id="saleQtyPlus" type="button" aria-label="Stückzahl erhöhen">+</button>
+                  </div>
+                </div>
+              </div>
+            </fieldset>
+            <fieldset class="booking-group">
+              <legend><span class="group-number">02</span> Verkaufspreis &amp; Kosten</legend>
+              <div class="field"><label for="salePrice">Verkaufspreis gesamt *</label><div class="money-input"><input id="salePrice" name="price" type="text" inputmode="decimal" value="0,00" required autocomplete="off"><span aria-hidden="true">€</span></div></div>
+              <div class="booking-grid booking-grid-money">
+                <div class="field"><label for="saleShippingIncome">Versand-Einnahmen</label><div class="money-input"><input id="saleShippingIncome" name="shippingIncome" type="text" inputmode="decimal" value="0,00" autocomplete="off"><span aria-hidden="true">€</span></div></div>
+                <div class="field"><label for="saleShippingCost">Versandkosten</label><div class="money-input"><input id="saleShippingCost" name="shippingCost" type="text" inputmode="decimal" value="0,00" autocomplete="off"><span aria-hidden="true">€</span></div></div>
+                <div class="field"><label for="saleFees">Plattform-Gebühren</label><div class="money-input"><input id="saleFees" name="fees" type="text" inputmode="decimal" value="0,00" autocomplete="off"><span aria-hidden="true">€</span></div></div>
+                <div class="field"><label for="saleOther">Weitere Kosten</label><div class="money-input"><input id="saleOther" name="other" type="text" inputmode="decimal" value="0,00" autocomplete="off"><span aria-hidden="true">€</span></div></div>
+              </div><button type="button" class="secondary full" id="feeSuggest">Gebühren aus Profil berechnen</button><p class="subtle" id="feeSuggestStatus" role="status"></p>
+            </fieldset>
+            <fieldset class="booking-group">
+              <legend><span class="group-number">03</span> Weitere Angaben</legend>
+              <div class="field"><label for="salePlatform">Plattform</label><select id="salePlatform" name="platform"><option>eBay</option><option>Cardmarket</option><option>Vinted</option><option>Whatnot</option><option>Willhaben</option><option>Privat</option><option>Sonstige</option></select></div>
+              <div class="field"><label for="saleNote">Notiz</label><input id="saleNote" name="note" placeholder="Optional" autocomplete="off"></div>
+            </fieldset>
+            <div class="preview" id="salePreview">Artikel, Stückzahl und Preis wählen.</div>
+            <button class="primary full booking-submit" type="submit">Verkauf buchen <span>→</span></button>
+          </form>
+        </div>
+      </section>
+
+      <section id="page-sales" class="page" hidden>
+        <div class="sectionhead"><h2>Verkäufe & Einkäufe</h2></div>
+        <div id="salesList" class="stack"></div>
+        <div class="panel shipment-panel" id="shipmentPanel">
+  <h2>Versandverwaltung</h2>
+  <p class="small muted">Versanddaten werden getrennt von der FIFO-Verkaufsbuchung gespeichert und zwischen Windows und Handy synchronisiert. Keine Käuferadresse erforderlich.</p>
+  <form id="shipmentForm">
+    <div class="two-fields shipment-grid">
+      <label>Verkauf * <select id="shipmentSale" name="sale_id" required><option value="">Gebuchten Verkauf auswählen</option></select></label>
+      <label>Status <select name="shipping_status"><option value="offen">Offen</option><option value="verpackt">Verpackt</option><option value="versendet">Versendet</option><option value="zugestellt">Zugestellt</option></select></label>
+      <label>Versanddienstleister <input name="carrier" maxlength="100" placeholder="z.B. Österreichische Post"></label>
+      <label>Sendungsnummer <input name="tracking_number" maxlength="150"></label>
+      <label>Bestellnummer / Referenz <input name="order_reference" maxlength="150"></label>
+      <label>Versanddatum <input name="shipped_on" type="date"></label>
+      <label>Sendungsverfolgungslink (HTTPS) <input name="tracking_url" type="url" maxlength="500" placeholder="https://..."></label>
+    </div>
+    <div class="actions"><button id="shipmentSave" class="primary" type="submit">Versanddaten speichern</button></div>
+    <p id="shipmentStatus" class="small muted" role="status" aria-live="polite"></p>
+  </form>
+</div>
+        <h2 class="subheading">Einkaufschargen</h2><div id="lotsList" class="stack"></div>
+      </section>
+
+      <section id="page-photos" class="page" hidden>
+        <div class="panel"><div class="micro-label">FOTOS</div><h2>Artikelbilder</h2><p class="subtle">Mache ein Foto mit deinem Handy oder wähle ein Bild. Bilder sind ausschließlich in deinem privaten Cloud-Speicher zugänglich.</p>
+          <form id="photoForm"><div class="field"><label>Einkaufslos *</label><select name="lot" required><option value="">Einkauf wählen</option></select></div>
+            <div class="two-fields photo-buttons"><label class="file-button">📷 Foto aufnehmen<input type="file" name="camera" accept="image/*" capture="environment"></label><label class="file-button">▧ Bild auswählen<input type="file" name="gallery" accept="image/*"></label></div>
+            <div id="photoSelection" class="image-selection">Noch kein Bild ausgewählt.</div>
+            <button class="primary full" type="submit">Bild sicher hochladen</button>
+          </form>
+        </div>
+        <div class="sectionhead"><h2>Gespeicherte Bilder</h2></div><div id="photosList" class="photo-grid"></div>
+      </section>
+
+      <section id="page-finance" class="page" hidden>
+        <div class="panel">
+          <div class="micro-label">VERKAUF & FINANZEN</div><h2>Finanzcenter</h2>
+          <p class="subtle">Umsatz, Gebühren und FIFO-Gewinn. Buchung und Zahlung sind steuerlich nicht immer dasselbe.</p>
+          <div class="field"><label for="financePeriod">Zeitraum</label><select id="financePeriod"><option value="all">Gesamter Zeitraum</option><option value="year">Dieses Jahr</option><option value="month">Dieser Monat</option></select></div>
+<div class="panel fee-panel" id="feePanel">
+<h3>Gebührenprofile für Verkaufsplattformen</h3>
+<p class="small muted">Eigene Schätzwerte eintragen; keine offiziellen Gebührensätze vorausgesetzt. Beim Verkauf wird der Vorschlag nur nach Klick übernommen und bleibt bearbeitbar.</p>
+<form id="feeProfileForm" class="fee-profile-form">
+<div class="grid">
+<label>Plattform <select name="platform"><option>eBay</option><option>Cardmarket</option><option>Vinted</option><option>Whatnot</option><option>Privat</option><option>Willhaben</option><option>Sonstige</option></select></label>
+<label>Prozent auf Verkauf (und optional Versand) <input name="percent_rate" inputmode="decimal" value="0,00"></label>
+<label>Fixgebühr EUR <input name="fixed_eur" inputmode="decimal" value="0,00"></label>
+<label><input name="include_shipping" type="checkbox" checked> Versand-Einnahmen bei Prozenten mitrechnen</label>
+</div>
+<button type="submit" id="feeProfileSave" class="secondary">Gebührenprofil speichern</button>
+<p id="feeProfileStatus" role="status" aria-live="polite"></p>
+</form><div id="feeProfileList" class="fee-profile-list"></div></div>
+          <section class="cash-panel" id="cashPanel" aria-label="Zahlungseingänge und Betriebsausgaben">
+<h3>Geldfluss & Betriebsausgaben</h3>
+<p class="small muted">Nur tatsächlich bezahlte oder erhaltene Beträge eintragen. Verkaufs-/Einkaufsbuchungen erzeugen <strong>keine</strong> automatischen Zahlungen, damit nichts doppelt gezählt wird. Zahlungstermine, Teilzahlungen, Plattformgebühren und weitere Ausgaben lassen sich getrennt dokumentieren. Dies ist eine Arbeitshilfe, keine Steuererklärung.</p>
+<form id="cashEntryForm">
+ <input type="hidden" name="edit_id">
+ <div class="cash-grid">
+  <label>Zahlungsdatum * <input type="date" name="payment_on" required></label>
+  <label>Bewegung * <select name="direction"><option value="income">Einnahme</option><option value="expense">Ausgabe</option></select></label>
+  <label>Kategorie * <select name="category" required></select></label>
+  <label>Betrag EUR * <input name="amount_eur" inputmode="decimal" required placeholder="z.B. 20,50"></label>
+  <label>Bezug zu Verkauf oder Einkauf (optional) <select name="relation"><option value="">Keine Zuordnung</option></select></label>
+  <label>Belegnummer / Referenz <input name="document_reference" maxlength="160" placeholder="z.B. Rechnung 2026-14"></label>
+  <label class="cash-description">Beschreibung <input name="description" maxlength="500" placeholder="z.B. Verpackungsmaterial"></label>
+ </div>
+ <div class="actions"><button type="submit" id="cashSave">Zahlung speichern</button><button type="button" id="cashCancel" hidden>Bearbeitung abbrechen</button></div>
+ <p id="cashEntryStatus" class="small muted" role="status" aria-live="polite"></p>
+</form>
+<div class="cash-summary-row">
+ <label>Jahr der Zahlung <select id="cashYear"><option value="">Alle Jahre</option></select></label>
+ <button type="button" id="cashExport">Zahlungen als CSV exportieren</button>
+</div>
+<div id="cashSummary" class="finance-metrics" aria-live="polite"></div>
+<p class="small muted">Die Übersicht zeigt nur erfasste Geldflüsse, nicht automatisch den steuerlichen Gewinn. Bei Retouren und Rückzahlungen eine eigene Gegenbuchung eintragen; Buchungen nicht unbemerkt doppelt erfassen. Steuerliche Sonderregeln, Umsatzsteuer und Abschreibungen gesondert prüfen.</p>
+<div id="cashEntries" class="cash-entries"></div>
+</section>
+<div id="financeSummary" class="finance-metrics"></div>
+          <p id="financeStatus" class="subtle" role="status" aria-live="polite"></p>
+          <h3>Umsatz je Monat</h3><div id="financeMonths" class="finance-bars"></div>
+          <h3>Gewinn je Verkaufsplattform</h3><div id="financePlatforms" class="finance-bars"></div>
+          <button id="financeExport" type="button" class="secondary full">CSV für Excel exportieren</button>
+          <button type="button" class="secondary full" data-go="home">Zum Lager</button>
+        </div>
+      </section>
+      <section id="page-carddex" class="page" hidden><div class="panel dex-panel">
+<div class="dex-head"><div><span class="dex-eyebrow">POKÉMON KARTENKATALOG · TCGDEX</span><h2>KartenDex</h2><p>Karten und komplette Sets nachschlagen – unabhängig vom Lager, ohne einen Artikel anzulegen.</p></div></div>
+<form id="dexSearchForm" class="dex-form">
+ <label>Pokémon / Kartenname<input id="dexQuery" type="search" required minlength="2" maxlength="100" placeholder="z. B. Pikachu, Glurak"></label>
+ <label>Sprache<select id="dexLanguage"><option value="de">Deutsch</option><option value="en">Englisch</option><option value="ja">Japanisch</option><option value="it">Italienisch</option></select></label>
+ <button type="submit" class="dex-action">Karten suchen</button>
+</form>
+<p id="dexSearchStatus" role="status" class="dex-status">Kartenname eingeben oder unten ein Set auswählen.</p>
+<div id="dexResults" class="dex-grid"></div>
+<div class="dex-pager"><button type="button" id="dexPrev" disabled>← Vorherige</button><span id="dexPageLabel">Noch keine Suche</span><button type="button" id="dexNext" disabled>Weitere 20 →</button></div>
+<div id="dexDetail" class="dex-detail" hidden>
+ <img id="dexDetailImage" hidden alt="Kartenbild aus TCGdex">
+ <div class="dex-detail-text"><h3 id="dexDetailTitle"></h3><div id="dexDetailMeta"></div>
+ <button type="button" class="dex-action" id="dexToArticle">Diese Karte als Artikel übernehmen</button>
+ <p class="dex-status">Katalogbilder sind externe Vorschaubilder. Für Verkaufsinserate eigene Fotos verwenden.</p></div>
+</div>
+<hr class="dex-rule">
+<h3>Pokémon-Sets durchsuchen</h3>
+<form id="dexSetForm" class="dex-form">
+ <label>Set-Name (optional)<input id="dexSetQuery" type="search" maxlength="100" placeholder="z. B. 151, Basis-Set"></label>
+ <button type="submit" class="dex-action">Sets anzeigen</button>
+</form>
+<p id="dexSetStatus" role="status" class="dex-status"></p>
+<div id="dexSets" class="dex-set-grid"></div>
+<button type="button" id="dexMoreSets" hidden>Weitere Sets laden</button>
+<p id="dexSetCardsStatus" role="status" class="dex-status"></p>
+<div id="dexSetCards" class="dex-grid"></div>
+<div class="dex-pager"><button type="button" id="dexSetPrev" disabled>← Karten</button><span>Set-Karten</span><button type="button" id="dexSetNext" disabled>Weitere Karten →</button></div>
+</div></section>
+      <section id="page-more" class="page" hidden>
+        <div class="panel"><div class="micro-label">KONTO & SYNCHRONISIERUNG</div><h2>Cloud TEST 1.2</h2>
+          <div class="setting-row"><span>Angemeldet als</span><b id="accountEmail">–</b></div>
+          <div class="setting-row"><span>Datenbank</span><b>Supabase TEST 1.2</b></div>
+          <div class="setting-row"><span>Letzte Aktualisierung</span><b id="lastUpdated">–</b></div>
+          <p class="subtle">Die App aktualisiert den Bestand etwa alle 12 Sekunden, sobald sie im Vordergrund ist. Beim Zurückkehren wird zusätzlich synchronisiert. Für Buchungen wird Internet benötigt.</p>
+          <button class="secondary full" type="button" id="moreRefresh">Jetzt synchronisieren</button>
+          <button class="danger full" type="button" id="signOutBtn">Abmelden</button>
+        </div>
+        <div class="panel"><h2>Auswertungen</h2><button class="secondary full" type="button" data-go="finance">Finanzcenter & CSV-Export öffnen</button></div>
+        <div class="panel"><h2>Zum Home-Bildschirm</h2><p class="subtle"><b>iPhone:</b> In Safari auf „Teilen“ tippen und „Zum Home-Bildschirm“ wählen.<br><b>Android:</b> In Chrome im Menü auf „App installieren“ oder „Zum Startbildschirm hinzufügen“ tippen.</p></div>
+      </section>
+    </div>
+  </main>
+  
+<dialog id="vintedDialog" class="vinted-dialog" aria-label="Vinted-Inserat vorbereiten">
+  <div class="vinted-dialog-head"><div><span class="dex-eyebrow">TRUMMCARDS · INSERATSVORLAGE</span><h2>Auf Vinted inserieren</h2></div><button id="vintedClose" type="button" aria-label="Schließen">✕</button></div>
+  <p class="dex-status">Erstelle den Inseratstext aus deinen Kartendaten. Es wird nichts automatisch auf Vinted hochgeladen.</p>
+  <label>Artikel aus deinem Lager<select id="vintedProduct"></select></label>
+  <div class="vinted-preview"><img id="vintedOwnImage" alt="Eigenes Kartenfoto" hidden><p>Verwende auf Vinted eigene Fotos deiner tatsächlichen Karte, keine fremden Katalogbilder.</p></div>
+  <label>Verkaufsüberschrift<input id="vintedTitle" type="text" maxlength="100" autocomplete="off"></label>
+  <button id="vintedCopyTitle" type="button" class="dex-action">Überschrift kopieren</button>
+  <label>Beschreibung<textarea id="vintedDescription" rows="8"></textarea></label>
+  <button id="vintedCopyDescription" type="button" class="dex-action">Beschreibung kopieren</button>
+  <p id="vintedStatus" role="status" class="dex-status"></p>
+  <a class="vinted-link" href="https://www.vinted.at/" target="_blank" rel="noopener noreferrer">Vinted öffnen ↗</a>
+</dialog>
+
+  <dialog id="imageViewer" class="image-dialog"><button id="closeImageViewer" class="image-dialog-close" type="button" aria-label="Bild schließen">✕</button><img id="viewerImage" alt="Großes Artikelbild"><p id="viewerCaption"></p></dialog>
+  <nav id="bottomNav" class="bottom-nav" aria-label="Navigation" hidden>
+    <button data-go="home" class="active" type="button"><span>▦</span>Lager</button>
+    <button data-go="purchase" type="button"><span>⊕</span>Einkauf</button>
+    <button data-go="sale" type="button"><span>↗</span>Verkauf</button>
+    <button data-go="carddex" type="button"><span>◈</span>KartenDex</button>
+    <button data-go="photos" type="button"><span>▧</span>Bilder</button>
+    <button data-go="more" type="button"><span>☰</span>Mehr</button>
+  </nav>
+  <footer>TRUMMCARDS · EST. 2026 <span>CLOUD TEST 1.2 · RELEASE VORSCHAU</span></footer>
+</div>
+</body>
+</html>
