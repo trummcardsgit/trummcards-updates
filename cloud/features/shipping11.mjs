@@ -16,7 +16,7 @@ export function shippingRecord(value={}){
  const order_reference=text(value.order_reference,150,'Bestellreferenz');
  const shipped_on=text(value.shipped_on,10,'Versanddatum');
  if(shipped_on&&!/^\d{4}-\d{2}-\d{2}$/.test(shipped_on))throw Error('Ungültiges Versanddatum.');
- if(shipped_on&&!Number.isFinite(new Date(shipped_on+'T00:00:00Z').valueOf()))throw Error('Ungültiges Versanddatum.');
+ if(shipped_on){const d=new Date(shipped_on+'T00:00:00Z');if(!Number.isFinite(d.valueOf())||d.toISOString().slice(0,10)!==shipped_on)throw Error('Ungültiges Versanddatum.');}
  const link=text(value.tracking_url,500,'Tracking-Link');
  let tracking_url='';
  if(link){
