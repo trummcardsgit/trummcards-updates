@@ -27,14 +27,34 @@ const cardBrief=x=>({
  id:String(x.id||''),localId:String(x.localId||''),name:String(x.name||''),
  imageCandidate:(typeof x.image==='string'&&x.image.startsWith('https://assets.tcgdex.net/'))?x.image:null
 });
-async function searchPokemonCards({query,language='de',page=1,limit=20,fetchImpl=fetch,signal}={}){
- const q=String(query||'').trim();
- if(q.length<2||q.length>100)throw Error('Bitte 2 bis 100 Zeichen als Kartenname angeben.');
+// Supports combined name + set (name or ID) + printed card number.
+// On TCGdex the printed number is the localId (without '/set size').
+function normalizePrintedNumber(input){
+ const value=String(input||'').trim().replace(/^#\s*/,'').split('/')[0].trim();
+ if(value.length>30||!(/^[a-zA-Z0-9-]*$/.test(value)))throw Error('Ungültige Kartennummer.');
+ return /^0+[0-9]+$/.test(value)?String(Number(value)):value;
+}
+async function searchPokemonCards({query='',set='',cardNumber='',language='de',page=1,limit=20,fetchImpl=fetch,signal}={}){
+ const q=String(query||'').trim(),setFilter=String(set||'').trim(),number=normalizePrintedNumber(cardNumber);
+ if(q.length>100||setFilter.length>100)throw Error('Suchtext zu lang (maximal 100 Zeichen).');
+ if(q&&q.length<2)throw Error('Bitte mindestens zwei Zeichen für den Kartennamen eingeben.');
+ if(setFilter&&setFilter.length<2)throw Error('Bitte mindestens zwei Zeichen für das Set eingeben.');
+ if(!q&&!setFilter&&!number)throw Error('Bitte Kartenname, Set oder Kartennummer eingeben.');
  const selectedPage=Number(page);
  if(!Number.isSafeInteger(selectedPage)||selectedPage<1||selectedPage>100)throw Error('Ungültige Kartensuchseite.');
  const lang=languageCode(language),n=Math.min(30,numberOr(limit,20));
- const params=new URLSearchParams({name:q,'pagination:page':String(selectedPage),'pagination:itemsPerPage':String(n)});
- const rows=await fetchJson(BASE+'/'+lang+'/cards?'+params.toString(),fetchImpl,signal);
+ const params=new URLSearchParams({'pagination:page':String(selectedPage),'pagination:itemsPerPage':String(n)});
+ if(q)params.set('name',q);
+ if(setFilter)params.set('set',setFilter);
+ if(number)params.set('localId','eq:'+number);
+ let rows=await fetchJson(BASE+'/'+lang+'/cards?'+params.toString(),fetchImpl,signal);
+ // Card prints may use '009' while catalog localId uses '9', or vice versa.
+ // Retry the exact printed number only for the first empty results page.
+ const rawNumber=String(cardNumber||'').trim().replace(/^#\s*/,'').split('/')[0].trim();
+ if(number&&rawNumber&&rawNumber!==number&&Array.isArray(rows)&&rows.length===0&&selectedPage===1){
+  params.set('localId','eq:'+rawNumber);
+  rows=await fetchJson(BASE+'/'+lang+'/cards?'+params.toString(),fetchImpl,signal);
+ }
  if(!Array.isArray(rows))throw Error('Katalogantwort hat ein unerwartetes Format.');
  return rows.filter(x=>x&&x.id&&x.name).slice(0,n).map(cardBrief);
 }
