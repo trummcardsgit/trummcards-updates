@@ -11,7 +11,7 @@ const NO_WRITES='Produktionsvorschau: Echtdaten und Buchungen bleiben bis zur Re
 let ROOT='',KEY='',session=null,authCheckPromise=null,refreshPromise=null,loading=false,busy=false,activePage='home',lastPurchaseEntry='unit',pendingImage=null,imageObjects=[];
 let state={products:[],inventory:[],lots:[],sales:[],images:[],productImages:[]};
 let articleImageFile=null,articleImagePreviewUrl=null,thumbnailObserver=null;
-let catalogPicker11=null;
+let catalogPicker11=null,financeUI11=null;
 const thumbnailCache=new Map(),thumbnailLoading=new Map();
 const API_HEADERS={'Content-Type':'application/json'};
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&quot;',"'":'&#39;'}[c]));
@@ -42,7 +42,7 @@ async function apiUser(){return authorizedRequest('/auth/v1/user',{headers:{Acce
 async function checkAccount(){const u=await apiUser();if(!u?.id)throw Error('Anmeldung nicht erkannt.');const allow=await rpc('tc_is_authorized');if(allow!==true)throw Error('Dieses Benutzerkonto ist nicht für TrummCards freigeschaltet.');if(session)session.user=u;localStorage.setItem(STORE,JSON.stringify(session));return u;}
 async function login(event){event.preventDefault();const form=event.currentTarget;const btn=$('signInBtn');btn.disabled=true;clearNotice();try{const email=val(form,'email'),password=val(form,'password');const data=await raw(apiBase()+'/auth/v1/token?grant_type=password',{method:'POST',headers:{...API_HEADERS,apikey:KEY},body:JSON.stringify({email,password})});persistSession(data);const u=await checkAccount();f(form,'password').value='';$('accountEmail').textContent=u.email||'TrummCards-Konto';showApp();await refreshAll();navigate('home');notice('Angemeldet – Lagerdaten aus Supabase synchronisiert.','success');}catch(e){notice(errorText(e),'error');if(session){await signOut(false);}}finally{btn.disabled=false;}}
 async function signOut(goLogin=true){if(session){try{await authorizedRequest('/auth/v1/logout',{method:'POST'});}catch{}}clearSession();state={products:[],inventory:[],lots:[],sales:[],images:[],productImages:[]};clearThumbnailCache();imageObjects.forEach(u=>URL.revokeObjectURL(u));imageObjects=[];showLogin();if(goLogin)notice('Du wurdest abgemeldet.','success');}
-function showPage(name){const allowed=['home','article','purchase','sale','sales','photos','more'];if(!allowed.includes(name))name='home';activePage=name;for(const id of allowed)$('page-'+id).hidden=id!==name;for(const btn of document.querySelectorAll('[data-go]'))btn.classList.toggle('active',btn.dataset.go===name);const titles={home:'Übersicht',article:'Artikel',purchase:'Einkauf',sale:'Verkauf',sales:'Buchungen',photos:'Artikelbilder',more:'Einstellungen'};$('screenTitle').textContent=titles[name];window.scrollTo({top:0,behavior:'instant'});if(name==='photos')renderPhotos().catch(e=>notice(errorText(e),'error'));}
+function showPage(name){const allowed=['home','article','purchase','sale','sales','photos','finance','more'];if(!allowed.includes(name))name='home';activePage=name;for(const id of allowed)$('page-'+id).hidden=id!==name;for(const btn of document.querySelectorAll('[data-go]'))btn.classList.toggle('active',btn.dataset.go===name);const titles={home:'Übersicht',article:'Artikel',purchase:'Einkauf',sale:'Verkauf',sales:'Buchungen',photos:'Artikelbilder',finance:'Finanzen',more:'Einstellungen'};$('screenTitle').textContent=titles[name];window.scrollTo({top:0,behavior:'instant'});if(name==='photos')renderPhotos().catch(e=>notice(errorText(e),'error'));if(name==='finance')financeUI11?.render();}
 function navigate(name){if(name==='article'&&activePage!=='article')resetArticle();showPage(name);}
 function productById(id){return state.products.find(p=>p.id===id);}
 function productName(id){return productById(id)?.name||'Unbekannter Artikel';}
@@ -60,7 +60,7 @@ async function refreshAll(opts={}){if(!session||loading||document.visibilityStat
  ]);state={products,inventory,lots,sales,images,productImages};renderData();const at=new Date().toLocaleTimeString('de-AT',{hour:'2-digit',minute:'2-digit',second:'2-digit'});$('lastUpdated').textContent=at;connected('Stand '+at,'online');if(opts.toast)notice('Cloud-Daten aktualisiert.','success');}catch(e){connected('Offline?','problem');if(opts.toast)notice(errorText(e),'error');console.error('TrummCards mobile sync:',e);}finally{loading=false;}}
 function renderData(){const {products,inventory,sales,lots}=state;
  $('statProducts').textContent=products.length.toLocaleString('de-AT');$('statPieces').textContent=inventory.reduce((a,x)=>a+Number(x.available_qty),0).toLocaleString('de-AT');$('statValue').textContent=euro(inventory.reduce((a,x)=>a+Number(x.remaining_cost),0));$('statProfit').textContent=euro(sales.filter(s=>s.status==='booked').reduce((a,x)=>a+profit(x),0));
- renderProducts();renderHistory();const name=p=>p.name+' · '+(p.sku||'ohne SKU');updateOptions(f($('purchaseForm'),'product'),products,name,'Artikel wählen');updateOptions(f($('saleForm'),'product'),products.filter(p=>available(p.id)>0),p=>p.name+' ('+available(p.id)+' Stk.)','Artikel mit Bestand wählen');updateOptions(f($('photoForm'),'lot'),lots,l=>productName(l.product_id)+' · '+l.bought_on+' · '+l.id.slice(0,6),'Einkauf wählen');updatePurchasePreview();updateSalePreview();renderPending();
+ renderProducts();renderHistory();const name=p=>p.name+' · '+(p.sku||'ohne SKU');updateOptions(f($('purchaseForm'),'product'),products,name,'Artikel wählen');updateOptions(f($('saleForm'),'product'),products.filter(p=>available(p.id)>0),p=>p.name+' ('+available(p.id)+' Stk.)','Artikel mit Bestand wählen');updateOptions(f($('photoForm'),'lot'),lots,l=>productName(l.product_id)+' · '+l.bought_on+' · '+l.id.slice(0,6),'Einkauf wählen');updatePurchasePreview();updateSalePreview();renderPending();financeUI11?.render();
  }
 
 function imagePathForProduct(productId){
@@ -281,6 +281,7 @@ function bind(){
  $('closeImageViewer').addEventListener('click',()=>$('imageViewer').close());
  $('imageViewer').addEventListener('click',e=>{if(e.target===$('imageViewer'))$('imageViewer').close();});
  catalogPicker11=window.TrummCatalogUI11?.bind();
+ financeUI11=window.TrummFinanceUI11?.bind(()=>({sales:state.sales,lots:state.lots,products:state.products}));
  $('articleForm').addEventListener('submit',saveArticle);
  $('purchaseForm').addEventListener('submit',savePurchase);
  $('saleForm').addEventListener('submit',saveSale);
