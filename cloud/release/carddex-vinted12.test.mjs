@@ -301,3 +301,65 @@ test('Official set size can find a vintage match on a later page of the set cata
   assert.equal(result[0].id,'gym2-2');
  }
 });
+
+
+test('Selected local Kein-Bild artwork appears only when no card artwork exists, in search AND detail',async()=>{
+ for(const root of clients){
+  function element(rootNode=false){
+   const e={_root:rootNode,children:[],parentElement:null,listeners:{},style:{},
+    hidden:false,value:'',textContent:'',onload:null,onerror:null,
+    append(...items){for(const item of items){item.parentElement=this;this.children.push(item);}},
+    replaceChildren(...items){for(const child of this.children)child.parentElement=null;this.children=[];this.append(...items);},
+    removeAttribute(name){if(name==='src')this._src='';},
+    addEventListener(event,fn){this.listeners[event]=fn;},
+    set src(value){this._src=value;queueMicrotask(()=>this.onload?.());},
+    get src(){return this._src;},
+    get isConnected(){return this._root||!!this.parentElement?.isConnected;}
+   };return e;
+  }
+  const nodes=new Map();
+  const get=id=>{if(!nodes.has(id))nodes.set(id,element(true));return nodes.get(id);};
+  get('dexQuery').value='Glurak';
+  get('dexLanguage').value='de';
+  get('dexLanguage').selectedOptions=[{textContent:'Deutsch'}];
+  const attempts=[];
+  const card={id:'base5-21',name:'Dunkles Glurak',localId:'21',setName:'Team Rocket',
+   imageCandidate:null,pricing:null,rarity:'Selten'};
+  const catalog={
+   searchPokemonCards:async()=>[card],
+   getPokemonCard:async({language})=>{attempts.push(language);return {...card};},
+   listPokemonSets:async()=>[],getPokemonSet:async()=>({name:'',cards:[]})
+  };
+  const env={window:{TrummCatalog11:catalog},document:{getElementById:get,createElement:()=>element()},
+   queueMicrotask,AbortController,Intl,Date};
+  runInNewContext(read(root+'carddex12.js'),env,{filename:root+'carddex12.js'});
+  env.window.TrummCardDex12.bind();
+  get('dexSearchForm').listeners.submit({preventDefault(){}});
+  for(let i=0;i<5;i++)await new Promise(resolve=>setImmediate(resolve));
+  const tile=get('dexResults').children[0],pic=tile.children[0];
+  assert.equal(pic.src,'./kein-bild12.webp');
+  assert.equal(pic.hidden,false);
+  assert.equal(pic.style.visibility,'visible');
+  assert.ok(attempts.includes('en'),'must try English first');
+  tile.listeners.click();
+  for(let i=0;i<5;i++)await new Promise(resolve=>setImmediate(resolve));
+  const detail=get('dexDetailImage');
+  assert.equal(detail.src,'./kein-bild12.webp');
+  assert.equal(detail.hidden,false);
+  assert.equal(detail.style.visibility,'visible');
+ }
+});
+test('Approved artwork is included in Windows package and PWA service-worker precache for offline use',()=>{
+ const file='cloud/desktop-production/src/kein-bild12.webp';
+ const image=readFileSync(file);
+ assert.equal(image.subarray(0,4).toString(),'RIFF');
+ assert.equal(image.subarray(8,12).toString(),'WEBP');
+ assert.ok(image.length>4000);
+ const pkg=JSON.parse(read('cloud/desktop-production/package.json'));
+ assert.ok(pkg.build.files.includes('src/kein-bild12.webp'));
+ const sw=read('cloud/release/prepare-cloud-12-test.mjs');
+ assert.match(sw,/\.\/kein-bild12\.webp/);
+ for(const root of clients){
+  assert.match(read(root+'carddex12.js'),/img\.src='\.\/kein-bild12\.webp'/);
+ }
+});
