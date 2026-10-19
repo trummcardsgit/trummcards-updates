@@ -36,6 +36,24 @@ async function searchPokemonCards({query,language='de',limit=20,fetchImpl=fetch,
  if(!Array.isArray(rows))throw Error('Katalogantwort hat ein unerwartetes Format.');
  return rows.filter(x=>x&&x.id&&x.name).slice(0,n).map(cardBrief);
 }
+// TCGdex's documented card pricing provides Cardmarket EUR trend estimates.
+// Variant matching is not reliable for Reverse, First Edition, SIR or graded cards.
+// Avoid a misleading automated valuation for those combinations.
+function euroMarketQuote(pricing,{variant='',gradingCompany=''}={}){
+ if(String(gradingCompany||'').trim())return null;
+ const normalized=String(variant||'').toLowerCase().trim();
+ if(normalized&&!['standard','holo'].includes(normalized))return null;
+ const cm=pricing?.cardmarket;
+ if(!cm||cm.unit!=='EUR')return null;
+ const holo=normalized==='holo';
+ const value=cm[holo?'trend-holo':'trend'];
+ if(typeof value!=='number'||!Number.isFinite(value)||value<0||value>9999999999.99)return null;
+ const date=new Date(cm.updated);
+ if(!Number.isFinite(date.getTime())||date.getTime()>Date.now()+24*3600000)return null;
+ return {value:Math.round((value+Number.EPSILON)*100)/100,currency:'EUR',
+  source:holo?'TCGdex / Cardmarket Trend Holo':'TCGdex / Cardmarket Trend',
+  updatedAt:date.toISOString(),estimated:true,variant:holo?'Holo':'Standard'};
+}
 async function getPokemonCard({id,language='de',fetchImpl=fetch,signal}={}){
  const lang=languageCode(language);
  const detail=await fetchJson(BASE+'/'+lang+'/cards/'+encodeURIComponent(cardId(id)),fetchImpl,signal);
@@ -46,11 +64,13 @@ async function getPokemonCard({id,language='de',fetchImpl=fetch,signal}={}){
   setName:String(detail.set?.name||''),
   setId:String(detail.set?.id||''),
   illustrator:String(detail.illustrator||''),
-  // Market prices are deliberately not invented or read from unauthorized sites.
+  // Raw pricing is only a candidate: matching the owner's specific variant,
+  // card condition and grading happens client-side before showing a quote.
+  pricing:detail.pricing||null,
   price:null,priceSource:null
  };
 }
 const CATALOG_SOURCE='TCGdex – tcgdex.dev';
 
-window.TrummCatalog11=Object.freeze({searchPokemonCards,getPokemonCard,CATALOG_SOURCE});
+window.TrummCatalog11=Object.freeze({searchPokemonCards,getPokemonCard,euroMarketQuote,CATALOG_SOURCE});
 })();
