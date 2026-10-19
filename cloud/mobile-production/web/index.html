@@ -15,6 +15,8 @@
 <link rel="stylesheet" href="./styles.css?v=0.9.0">
 <script src="./catalog11.js?v=0.9.0" defer></script>
 <script src="./catalog11-ui.js?v=0.9.0" defer></script>
+<script src="./finance11.js?v=0.9.0" defer></script>
+<script src="./finance11-ui.js?v=0.9.0" defer></script>
 <script src="./app.js?v=0.9.0" defer></script>
 </head>
 <body>
@@ -189,6 +191,19 @@
         <div class="sectionhead"><h2>Gespeicherte Bilder</h2></div><div id="photosList" class="photo-grid"></div>
       </section>
 
+      <section id="page-finance" class="page" hidden>
+        <div class="panel">
+          <div class="micro-label">VERKAUF & FINANZEN</div><h2>Finanzcenter</h2>
+          <p class="subtle">Umsatz, Gebühren und FIFO-Gewinn. Buchung und Zahlung sind steuerlich nicht immer dasselbe.</p>
+          <div class="field"><label for="financePeriod">Zeitraum</label><select id="financePeriod"><option value="all">Gesamter Zeitraum</option><option value="year">Dieses Jahr</option><option value="month">Dieser Monat</option></select></div>
+          <div id="financeSummary" class="finance-metrics"></div>
+          <p id="financeStatus" class="subtle" role="status" aria-live="polite"></p>
+          <h3>Umsatz je Monat</h3><div id="financeMonths" class="finance-bars"></div>
+          <h3>Gewinn je Verkaufsplattform</h3><div id="financePlatforms" class="finance-bars"></div>
+          <button id="financeExport" type="button" class="secondary full">CSV für Excel exportieren</button>
+          <button type="button" class="secondary full" data-go="home">Zum Lager</button>
+        </div>
+      </section>
       <section id="page-more" class="page" hidden>
         <div class="panel"><div class="micro-label">KONTO & SYNCHRONISIERUNG</div><h2>Cloud PRODUCTION</h2>
           <div class="setting-row"><span>Angemeldet als</span><b id="accountEmail">–</b></div>
@@ -198,6 +213,7 @@
           <button class="secondary full" type="button" id="moreRefresh">Jetzt synchronisieren</button>
           <button class="danger full" type="button" id="signOutBtn">Abmelden</button>
         </div>
+        <div class="panel"><h2>Auswertungen</h2><button class="secondary full" type="button" data-go="finance">Finanzcenter & CSV-Export öffnen</button></div>
         <div class="panel"><h2>Zum Home-Bildschirm</h2><p class="subtle"><b>iPhone:</b> In Safari auf „Teilen“ tippen und „Zum Home-Bildschirm“ wählen.<br><b>Android:</b> In Chrome im Menü auf „App installieren“ oder „Zum Startbildschirm hinzufügen“ tippen.</p></div>
       </section>
     </div>
