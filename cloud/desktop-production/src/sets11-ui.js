@@ -97,6 +97,9 @@
       more.hidden=true;
     }finally{if(current===listRevision)more.disabled=false;}
   }
+  search.addEventListener('input',()=>{
+    if(sets.length){more.hidden=true;status.textContent='Set-Suchtext geändert. Bitte erneut auf „Sets anzeigen“ klicken.';}
+  });
   form.addEventListener('submit',e=>{e.preventDefault();void loadSets({reset:true});});
   more.addEventListener('click',()=>{void loadSets();});
   cardFilter.addEventListener('input',()=>{cardPage=1;renderCards();});
