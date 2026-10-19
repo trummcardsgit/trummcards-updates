@@ -194,9 +194,12 @@
     $('metricProfit').textContent=L.euro(state.sales.filter(s=>s.status==='booked').reduce((n,s)=>n+L.profit({price:Number(s.price),shippingIncome:Number(s.shipping_income),shippingCost:Number(s.shipping_cost),fees:Number(s.fees),other:Number(s.other_cost),cost:Number(s.cogs_total)}),0));
     $('inventoryRows').innerHTML=filteredInventoryProducts().map(p=>{
       const x=inv.find(i=>i.product_id===p.id)||{available_qty:0,remaining_cost:0};
+      const market=p.market_price_eur==null?null:Number(p.market_price_eur);
+      const available=Number(x.available_qty||0),avg=available>0?Number(x.remaining_cost)/available:null;
+      const marketCell=market==null?'-':L.euro(market)+(avg==null?'':'<br><small>'+(market-avg>=0?'+':'')+L.euro(market-avg)+' vor Gebühren/St.</small>');
       const picture=productImagePath(p.id)?'<button type="button" class="inventory-thumb" data-open-product-image="'+p.id+'" aria-label="Artikelbild von '+escapeHtml(p.name)+' vergrößern" title="Bild groß anzeigen"><img data-inventory-thumb="'+p.id+'" alt="Bild von '+escapeHtml(p.name)+'" width="60" height="72" decoding="async" hidden><span class="inventory-photo-placeholder" aria-hidden="true">▧</span></button>':'<div class="inventory-thumb no-photo" title="Noch kein Artikelbild" aria-label="Kein Bild vorhanden">▧</div>';
-      return '<tr><td>'+picture+'</td><td>'+escapeHtml(p.name)+'</td><td>'+escapeHtml(p.sku||'-')+'</td><td>'+escapeHtml(p.set_name||'-')+'<br><small>'+escapeHtml(p.card_number||'')+'</small></td><td>'+escapeHtml(p.card_condition||'-')+'</td><td>'+escapeHtml(p.storage_location||'-')+'</td><td>'+Number(x.available_qty)+'</td><td>'+L.euro(x.remaining_cost)+'</td><td><button type="button" data-edit-product="'+p.id+'">Bearbeiten</button></td></tr>';
-    }).join('') || '<tr><td colspan="9" class="empty">Keine Artikel passend zur Suche.</td></tr>';
+      return '<tr><td>'+picture+'</td><td>'+escapeHtml(p.name)+'</td><td>'+escapeHtml(p.sku||'-')+'</td><td>'+escapeHtml(p.set_name||'-')+'<br><small>'+escapeHtml(p.card_number||'')+'</small></td><td>'+escapeHtml(p.card_condition||'-')+'</td><td>'+escapeHtml(p.storage_location||'-')+'</td><td>'+Number(x.available_qty)+'</td><td>'+L.euro(x.remaining_cost)+'</td><td>'+marketCell+'</td><td><button type="button" data-edit-product="'+p.id+'">Bearbeiten</button></td></tr>';
+    }).join('') || '<tr><td colspan="10" class="empty">Keine Artikel passend zur Suche.</td></tr>';
     prepareDesktopThumbnails();
     selectCurrent(getForm($('purchaseForm'),'product'),state.products,p=>p.name+' | '+(p.sku||'ohne SKU'),'Artikel auswaehlen');
     selectCurrent(getForm($('saleForm'),'product'),state.products.filter(p=>totalAvailable(p.id)>0),p=>p.name+' ('+totalAvailable(p.id)+' verfuegbar)','Artikel auswaehlen');
