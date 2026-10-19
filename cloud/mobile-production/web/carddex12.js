@@ -87,8 +87,8 @@ function bind({onUseCard}={}){
   setCardsStatus.textContent=selectedSet.name+' · '+all.length+' Karten · Seite '+cardPage+' von '+Math.max(1,Math.ceil(all.length/PAGE));
  }
  async function openSet(id){
-  const current=++setCardsGeneration;setCardsAbort?.abort();setCardsAbort=new AbortController();
   clearSetCards();const request=++setCardsGeneration;
+  setCardsAbort=new AbortController();
   setCardsStatus.textContent='Lade Karten des Sets …';
   try{
    const found=await catalog.getPokemonSet({id,language:lang.value,signal:setCardsAbort.signal});
