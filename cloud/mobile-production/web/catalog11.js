@@ -120,6 +120,7 @@ async function getPokemonCard({id,language='de',fetchImpl=fetch,signal}={}){
   rarity:String(detail.rarity||''),
   setName:String(detail.set?.name||''),
   setId:String(detail.set?.id||''),
+  setOfficial:Number.isSafeInteger(detail.set?.cardCount?.official)&&detail.set.cardCount.official>0?detail.set.cardCount.official:null,
   illustrator:String(detail.illustrator||''),
   // Raw pricing is only a candidate: matching the owner's specific variant,
   // card condition and grading happens client-side before showing a quote.
