@@ -1,7 +1,7 @@
 import {createHash} from 'node:crypto';
 export const PROD_REF='hgdexyvtgfffcasfpjyu';
 export const TABLES=['tc_products','tc_purchase_lots','tc_sales','tc_sale_allocations','tc_stock_movements','tc_lot_images','tc_product_images'];
-export const TABLES_V2=[...TABLES,'tc_sale_shipments'];
+export const TABLES_V2=[...TABLES,'tc_sale_shipments','tc_platform_fee_profiles'];
 export const tablesForSnapshot=snapshot=>snapshot.format==='trummcards-cloud-backup-v2'?TABLES_V2:TABLES;
 export const sha256=data=>createHash('sha256').update(data).digest('hex');
 const validOwner=x=>typeof x==='string'&&/^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(x);
