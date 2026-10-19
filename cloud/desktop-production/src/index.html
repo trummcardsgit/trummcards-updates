@@ -102,12 +102,17 @@
     </div>
   </section>
 </section>
-          <p class="small muted">TCGdex-Katalog: Kartendaten nach Auswahl übernehmen. Katalogbilder sind nur Vorschauen; eigene Fotos bleiben privat. Fehlende Karten kannst du weiterhin manuell anlegen.</p>
+          <p class="small muted">TCGdex-Katalog: Kartendaten nach Auswahl übernehmen. Beim Import wird das Katalogbild automatisch dem Artikel zugeordnet (externe Verknüpfung). Eigene Fotos haben Vorrang und bleiben privat. Fehlende Karten kannst du weiterhin manuell anlegen.</p>
           <p id="catalogSearchStatus" class="small muted" role="status" aria-live="polite"></p>
           <div id="catalogSearchResults" class="catalog-results"></div>
+          <div class="catalog-page-actions" aria-label="Weitere Pokémon-Suchtreffer">
+            <button type="button" id="catalogSearchPrev" disabled>← Vorherige Treffer</button>
+            <span id="catalogSearchPageLabel" aria-live="polite">Noch keine Suche</span>
+            <button type="button" id="catalogSearchNext" disabled>Weitere 20 Treffer →</button>
+          </div>
           <div id="catalogSelected" class="catalog-selected" hidden><img id="catalogSelectedImage" alt="Katalogbild-Vorschau" hidden><span id="catalogSelectedInfo"></span></div>
         </section>
-        <form id="productForm"><input type="hidden" name="edit_id"><input type="hidden" name="catalog_card_id">
+        <form id="productForm"><input type="hidden" name="edit_id"><input type="hidden" name="catalog_card_id"><input type="hidden" name="catalog_image_url">
           <div class="grid">
             <label>Artikelname * <input name="name" maxlength="300" required placeholder="z.B. Delta Herrschaft"></label>
             <label>Artikelnummer / SKU <input name="sku" maxlength="120" placeholder="z.B. PKM-001"></label>
