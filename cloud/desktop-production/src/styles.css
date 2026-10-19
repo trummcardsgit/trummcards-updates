@@ -99,3 +99,17 @@ header .test-pill{background:#2e405b;border-color:#96a9c5;color:#f8d691}
 #shipmentStatus{min-height:24px;overflow-wrap:anywhere}
 #shipmentSave:disabled{opacity:.5;cursor:not-allowed}
 @media(max-width:620px){.shipment-panel .shipment-grid{grid-template-columns:minmax(0,1fr)}}
+
+
+/* Cloud 1.1 price/fee comparison – clear, readable on mobile and Windows. */
+.market-price-info{align-self:center;padding:10px 12px;border-radius:9px;border:1px solid #53677d;color:#cfd9e8;font-size:12px;line-height:1.5}
+.fee-panel{margin:16px 0;padding:14px;border:1px solid #53677d;border-radius:12px}
+.fee-profile-form .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px}
+.fee-profile-form label{display:flex;flex-direction:column;gap:6px;min-width:0}
+.fee-profile-form input,.fee-profile-form select{box-sizing:border-box;width:100%;min-width:0}
+.fee-profile-form input[type=checkbox]{width:auto}
+.fee-profile-list{display:grid;gap:8px;margin:14px 0 0}
+.fee-rule{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;background:#0e2238;border-radius:9px;padding:10px;font-size:13px}
+.fee-rule strong{color:#eed192}.fee-rule span{overflow-wrap:anywhere}
+#feeSuggestStatus{font-size:12px;color:#aebece;margin:7px 0}
+@media(max-width:570px){.fee-profile-form .grid{grid-template-columns:1fr}.fee-rule{align-items:flex-start;flex-direction:column;gap:4px}}
