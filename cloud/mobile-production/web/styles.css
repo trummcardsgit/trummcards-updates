@@ -273,3 +273,13 @@ main{width:min(100%,1000px);padding:21px 18px 24px;margin:0 auto;flex:1}.login-s
 .finance-bar{height:100%;min-width:2px;border-radius:12px;background:#e5ba68}
 .finance-bar.negative{background:#d97d73}
 @media(max-width:570px){.catalog-search-form{display:block}.catalog-search-form>button{width:100%;margin:8px 0}.catalog-results{grid-template-columns:repeat(2,minmax(0,1fr))}.finance-bar-row{grid-template-columns:70px minmax(35px,1fr) 85px;gap:6px}.finance-metric strong{font-size:17px}}
+
+
+/* TrummCards 1.1 sale shipment workflow */
+.shipment-panel{border:1px solid #536a83}
+.shipment-panel .shipment-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}
+.shipment-panel label{display:flex;flex-direction:column;gap:7px;min-width:0;overflow-wrap:anywhere}
+.shipment-panel label input,.shipment-panel label select{box-sizing:border-box;width:100%;min-width:0;max-width:100%}
+#shipmentStatus{min-height:24px;overflow-wrap:anywhere}
+#shipmentSave:disabled{opacity:.5;cursor:not-allowed}
+@media(max-width:620px){.shipment-panel .shipment-grid{grid-template-columns:minmax(0,1fr)}}
