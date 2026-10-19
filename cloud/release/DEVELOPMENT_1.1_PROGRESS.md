@@ -7,13 +7,16 @@ Stand: 19.10.2026. **Nur Entwicklungsbranch `feature/cloud-1.1-unified`. Keine �
 - [x] TCGdex-Read-only-Kartensuche über öffentlichen REST-Endpunkt, Ergebnisse und Kartendetails, Auswahl und Übernahme von Name/Set/Nummer/Seltenheit/Sprache plus Katalog-ID in beide Artikelmasken. Externe Bildvorschau `low.webp`; kein automatisches Kopieren in private Supabase-Storage, da Nutzungsrechte für Speicherung/Rehosting noch zu klären sind.
 - [x] Finanzcenter mit Zeitraumfilter, FIFO-Gewinn, Umsatz, Gebühren, Einkaufsausgaben, Monats- und Plattformbalken in Windows und PWA.
 - [x] Excel-kompatibler CSV-Export (UTF-8 BOM, Semikolon, Dezimal-Komma, Verhinderung von Formelinjektion); negative Geldbeträge bleiben numerisch.
-- [x] Versandlogik als isolierter geprüfter Baustein: Status, Versanddienst, Trackingnummer, Bestellreferenz, Datum und validierte HTTPS-Links. **Noch keine persistente Versandmaske oder Datenbankmigration.**
+- [x] **Versandverwaltung in Windows/PWA:** Versandstatus, Dienstleister, Trackingnummer, Bestellreferenz, Versanddatum und HTTPS-Link je Verkauf, Cloud-Synchronisierung, Bearbeiten direkt aus Verkaufsliste.
+- [x] **Datenmodell vorbereitet:** Separate, owner-RLS-geschützte Tabelle `tc_sale_shipments` mit zusammengesetzter Referenz auf den richtigen Verkäufer; kein Eingriff in FIFO-Verkauf/Buchungs-RPC. SQL liegt **nur im Entwicklungsbranch**.
+- [x] **Datensicherung vorbereitet:** Backupformat v2 enthält Verkaufssendungen; Validierung akzeptiert v1 (historisch) und v2; Offline-Restore und Eigentümerzugriff werden in GitHub Actions geprüft. V2-Umstellung erfordert einen geplanten Backup-/Schema-Switchover und ist noch nicht live.
 - [x] Automatische Node-/RLS-/FIFO-/Restore-/Windows-Pakettests über GitHub Actions, **NO DEPLOY**.
 
 ## Noch offen bis zum einen gemeinsamen Release 1.1.0
 - [ ] Set-Datenbank bequem durchsuchen, Sprachen/Fälle prüfen und Bildübernahmerechte klären; ggf. externe Bilder nur ansehen, eigene Bilder privat speichern.
 - [ ] Marktpreisquelle (passende Sprache, Variante, Zustand, Zeitstempel, Rechte, Kosten) integrieren und manuelle Preise als Fallback.
-- [ ] Versandstatus im owner-RLS-geschützten Datenmodell dauerhaft speichern, in Windows/PWA bearbeitbar und synchronisierbar machen. **Bestehenden Verkauf-FIFO-RPC nicht ändern.**
+- [x] Versandfunktion und Speicherung im 1.1-Branch integriert (SQL, Windows/PWA, Tests). **Noch nicht produktiv migriert, noch kein Endgerätetest.**
+- [ ] Backup-Upgrade im abgestimmten Verfahren: neue v1/v2-kompatible Sicherungssoftware vor der Datenbankänderung bereitstellen; Snapshot v2 aktivieren; vollständige echte verschlüsselte Sicherung und Restore des Versanddatensatzes bestätigen.
 - [ ] Individuell konfigurierbare Plattformgebühren und vollständige Finanz-/Steuerexportdaten mit **Zahlungsdatum** und sonstigen Ausgaben (FIFO-Betriebsgewinn ≠ österreichische steuerliche E/A-Rechnung).
 - [ ] Umfangreiche manuelle Systemtests mit echter PWA und Windows-Installer, inklusive Set/Artwork, Statistik und CSV-Download.
 - [ ] Version 1.1.0, Cloud-Auto-Update-Metadaten, PWA-Service-Worker und durchgängig geschütztes Releaseverfahren vorbereiten.
