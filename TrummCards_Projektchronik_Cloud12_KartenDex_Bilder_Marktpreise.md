@@ -88,3 +88,12 @@ Version 1.2 TEST mit eigenem KartenDex-Menü, Pokémon-Namenssuche mit Blättern
 - Windows-TEST-Paket enthält das WebP direkt unter `src/`. Der PWA-TEST-Build kopiert dieselben Bildbytes nach `web/`, prüft das RIFF/WebP-Format und speichert den lokalen Dateipfad im Service-Worker-Cache für Offline-Verfügbarkeit.
 - Testversion `1.2.0-test.8` mit Cache `trummcards-mobile-test12-shell-v1-1208`. Regressionstests für Suchergebnis und Detailansicht sowie Paket- und Cache-Vollständigkeit.
 - Nur der Entwicklungszweig und die TEST-Ausgabe werden geändert; Supabase-TEST- und PRODUKTIV-Daten sowie Cloud-PRODUCTION 1.1 bleiben unberührt.
+
+## 19.10.2026 – Zuverlässiger „Kein Bild“-Platzhalter (TEST 1.2.0-test.9)
+- Nutzer meldete weiterhin textbasierte „Kein Kartenbild verfügbar“-Treffer statt ausgewählter Kartenplatzhalter. Ursache: Der Platzhalter wurde als zusätzliche externe Bildressource aus dem Pages-Verzeichnis geladen; solange die Seiten-Neuveröffentlichung oder das PWA-Caching nicht abgeschlossen waren, schlug dieser Abruf fehl.
+- Das vom Nutzer gewählte WebP (220×330 px, 5.516 Bytes, Git-Blob `91a1eeb4b5503af3319bc1efa25613e68082e915`) ist jetzt **als Daten-URI direkt in beide KartenDex-Quellcodes eingebettet**. Der Fallback benötigt daher keinen separaten HTTP-Aufruf und kann auch offline funktionieren, sobald die JavaScript-Datei im Cache liegt.
+- Rendering weiterhin nur nach erfolglosem Versuch, das gewünschte bzw. englische TCGdex-Bild zu laden. Gleiche Bildlogik für Suche, Set-Treffer und Detailansicht. Der Fallback zeigt exakt die benutzergewählte dunkelblau/goldene Grafik, nicht ein neu gestaltetes Motiv.
+- Automatische Tests bestätigen, dass die eingebetteten Bildbytes mit dem Originalbild identisch sind und dass Such- und Detailansicht die Bild-Daten-URI verwenden.
+- Der PWA-Service-Worker enthält das neue KartenDex-JavaScript mit Version `1.2.0-test.9` und benötigt keine zweite Platzhalterbilddatei mehr beim Installieren. Separate lokale WebP-Datei bleibt als Windows-Paketbestandteil verfügbar.
+- Version `1.2.0-test.9` ist unter `gh-pages/test-12/` als Quell-Deployment angelegt. Die endgültige Veröffentlichung durch GitHub Pages und der Windows-Test-Build müssen anhand der GitHub-Actions-Ergebnisse geprüft werden; einen wartenden Pages-Build nicht als abgeschlossen markieren.
+- TEST-Datenbank, alle Echtdaten sowie Cloud-Production 1.1 unverändert.
