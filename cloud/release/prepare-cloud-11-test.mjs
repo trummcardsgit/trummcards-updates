@@ -6,7 +6,7 @@ if(process.env.GITHUB_ACTIONS==='true'&&process.env.GITHUB_REF!=='refs/heads/fea
 const PROD='hgdexyvtgfffcasfpjyu',TEST='cpycfxolqpidfjbhhsmr';
 const PROD_KEY='sb_publishable_JDdbnEq3muaOhp3LsNhBkQ_eJZ0uYEf';
 const TEST_KEY='sb_publishable_oS2Ri8VlhEqv1XDBwkUahQ_zVEEtyHG';
-const VERSION='1.1.0-test.1',desk='cloud/desktop-production',web='cloud/mobile-production/web';
+const VERSION='1.1.0-test.2',desk='cloud/desktop-production',web='cloud/mobile-production/web';
 const read=f=>fs.readFileSync(path.resolve(f),'utf8');
 const write=(f,s)=>fs.writeFileSync(path.resolve(f),s,'utf8');
 const changed=[];
@@ -34,7 +34,7 @@ change(desk+'/package.json',s=>{
  p.name='trummcards-cloud-test11';p.version=VERSION;p.description='TrummCards Cloud 1.1 TEST on existing TEST Supabase';
  p.build.appId='at.trummcards.cloudtest11';p.build.productName='TrummCards Cloud 1.1 TEST';
  p.build.nsis.shortcutName='TrummCards Cloud 1.1 TEST';
- p.build.artifactName='TrummCards-Cloud-11-TEST-Setup-1.1.0-test.1.exe';
+ p.build.artifactName='TrummCards-Cloud-11-TEST-Setup-1.1.0-test.2.exe';
  p.build.publish=[{provider:'generic',url:'https://example.invalid/test11-no-updates/'}];
  p.scripts.dist='npm run bundle && node --check main.cjs && node --check src/app.js && python scripts/make-icon.py && electron-builder --win nsis --publish never';
  return JSON.stringify(p,null,2)+'\n';
