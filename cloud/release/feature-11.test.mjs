@@ -234,6 +234,14 @@ test('Austrian cash-flow journal works on Windows and mobile independently of bo
  }
  assert.ok(pkg.build.files.includes('src/cash11.js'));
  assert.ok(pkg.build.files.includes('src/cash11-ui.js'));
+ for(const app of [win,mobile]){
+  assert.ok(app.includes('data-cash-sale'),'booked sales link to actual payment recording');
+  assert.ok(app.includes('data-cash-lot'),'purchases link to actual payment recording');
+  assert.ok(app.includes("beginLinkedPayment('sale'"),'sale entry preselects related payment');
+  assert.ok(app.includes("beginLinkedPayment('lot'"),'purchase entry preselects related payment');
+ }
+ for(const base of ['cloud/desktop-production/src/','cloud/mobile-production/web/'])
+  assert.ok(read(base+'cash11-ui.js').includes('beginLinkedPayment'),'cash form can preselect related transaction');
  assert.ok(read('cloud/backup/restore-check.mjs').includes('cloud11_cash_entries_staging.sql'));
  assert.ok(read('cloud/backup/business-flow-check.mjs').includes('cloud11_cash_entries_staging.sql'));
 });
