@@ -17,7 +17,7 @@
   let lastPurchasePrice='unit';
   let lastSyncAt=0;
   let productPhotoFile=null,productPreviewUrl=null,cameraStream=null,desktopThumbObserver=null,productPreviewGeneration=0;
-  let catalogPicker11=null,setPicker11=null,financeUI11=null,shippingUI11=null,marketUI11=null,feesUI11=null,cashUI11=null;
+  let catalogPicker11=null,setPicker11=null,financeUI11=null,shippingUI11=null,marketUI11=null,feesUI11=null,cashUI11=null,cardDexUI12=null,vintedUI12=null;
   const desktopThumbCache=new Map();
 
   const getForm = (form,name) => form.elements.namedItem(name);
@@ -203,7 +203,7 @@
       const available=Number(x.available_qty||0),avg=available>0?Number(x.remaining_cost)/available:null;
       const marketCell=market==null?'-':L.euro(market)+(avg==null?'':'<br><small>'+(market-avg>=0?'+':'')+L.euro(market-avg)+' vor Gebühren/St.</small>');
       const picture=productImagePath(p.id)?'<button type="button" class="inventory-thumb" data-open-product-image="'+p.id+'" aria-label="Artikelbild von '+escapeHtml(p.name)+' vergrößern" title="Bild groß anzeigen"><img data-inventory-thumb="'+p.id+'" alt="Bild von '+escapeHtml(p.name)+'" width="60" height="72" decoding="async" hidden><span class="inventory-photo-placeholder" aria-hidden="true">▧</span></button>':'<div class="inventory-thumb no-photo" title="Noch kein Artikelbild" aria-label="Kein Bild vorhanden">▧</div>';
-      return '<tr><td>'+picture+'</td><td>'+escapeHtml(p.name)+'</td><td>'+escapeHtml(p.sku||'-')+'</td><td>'+escapeHtml(p.set_name||'-')+'<br><small>'+escapeHtml(p.card_number||'')+'</small></td><td>'+escapeHtml(p.card_condition||'-')+'</td><td>'+escapeHtml(p.storage_location||'-')+'</td><td>'+Number(x.available_qty)+'</td><td>'+L.euro(x.remaining_cost)+'</td><td>'+marketCell+'</td><td><button type="button" data-edit-product="'+p.id+'">Bearbeiten</button></td></tr>';
+      return '<tr><td>'+picture+'</td><td>'+escapeHtml(p.name)+'</td><td>'+escapeHtml(p.sku||'-')+'</td><td>'+escapeHtml(p.set_name||'-')+'<br><small>'+escapeHtml(p.card_number||'')+'</small></td><td>'+escapeHtml(p.card_condition||'-')+'</td><td>'+escapeHtml(p.storage_location||'-')+'</td><td>'+Number(x.available_qty)+'</td><td>'+L.euro(x.remaining_cost)+'</td><td>'+marketCell+'</td><td><button type="button" data-edit-product="'+p.id+'">Bearbeiten</button> <button type="button" data-vinted="'+p.id+'">Vinted</button></td></tr>';
     }).join('') || '<tr><td colspan="10" class="empty">Keine Artikel passend zur Suche.</td></tr>';
     prepareDesktopThumbnails();
     selectCurrent(getForm($('purchaseForm'),'product'),state.products,p=>p.name+' | '+(p.sku||'ohne SKU'),'Artikel auswaehlen');
@@ -579,6 +579,19 @@
     marketUI11=window.TrummMarketUI11?.bind();window.TrummMarketInstance11=marketUI11;
     catalogPicker11=window.TrummCatalogUI11?.bind();
     setPicker11=window.TrummSetUI11?.bind({selectCard:id=>catalogPicker11.selectCard(id)});
+    cardDexUI12=window.TrummCardDex12?.bind({onUseCard:({id,language})=>{
+      switchTab('inventory');$('catalogSearchLanguage').value=language;
+      void catalogPicker11.selectCard(id);
+    }});
+    vintedUI12=window.TrummVinted12?.bind({
+      getProducts:()=>state.products,
+      getOwnImage:async p=>{
+        const hero=state.productImages.find(x=>x.product_id===p.id);
+        const lots=new Set(state.lots.filter(x=>x.product_id===p.id).map(x=>x.id));
+        const own=hero?.storage_path||state.images.find(x=>lots.has(x.lot_id))?.storage_path;
+        return own?productImageUrl(own):null;
+      }
+    });
     financeUI11=window.TrummFinanceUI11?.bind(()=>({sales:state.sales,lots:state.lots,products:state.products}));
     shippingUI11=window.TrummShippingUI11?.bind({getSales:()=>state.sales,getShipments:()=>state.shipments,productName,save:saveShipment11});
     feesUI11=window.TrummFeesUI11?.bind({getProfiles:()=>state.feeProfiles,save:saveFeeProfile11,parseEuro:v=>L.parseMoney(v,{optional:true}),onFeeApplied:updateSaleHint});
@@ -602,7 +615,7 @@
     for(const id of ['inventorySearch','inventoryLanguageFilter','inventoryStockFilter','inventorySort']){
       $(id).addEventListener(id==='inventorySearch'?'input':'change',render);
     }
-    $('inventoryRows').addEventListener('click',e=>{const view=e.target.closest('[data-open-product-image]');if(view){void openDesktopProductImage(view.dataset.openProductImage);return;}const b=e.target.closest('[data-edit-product]');if(b)startProductEdit(b.dataset.editProduct);});
+    $('inventoryRows').addEventListener('click',e=>{const view=e.target.closest('[data-open-product-image]');if(view){void openDesktopProductImage(view.dataset.openProductImage);return;}const v=e.target.closest('[data-vinted]');if(v){void vintedUI12?.open(v.dataset.vinted);return;}const b=e.target.closest('[data-edit-product]');if(b)startProductEdit(b.dataset.editProduct);});
     $('purchaseForm').addEventListener('submit',savePurchase);
     for(const name of ['unit','total','qty'])getForm($('purchaseForm'),name).addEventListener('input',()=>purchasePriceChanged(name));
     getForm($('purchaseForm'),'extra').addEventListener('input',updatePurchaseHint);
