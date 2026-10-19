@@ -92,3 +92,44 @@ test('Finance dashboard & safe CSV export are wired to both Cloud apps',()=>{
  assert.ok(wh.includes('data-tab="finance"'));
  assert.ok(mh.includes('data-go="finance"'));
 });
+
+
+test('Shipment editor is shipped in both clients without modifying FIFO sale booking',()=>{
+ const schema=read('cloud/release/sql/cloud11_sale_shipments_staging.sql');
+ const pkg=JSON.parse(read('cloud/desktop-production/package.json'));
+ assert.ok(schema.includes('create table public.tc_sale_shipments'),'separate shipping table');
+ assert.ok(schema.includes('alter table public.tc_sale_shipments enable row level security'));
+ assert.ok(schema.includes('foreign key (sale_id,owner_id) references public.tc_sales(id,owner_id)'));
+ assert.ok(schema.includes('create policy tc_shipments_update'));
+ assert.ok(!schema.includes('alter table public.tc_sales'),'sale ledger must not change');
+ assert.ok(!read('.github/workflows/cloud-production-release.yml').includes('cloud11_sale_shipments_staging.sql'));
+ for(const [html,app,base] of [[wh,win,'cloud/desktop-production/src/'],[mh,mobile,'cloud/mobile-production/web/']]){
+  for(const file of ['shipping11.js','shipping11-ui.js'])assert.ok(html.includes(file),'missing '+file);
+  for(const field of ['shipping_status','carrier','tracking_number','order_reference','shipped_on','tracking_url'])
+   assert.ok(html.includes('name="'+field+'"'),'shipping field '+field);
+  for(const id of ['shipmentPanel','shipmentForm','shipmentSale','shipmentSave','shipmentStatus'])
+   assert.ok(html.includes('id="'+id+'"'),'shipment id '+id);
+  assert.ok(app.includes('tc_sale_shipments'),'client must synchronize shipments');
+  assert.ok(app.includes('TrummShippingUI11?.bind'),'client must wire UI');
+  assert.ok(app.includes('data-shipping-sale'),'sales list entry point');
+  assert.ok(app.includes('saveShipment11'),'shipping persistence');
+  const js=read(base+'shipping11-ui.js');
+  assert.ok(js.includes('shippingRecord'),'form inputs validated');
+  assert.ok(!js.includes('tc_book_sale'),'must not rebook or change FIFO');
+ }
+ for(const path of ['cloud/backup/restore-check.mjs','cloud/backup/business-flow-check.mjs'])
+  assert.ok(read(path).includes('cloud11_sale_shipments_staging.sql'),'local PG tests must load shipping');
+ assert.ok(pkg.build.files.includes('src/shipping11.js'));
+ assert.ok(pkg.build.files.includes('src/shipping11-ui.js'));
+});
+test('Encrypted Cloud 1.1 shipment backups have v2 snapshot, retain v1 restore support',()=>{
+ const backup=read('cloud/release/sql/cloud11_backup_snapshot_v2_staging.sql');
+ const validator=read('cloud/backup/validate.mjs');
+ assert.ok(backup.includes('trummcards-cloud-backup-v2'));
+ assert.ok(backup.includes("'tc_sale_shipments'"));
+ assert.ok(validator.includes('tablesForSnapshot'));
+ assert.ok(validator.includes('tc_sale_shipments'));
+ assert.ok(validator.includes('trummcards-cloud-backup-v1'));
+ assert.ok(validator.includes('trummcards-cloud-backup-v2'));
+ assert.ok(read('cloud/backup/backup.test.mjs').includes('v2 backups'));
+});
