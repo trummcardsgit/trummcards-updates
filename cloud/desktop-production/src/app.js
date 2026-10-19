@@ -17,7 +17,7 @@
   let lastPurchasePrice='unit';
   let lastSyncAt=0;
   let productPhotoFile=null,productPreviewUrl=null,cameraStream=null,desktopThumbObserver=null,productPreviewGeneration=0;
-  let catalogPicker11=null,financeUI11=null,shippingUI11=null,marketUI11=null,feesUI11=null;
+  let catalogPicker11=null,setPicker11=null,financeUI11=null,shippingUI11=null,marketUI11=null,feesUI11=null;
   const desktopThumbCache=new Map();
 
   const getForm = (form,name) => form.elements.namedItem(name);
@@ -294,7 +294,7 @@
   function resetProductEdit(){
     stopProductCamera();
     const form=$('productForm');form.reset();getForm(form,'edit_id').value='';getForm(form,'catalog_card_id').value='';
-    catalogPicker11?.clear();marketUI11?.reset();
+    catalogPicker11?.clear();setPicker11?.clear();marketUI11?.reset();
     previewProductPicture(null);
     $('productFormTitle').textContent='Artikel anlegen';
     $('productSubmit').textContent='Artikel und Bild speichern';$('productCancel').hidden=true;
@@ -557,6 +557,7 @@
     void initializeCloudUpdater();
     marketUI11=window.TrummMarketUI11?.bind();window.TrummMarketInstance11=marketUI11;
     catalogPicker11=window.TrummCatalogUI11?.bind();
+    setPicker11=window.TrummSetUI11?.bind({selectCard:id=>catalogPicker11.selectCard(id)});
     financeUI11=window.TrummFinanceUI11?.bind(()=>({sales:state.sales,lots:state.lots,products:state.products}));
     shippingUI11=window.TrummShippingUI11?.bind({getSales:()=>state.sales,getShipments:()=>state.shipments,productName,save:saveShipment11});
     feesUI11=window.TrummFeesUI11?.bind({getProfiles:()=>state.feeProfiles,save:saveFeeProfile11,parseEuro:v=>L.parseMoney(v,{optional:true}),onFeeApplied:updateSaleHint});
