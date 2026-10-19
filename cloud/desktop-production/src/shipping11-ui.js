@@ -70,7 +70,7 @@
        await save(active,normalized);
        dirty=false;say('Versandinformationen in der Cloud gespeichert. Status: '+normalized.status+'.');
      }catch(err){say('Versand konnte nicht gespeichert werden: '+String(err.message||err));}
-     finally{busy=false;saveButton.disabled=false;render();}
+     finally{busy=false;const current=getSales().find(x=>x.id===active);saveButton.disabled=!current||current.status!=='booked';}
    });
    options();load('',true);
    return Object.freeze({render,load});
