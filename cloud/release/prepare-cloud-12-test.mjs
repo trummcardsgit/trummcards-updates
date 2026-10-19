@@ -54,22 +54,12 @@ change(web+'/manifest.webmanifest',s=>{
  const m=JSON.parse(s);m.name='TrummCards Cloud 1.2 TEST';m.short_name='TC 1.2 TEST';
  m.description='Separate Testausgabe – nur Supabase TEST';return JSON.stringify(m,null,2)+'\n';
 });
-// The user-approved artwork lives in the Windows source as one binary asset.
-// Copy the SAME bitmap to the PWA build; never fetch it from an external image host.
-const localArtwork=path.resolve(desk+'/src/kein-bild12.webp');
-const browserArtwork=path.resolve(web+'/kein-bild12.webp');
-const artwork=fs.readFileSync(localArtwork);
-if(artwork.length<4000||artwork.length>100000||artwork.toString('ascii',0,4)!=='RIFF'||artwork.toString('ascii',8,12)!=='WEBP')
- throw Error('Kein-Bild artwork is missing or invalid');
-fs.writeFileSync(browserArtwork,artwork);
 change(web+'/sw.js',s=>{
  s=s.replaceAll('trummcards-mobile-production-shell-','trummcards-mobile-test12-shell-').replaceAll('0.9.0',VERSION).replaceAll('trummcards-mobile-test12-shell-v1','trummcards-mobile-test12-shell-v1-1209');
  const old="'./app.js?v="+VERSION+"','./styles.css?v="+VERSION+"'";
  const addition=['catalog11.js','catalog11-ui.js','sets11-ui.js','market11-ui.js','fees11.js','fees11-ui.js','finance11.js','finance11-ui.js','cash11.js','cash11-ui.js','shipping11.js','shipping11-ui.js','carddex12.js','vinted12.js'].map(x=>",'./"+x+"?v="+VERSION+"'").join('');
- const artworkEntry=",'./kein-bild12.webp'";
- return replaceOne(s,old,old+addition+artworkEntry);
+ return replaceOne(s,old,old+addition);
 });
-if(!read(web+'/sw.js').includes("'./kein-bild12.webp'"))throw Error('PWA offline cache missing selected artwork');
 if(!read(web+'/carddex12.js').includes("img.src=NO_IMAGE_DATA_URI"))throw Error('PWA card-image fallback not enabled');
 if(!read(desk+'/src/carddex12.js').includes("img.src=NO_IMAGE_DATA_URI"))throw Error('Windows card-image fallback not enabled');
 for(const f of changed){
