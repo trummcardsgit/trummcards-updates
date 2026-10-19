@@ -19,6 +19,16 @@
      $('catalogSelectedImage').removeAttribute('src');
      $('catalogSelectedInfo').textContent='';
    }
+   form.addEventListener('input',e=>{
+     const changed=e.target?.name;
+     if(!['name','set_name','card_number','language'].includes(changed))return;
+     const id=form.elements.namedItem('catalog_card_id');
+     if(!id?.value)return;
+     id.value='';
+     selected.hidden=true;$('catalogSelectedImage').hidden=true;
+     $('catalogSelectedImage').removeAttribute('src');
+     statusText('Kartendaten manuell geändert – Katalogzuordnung zurückgesetzt. Die Eingaben bleiben erhalten.');
+   });
    search.addEventListener('submit',async e=>{
      e.preventDefault();
      const id=++revision;
