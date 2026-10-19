@@ -1,0 +1,86 @@
+name: TrummCards Cloud 1.2 - Production Release Rehearsal NO DEPLOY
+on:
+  push:
+    branches: [release/cloud-1.2.0-production-upgrade]
+    paths:
+      - 'cloud/release/prepare-cloud-12-production.mjs'
+      - '.github/workflows/cloud-12-production-rehearsal.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: trummcards-cloud12-prod-rehearsal
+  cancel-in-progress: false
+jobs:
+  prepare-only:
+    runs-on: ubuntu-latest
+    env:
+      TRUMMCARDS_BACKUP_ACTIVE: 'true'
+      TRUMMCARDS_RESTORE_VERIFIED: 'true'
+      TRUMMCARDS_PRODUCTION_APPROVED: 'true'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check latest source and original Cloud 1.2 features
+        run: |
+          node --test cloud/release/carddex-vinted12.test.mjs
+          node --test cloud/backup/backup.test.mjs
+          node --check cloud/release/prepare-cloud-12-production.mjs
+      - name: Prepare the same production assets without deploying
+        run: |
+          node cloud/release/prepare-cloud-12-production.mjs
+          node --test cloud/release/carddex-vinted12.test.mjs
+          for f in cloud/mobile-production/web/*.js; do node --check "$f"; done
+          for f in cloud/desktop-production/src/*.js; do node --check "$f"; done
+          node cloud/release/probe-prod-anon.mjs
+      - name: Keep preview PWA for release inspection
+        uses: actions/upload-artifact@v4
+        with:
+          name: TrummCards-Cloud-12-PROD-PREVIEW-NO-DEPLOY
+          path: cloud/mobile-production/web/
+          if-no-files-found: error
+          retention-days: 7
+  windows-only:
+    runs-on: windows-latest
+    needs: prepare-only
+    env:
+      TRUMMCARDS_BACKUP_ACTIVE: 'true'
+      TRUMMCARDS_RESTORE_VERIFIED: 'true'
+      TRUMMCARDS_PRODUCTION_APPROVED: 'true'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Stage Windows source
+        shell: pwsh
+        run: |
+          node cloud/release/prepare-cloud-12-production.mjs
+          if($LASTEXITCODE -ne 0){throw 'Release staging failure'}
+      - name: Install build dependencies
+        working-directory: cloud/desktop-production
+        shell: pwsh
+        run: npm install --no-audit --no-fund
+      - name: Build Windows updater package
+        working-directory: cloud/desktop-production
+        shell: pwsh
+        run: |
+          python -m pip install --disable-pip-version-check pillow
+          npm run dist
+          if($LASTEXITCODE -ne 0){throw 'Windows build failed'}
+          foreach($f in @('TrummCards-Cloud-Setup-1.2.0.exe','TrummCards-Cloud-Setup-1.2.0.exe.blockmap','latest.yml')){
+            if(-not(Test-Path "dist/$f")){throw "Update file missing: $f"}
+          }
+          if(-not (Get-Content 'dist/latest.yml' -Raw).Contains('version: 1.2.0')){throw 'Updater manifest incorrect'}
+      - name: Retain Windows rehearsal files (not live)
+        uses: actions/upload-artifact@v4
+        with:
+          name: TrummCards-Cloud-12-WINDOWS-PREVIEW-NO-DEPLOY
+          path: |
+            cloud/desktop-production/dist/TrummCards-Cloud-Setup-1.2.0.exe
+            cloud/desktop-production/dist/TrummCards-Cloud-Setup-1.2.0.exe.blockmap
+            cloud/desktop-production/dist/latest.yml
+          if-no-files-found: error
+          retention-days: 7
