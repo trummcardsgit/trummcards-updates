@@ -9,9 +9,9 @@ const PROJECT='hgdexyvtgfffcasfpjyu';
 const WRITES_ENABLED=false; // Release gate: allow writes only after approved backups and GO LIVE.
 const NO_WRITES='Produktionsvorschau: Echtdaten und Buchungen bleiben bis zur Releasefreigabe gesperrt.';
 let ROOT='',KEY='',session=null,authCheckPromise=null,refreshPromise=null,loading=false,busy=false,activePage='home',lastPurchaseEntry='unit',pendingImage=null,imageObjects=[];
-let state={products:[],inventory:[],lots:[],sales:[],images:[],productImages:[],shipments:[]};
+let state={products:[],inventory:[],lots:[],sales:[],images:[],productImages:[],shipments:[],feeProfiles:[]};
 let articleImageFile=null,articleImagePreviewUrl=null,thumbnailObserver=null;
-let catalogPicker11=null,financeUI11=null,shippingUI11=null,marketUI11=null;
+let catalogPicker11=null,financeUI11=null,shippingUI11=null,marketUI11=null,feesUI11=null;
 const thumbnailCache=new Map(),thumbnailLoading=new Map();
 const API_HEADERS={'Content-Type':'application/json'};
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&quot;',"'":'&#39;'}[c]));
@@ -41,7 +41,7 @@ async function tableGet(table,query){return authorizedRequest('/rest/v1/'+table+
 async function apiUser(){return authorizedRequest('/auth/v1/user',{headers:{Accept:'application/json'}});}
 async function checkAccount(){const u=await apiUser();if(!u?.id)throw Error('Anmeldung nicht erkannt.');const allow=await rpc('tc_is_authorized');if(allow!==true)throw Error('Dieses Benutzerkonto ist nicht für TrummCards freigeschaltet.');if(session)session.user=u;localStorage.setItem(STORE,JSON.stringify(session));return u;}
 async function login(event){event.preventDefault();const form=event.currentTarget;const btn=$('signInBtn');btn.disabled=true;clearNotice();try{const email=val(form,'email'),password=val(form,'password');const data=await raw(apiBase()+'/auth/v1/token?grant_type=password',{method:'POST',headers:{...API_HEADERS,apikey:KEY},body:JSON.stringify({email,password})});persistSession(data);const u=await checkAccount();f(form,'password').value='';$('accountEmail').textContent=u.email||'TrummCards-Konto';showApp();await refreshAll();navigate('home');notice('Angemeldet – Lagerdaten aus Supabase synchronisiert.','success');}catch(e){notice(errorText(e),'error');if(session){await signOut(false);}}finally{btn.disabled=false;}}
-async function signOut(goLogin=true){if(session){try{await authorizedRequest('/auth/v1/logout',{method:'POST'});}catch{}}clearSession();state={products:[],inventory:[],lots:[],sales:[],images:[],productImages:[],shipments:[]};clearThumbnailCache();imageObjects.forEach(u=>URL.revokeObjectURL(u));imageObjects=[];showLogin();if(goLogin)notice('Du wurdest abgemeldet.','success');}
+async function signOut(goLogin=true){if(session){try{await authorizedRequest('/auth/v1/logout',{method:'POST'});}catch{}}clearSession();state={products:[],inventory:[],lots:[],sales:[],images:[],productImages:[],shipments:[],feeProfiles:[]};clearThumbnailCache();imageObjects.forEach(u=>URL.revokeObjectURL(u));imageObjects=[];showLogin();if(goLogin)notice('Du wurdest abgemeldet.','success');}
 function showPage(name){const allowed=['home','article','purchase','sale','sales','photos','finance','more'];if(!allowed.includes(name))name='home';activePage=name;for(const id of allowed)$('page-'+id).hidden=id!==name;for(const btn of document.querySelectorAll('[data-go]'))btn.classList.toggle('active',btn.dataset.go===name);const titles={home:'Übersicht',article:'Artikel',purchase:'Einkauf',sale:'Verkauf',sales:'Buchungen',photos:'Artikelbilder',finance:'Finanzen',more:'Einstellungen'};$('screenTitle').textContent=titles[name];window.scrollTo({top:0,behavior:'instant'});if(name==='photos')renderPhotos().catch(e=>notice(errorText(e),'error'));if(name==='finance')financeUI11?.render();}
 function navigate(name){if(name==='article'&&activePage!=='article')resetArticle();showPage(name);}
 function productById(id){return state.products.find(p=>p.id===id);}
@@ -50,18 +50,19 @@ function available(id){return Number(state.inventory.find(x=>x.product_id===id)?
 function fifoPreview(productId,quantity){const list=state.lots.filter(l=>l.product_id===productId&&Number(l.available_qty)>0).sort((a,b)=>String(a.bought_on).localeCompare(String(b.bought_on))||String(a.created_at).localeCompare(String(b.created_at))||String(a.id).localeCompare(String(b.id)));let remaining=quantity,cost=0;for(const l of list){if(!remaining)break;const n=Math.min(remaining,Number(l.available_qty));const rest=money(Number(l.purchase_total)+Number(l.extra_cost)-Number(l.allocated_cost));const c=n===Number(l.available_qty)?rest:Math.min(money((Number(l.purchase_total)+Number(l.extra_cost))/Number(l.purchased_qty)*n),rest);cost=money(cost+c);remaining-=n;}return {cost,missing:remaining};}
 function profit(s){return money(Number(s.price||0)+Number(s.shipping_income||0)-Number(s.shipping_cost||0)-Number(s.fees||0)-Number(s.other_cost||0)-Number(s.cogs_total||0));}
 function updateOptions(element,rows,makeLabel,placeholder){const chosen=element.value;const sig=JSON.stringify(rows.map(p=>[p.id,makeLabel(p)]));if(element.dataset.signature===sig)return;element.dataset.signature=sig;element.replaceChildren();const opt=document.createElement('option');opt.value='';opt.textContent=placeholder;element.append(opt);for(const p of rows){const option=document.createElement('option');option.value=p.id;option.textContent=makeLabel(p);element.append(option);}if(rows.some(r=>r.id===chosen))element.value=chosen;}
-async function refreshAll(opts={}){if(!session||loading||document.visibilityState==='hidden')return;loading=true;connected('Synchronisiere …');try{const [products,inventory,lots,sales,images,productImages,shipments]=await Promise.all([
+async function refreshAll(opts={}){if(!session||loading||document.visibilityState==='hidden')return;loading=true;connected('Synchronisiere …');try{const [products,inventory,lots,sales,images,productImages,shipments,feeProfiles]=await Promise.all([
  tableGet('tc_products','select=id,sku,name,set_name,language,card_condition,card_number,rarity,card_variant,storage_location,grading_company,grading_grade,grading_certificate,catalog_card_id,market_price_eur,market_price_source,market_price_checked_at,note,created_at&order=name.asc&limit=1000'),
  tableGet('tc_inventory','select=product_id,available_qty,remaining_cost&limit=1000'),
  tableGet('tc_purchase_lots','select=id,product_id,bought_on,purchased_qty,available_qty,purchase_total,extra_cost,allocated_cost,source,note,created_at&order=bought_on.asc&limit=1000'),
  tableGet('tc_sales','select=id,product_id,sold_on,qty,price,shipping_income,shipping_cost,fees,other_cost,cogs_total,platform,note,status,created_at&order=created_at.desc&limit=1000'),
  tableGet('tc_lot_images','select=id,lot_id,storage_path,mime_type,display_order&limit=1000'),
  tableGet('tc_product_images','select=id,product_id,storage_path,mime_type,created_at&limit=1000'),
- tableGet('tc_sale_shipments','select=sale_id,shipping_status,carrier,tracking_number,order_reference,shipped_on,tracking_url,updated_at&limit=1000')
- ]);state={products,inventory,lots,sales,images,productImages,shipments};renderData();const at=new Date().toLocaleTimeString('de-AT',{hour:'2-digit',minute:'2-digit',second:'2-digit'});$('lastUpdated').textContent=at;connected('Stand '+at,'online');if(opts.toast)notice('Cloud-Daten aktualisiert.','success');}catch(e){connected('Offline?','problem');if(opts.toast)notice(errorText(e),'error');console.error('TrummCards mobile sync:',e);}finally{loading=false;}}
+ tableGet('tc_sale_shipments','select=sale_id,shipping_status,carrier,tracking_number,order_reference,shipped_on,tracking_url,updated_at&limit=1000'),
+ tableGet('tc_platform_fee_profiles','select=id,platform,percent_rate,fixed_eur,include_shipping,updated_at&limit=1000')
+ ]);state={products,inventory,lots,sales,images,productImages,shipments,feeProfiles};renderData();const at=new Date().toLocaleTimeString('de-AT',{hour:'2-digit',minute:'2-digit',second:'2-digit'});$('lastUpdated').textContent=at;connected('Stand '+at,'online');if(opts.toast)notice('Cloud-Daten aktualisiert.','success');}catch(e){connected('Offline?','problem');if(opts.toast)notice(errorText(e),'error');console.error('TrummCards mobile sync:',e);}finally{loading=false;}}
 function renderData(){const {products,inventory,sales,lots}=state;
  $('statProducts').textContent=products.length.toLocaleString('de-AT');$('statPieces').textContent=inventory.reduce((a,x)=>a+Number(x.available_qty),0).toLocaleString('de-AT');$('statValue').textContent=euro(inventory.reduce((a,x)=>a+Number(x.remaining_cost),0));$('statProfit').textContent=euro(sales.filter(s=>s.status==='booked').reduce((a,x)=>a+profit(x),0));
- renderProducts();renderHistory();const name=p=>p.name+' · '+(p.sku||'ohne SKU');updateOptions(f($('purchaseForm'),'product'),products,name,'Artikel wählen');updateOptions(f($('saleForm'),'product'),products.filter(p=>available(p.id)>0),p=>p.name+' ('+available(p.id)+' Stk.)','Artikel mit Bestand wählen');updateOptions(f($('photoForm'),'lot'),lots,l=>productName(l.product_id)+' · '+l.bought_on+' · '+l.id.slice(0,6),'Einkauf wählen');updatePurchasePreview();updateSalePreview();renderPending();financeUI11?.render();shippingUI11?.render();
+ renderProducts();renderHistory();const name=p=>p.name+' · '+(p.sku||'ohne SKU');updateOptions(f($('purchaseForm'),'product'),products,name,'Artikel wählen');updateOptions(f($('saleForm'),'product'),products.filter(p=>available(p.id)>0),p=>p.name+' ('+available(p.id)+' Stk.)','Artikel mit Bestand wählen');updateOptions(f($('photoForm'),'lot'),lots,l=>productName(l.product_id)+' · '+l.bought_on+' · '+l.id.slice(0,6),'Einkauf wählen');updatePurchasePreview();updateSalePreview();renderPending();financeUI11?.render();shippingUI11?.render();feesUI11?.render();
  }
 
 function imagePathForProduct(productId){
@@ -271,6 +272,25 @@ function clearPending(){localStorage.removeItem(PENDING);renderPending();}
 function renderPending(){const el=$('pendingBanner'),p=getPending();el.hidden=!p;if(!p)return;el.replaceChildren();const text=document.createElement('div');text.textContent='Ungeklärte '+(p.kind==='purchase'?'Einkaufs-':'Verkaufs-')+'Buchung: Bei einer abgebrochenen Verbindung denselben Vorgang erneut abschicken, damit die Buchung nicht doppelt erfolgt. Sonst zuerst Lager und Buchungen prüfen.';const btn=document.createElement('button');btn.type='button';btn.className='tiny-btn';btn.textContent='Nach Kontrolle entsperren';btn.onclick=()=>{if(confirm('Hast du Lagerbestand und Buchungen geprüft? Wenn ein Vorgang ungeklärt ist, kann das Aufheben der Sperre eine Doppelbuchung ermöglichen.')){clearPending();notice('Buchungssperre aufgehoben.','success');}};el.append(text,btn);}
 async function savePurchase(e){e.preventDefault();if(!WRITES_ENABLED){notice(NO_WRITES,'error');return;}await withBusy(async()=>{const form=e.currentTarget,id=val(form,'product');if(!productById(id))throw Error('Bitte Artikel auswählen.');const qty=parseCount(val(form,'qty')),total=parseMoney(val(form,'total')),extra=parseMoney(val(form,'extra'),true);const args={p_product_id:id,p_bought_on:dateValid(val(form,'date')),p_qty:qty,p_purchase_total:money(total).toFixed(2),p_extra_cost:money(extra).toFixed(2),p_source:val(form,'source'),p_note:val(form,'note')};const requestKey=bookId('purchase',args);await rpc('tc_book_purchase',{...args,p_request_key:requestKey});clearPending();form.reset();f(form,'date').value=today();lastPurchaseEntry='unit';await refreshAll();showPage('home');notice(`${qty} Stück ins Cloud-Lager gebucht.`, 'success');});}
 function saleValues(){const form=$('saleForm');return {product:val(form,'product'),date:dateValid(val(form,'date')),qty:parseCount(val(form,'qty')),price:parseMoney(val(form,'price')),shippingIncome:parseMoney(val(form,'shippingIncome'),true),shippingCost:parseMoney(val(form,'shippingCost'),true),fees:parseMoney(val(form,'fees'),true),other:parseMoney(val(form,'other'),true),platform:val(form,'platform'),note:val(form,'note')};}
+async function saveFeeProfile11(rule){
+ if(!WRITES_ENABLED)throw Error(NO_WRITES);
+ if(!session?.user?.id)throw Error('Bitte zuerst anmelden.');
+ const found=state.feeProfiles.find(p=>p.platform===rule.platform);
+ const payload={percent_rate:rule.percent_rate,fixed_eur:rule.fixed_eur,include_shipping:rule.include_shipping};
+ if(found){
+  await authorizedRequest('/rest/v1/tc_platform_fee_profiles?id=eq.'+encodeURIComponent(found.id),{
+   method:'PATCH',headers:{...API_HEADERS,Prefer:'return=minimal'},
+   body:JSON.stringify({...payload,updated_at:new Date().toISOString()})
+  });
+ }else{
+  await authorizedRequest('/rest/v1/tc_platform_fee_profiles',{
+   method:'POST',headers:{...API_HEADERS,Prefer:'return=minimal'},
+   body:JSON.stringify({...payload,platform:rule.platform,owner_id:session.user.id})
+  });
+ }
+ state.feeProfiles=[...state.feeProfiles.filter(p=>p.platform!==rule.platform),{...found,...payload,platform:rule.platform}];
+ await refreshAll();
+}
 async function saveShipment11(saleId,details){
  if(!WRITES_ENABLED)throw Error(NO_WRITES);
  if(!session?.user?.id)throw Error('Bitte zuerst anmelden.');
@@ -307,6 +327,7 @@ function bind(){
  catalogPicker11=window.TrummCatalogUI11?.bind();
  financeUI11=window.TrummFinanceUI11?.bind(()=>({sales:state.sales,lots:state.lots,products:state.products}));
  shippingUI11=window.TrummShippingUI11?.bind({getSales:()=>state.sales,getShipments:()=>state.shipments,productName,save:saveShipment11});
+ feesUI11=window.TrummFeesUI11?.bind({getProfiles:()=>state.feeProfiles,save:saveFeeProfile11,parseEuro:v=>parseMoney(v,true),onFeeApplied:updateSalePreview});
  $('articleForm').addEventListener('submit',saveArticle);
  $('purchaseForm').addEventListener('submit',savePurchase);
  $('saleForm').addEventListener('submit',saveSale);
