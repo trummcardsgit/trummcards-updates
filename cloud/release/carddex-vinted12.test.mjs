@@ -77,3 +77,63 @@ test('KartenDex picture fallback uses same ID in English, keeps localized card d
   assert.ok(!js.includes('navigator.clipboard'));
  }
 });
+
+
+test('KartenDex combines Pokémon name, set name and card number in TCGdex pagination',async()=>{
+ for(const root of clients){
+  const env={window:{},URLSearchParams};
+  runInNewContext(read(root+'catalog11.js'),env,{filename:'catalog11.js'});
+  const calls=[];
+  const api=async url=>{
+   calls.push(new URL(url));
+   return {ok:true,json:async()=>[{id:'sv03.5-9',name:'Glurak',localId:'9',image:null}]};
+  };
+  const cards=await env.window.TrummCatalog11.searchPokemonCards({
+   query:'Glurak',set:'151',cardNumber:'009/165',language:'de',page:2,limit:20,fetchImpl:api
+  });
+  assert.equal(cards.length,1);
+  const params=calls[0].searchParams;
+  assert.equal(params.get('name'),'Glurak');
+  assert.equal(params.get('set'),'151');
+  assert.equal(params.get('localId'),'eq:9');
+  assert.equal(params.get('pagination:page'),'2');
+  assert.equal(params.get('pagination:itemsPerPage'),'20');
+  assert.equal(calls[0].pathname,'/v2/de/cards');
+  calls.length=0;
+  await env.window.TrummCatalog11.searchPokemonCards({cardNumber:'9',fetchImpl:api});
+  assert.equal(calls[0].searchParams.get('name'),null);
+  assert.equal(calls[0].searchParams.get('localId'),'eq:9');
+  await assert.rejects(env.window.TrummCatalog11.searchPokemonCards({fetchImpl:api}),/Kartenname, Set oder Kartennummer/);
+ }
+});
+
+test('KartenDex retries printed leading-zero number if catalog uses original identifier',async()=>{
+ for(const root of clients){
+  const env={window:{},URLSearchParams};
+  runInNewContext(read(root+'catalog11.js'),env,{filename:'catalog11.js'});
+  const requested=[];
+  const api=async url=>{
+   const number=new URL(url).searchParams.get('localId');
+   requested.push(number);
+   return {ok:true,json:async()=>number==='eq:009'?[{id:'abc-009',localId:'009',name:'Glurak'}]:[]};
+  };
+  const cards=await env.window.TrummCatalog11.searchPokemonCards({set:'XY',cardNumber:'009/147',fetchImpl:api});
+  assert.equal(cards[0].localId,'009');
+  assert.deepEqual(requested,['eq:9','eq:009']);
+ }
+});
+
+test('KartenDex shows canonical set name then separate card number in every result',()=>{
+ for(const root of clients){
+  const js=read(root+'carddex12.js'),html=read(root+'index.html');
+  assert.match(html,/id="dexSearchSet"/);
+  assert.match(html,/id="dexSearchNumber"/);
+  assert.match(js,/catalog\.getPokemonCard\(\{id:card\.id,language\}\)/);
+  assert.match(js,/setLabel\.textContent=value\|\|'Set nicht verfügbar'/);
+  assert.match(js,/card\.setName\|\|'Set wird geladen/);
+  assert.match(js,/number\.textContent='Kartennummer: '/);
+  assert.match(js,/setName:selectedSet\.name/);
+  assert.match(js,/searchFilters=\{\.\.\.filters\}/);
+  assert.match(js,/loadCards\(currentPage\+1,searchFilters,searchLang\)/);
+ }
+});
