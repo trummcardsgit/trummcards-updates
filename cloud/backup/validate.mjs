@@ -27,6 +27,11 @@ export function validateSnapshot(snapshot){
  for(const sale of map.tc_sales)ref('Verkauf',sale.product_id,'tc_products');
  if(snapshot.format==='trummcards-cloud-backup-v2'){
   for(const shipment of map.tc_sale_shipments)ref('Versand',shipment.sale_id,'tc_sales');
+  for(const cash of map.tc_cash_entries){
+   if(cash.sale_id!=null)ref('Zahlung Verkauf',cash.sale_id,'tc_sales');
+   if(cash.purchase_lot_id!=null)ref('Zahlung Einkauf',cash.purchase_lot_id,'tc_purchase_lots');
+   if(cash.sale_id!=null&&cash.purchase_lot_id!=null)throw Error('Doppelte Zahlungsreferenz');
+  }
  }
  for(const a of map.tc_sale_allocations){
   ref('Verkaufszuordnung',a.sale_id,'tc_sales');
