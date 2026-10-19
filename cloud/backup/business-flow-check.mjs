@@ -22,6 +22,7 @@ const files=[
  'cloud/supabase/migrations/20261016000400_backup_snapshot.sql',
  'cloud/release/sql/harden_product_images_owner.sql',
  'cloud/supabase/migrations/20261019000100_cloud_11_card_metadata.sql',
+ 'cloud/release/sql/cloud11_catalog_image_link_staging.sql',
  'cloud/release/sql/cloud11_sale_shipments_staging.sql',
  'cloud/release/sql/cloud11_fee_profiles_staging.sql',
  'cloud/release/sql/cloud11_cash_entries_staging.sql',
@@ -55,6 +56,11 @@ try{
  ['025/165','Illustration Rare','Holo','Box 2 / Fach 4','PSA','9','DEMO-NOT-REAL',product]);
  const meta=(await c.query('select card_number,rarity,storage_location,grading_grade from public.tc_products where id=$1',[product])).rows[0];
  assert.deepEqual(meta,{card_number:'025/165',rarity:'Illustration Rare',storage_location:'Box 2 / Fach 4',grading_grade:'9'});
+ const link='https://assets.tcgdex.net/de/base/base1/4';
+ await c.query('update public.tc_products set catalog_image_url=$1 where id=$2',[link,product]);
+ assert.equal((await c.query('select catalog_image_url from public.tc_products where id=$1',[product])).rows[0].catalog_image_url,link);
+ await assert.rejects(()=>c.query("update public.tc_products set catalog_image_url='https://not-trusted.example/card' where id=$1",[product]),/tc_products_11_catalog_image_url_safe/);
+ assert.equal((await c.query('select catalog_image_url from public.tc_products where id=$1',[product])).rows[0].catalog_image_url,link);
  await assert.rejects(()=>c.query("update public.tc_products set storage_location=repeat('X',161) where id=$1",[product]),/tc_products_11_storage_len/);
  const purchase=async(date,qty,total,key)=>{
    const r=await c.query("select public.tc_book_purchase($1,$2,$3,$4,$5,$6,$7,$8) as id",
