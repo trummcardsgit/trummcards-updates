@@ -84,8 +84,22 @@ function bind({onUseCard}={}){
   const active=()=>img.isConnected&&isCurrent();
   function unavailable(){
    if(!active())return;
-   img.hidden=true;img.style.visibility='hidden';img.removeAttribute('src');
-   notice.textContent='Kein Kartenbild verfügbar.';
+   // Use the exact locally shipped collector-card artwork, not a remote image.
+   // Reset callbacks from earlier failed URLs to prevent stale image handlers.
+   img.onload=null;
+   img.onerror=()=>{
+    if(active()){
+     img.hidden=true;
+     img.style.visibility='hidden';
+     notice.textContent='Kein Kartenbild verfügbar.';
+    }
+   };
+   img.loading='eager';
+   img.alt='Kein Bild – Kein Kartenbild verfügbar';
+   img.hidden=false;
+   img.style.visibility='visible';
+   img.src='./kein-bild12.webp';
+   notice.textContent='';
   }
   function display(url,label){
    return new Promise(resolve=>{
