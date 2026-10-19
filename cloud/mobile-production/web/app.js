@@ -87,7 +87,7 @@ function filteredInventory11(){
   if(stock==='available'&&qty<=0)return false;
   if(stock==='empty'&&qty>0)return false;
   const content=['name','sku','set_name','card_number','rarity','card_variant','storage_location','card_condition','grading_company','grading_grade','grading_certificate'].map(k=>p[k]||'').join(' ').toLocaleLowerCase('de');
-  return !term||term.split(/\\s+/).every(t=>content.includes(t));
+  return !term||term.split(/\s+/).every(t=>content.includes(t));
  });
  products.sort((a,b)=>{
   if(sort==='stock')return available(b.id)-available(a.id)||a.name.localeCompare(b.name,'de');
