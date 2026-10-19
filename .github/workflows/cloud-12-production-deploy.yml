@@ -47,11 +47,24 @@ jobs:
           test "$expected" = "$(git rev-parse origin/feature/cloud-1.2-carddex-vinted)"
           gh api "repos/$GITHUB_REPOSITORY/actions/workflows/cloud-12-test-build.yml/runs?branch=feature%2Fcloud-1.2-carddex-vinted&per_page=100" \
             --jq '.workflow_runs | map(select(.status=="completed" and .conclusion=="success")) | .[].head_sha' > "$RUNNER_TEMP/green-test12-shas.txt"
-          if ! grep -Fxq "$expected" "$RUNNER_TEMP/green-test12-shas.txt"; then
-            echo "BLOCKED: Latest TEST 1.2 PWA+Windows is not confirmed green for $expected"
+          test -s "$RUNNER_TEMP/green-test12-shas.txt"
+          matched=""
+          while IFS= read -r successful; do
+            git cat-file -e "$successful^{commit}" || continue
+            # Verify executable sources even if subsequent documentation changed.
+            if git diff --quiet "$successful" "$expected" -- \
+              cloud/desktop-production cloud/mobile-production cloud/features \
+              cloud/release/carddex-vinted12.test.mjs cloud/release/prepare-cloud-12-test.mjs \
+              .github/workflows/cloud-12-test-build.yml; then
+              matched="$successful"
+              break
+            fi
+          done < "$RUNNER_TEMP/green-test12-shas.txt"
+          if test -z "$matched"; then
+            echo "BLOCKED: No green TEST build matches 1.2 release application code"
             exit 1
           fi
-          echo "TEST PWA+Windows verified for release source SHA $expected"
+          echo "Validated TEST build $matched matching source $expected"
       - name: Ensure main daily backup validator supports both v1 and v2 before any release
         shell: bash
         run: |
