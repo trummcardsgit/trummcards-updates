@@ -21,4 +21,5 @@ test('Empty optional fields and shipping date normalize safely',()=>{
  const result=shippingRecord({status:'offen'});
  assert.deepEqual(result,{status:'offen',carrier:'',tracking_number:'',order_reference:'',shipped_on:null,tracking_url:''});
  assert.throws(()=>shippingRecord({shipped_on:'yesterday'}),/Versanddatum/);
+ assert.throws(()=>shippingRecord({shipped_on:'2026-02-30'}),/Versanddatum/);
 });
