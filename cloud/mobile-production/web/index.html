@@ -15,6 +15,7 @@
 <link rel="stylesheet" href="./styles.css?v=0.9.0">
 <script src="./catalog11.js?v=0.9.0" defer></script>
 <script src="./catalog11-ui.js?v=0.9.0" defer></script>
+<script src="./market11-ui.js?v=0.9.0" defer></script>
 <script src="./finance11.js?v=0.9.0" defer></script>
 <script src="./finance11-ui.js?v=0.9.0" defer></script>
 <script src="./shipping11.js?v=0.9.0" defer></script>
@@ -89,6 +90,9 @@
             <div class="two-fields"><div class="field"><label>Variante</label><select name="card_variant"><option value="">Standard</option><option>Holo</option><option>Reverse Holo</option><option>Full Art</option><option>Illustration Rare</option><option>Special Illustration Rare</option><option>1st Edition</option><option>Sonstige</option></select></div><div class="field"><label>Lagerplatz</label><input name="storage_location" maxlength="160" placeholder="Box 2 / Fach 4"></div></div>
             <div class="two-fields"><div class="field"><label>Grading</label><select name="grading_company"><option value="">Nicht gegradet</option><option>PSA</option><option>CGC</option><option>BGS</option><option>ACE</option><option>Andere</option></select></div><div class="field"><label>Bewertung</label><input name="grading_grade" maxlength="30" placeholder="9.5"></div></div>
             <div class="field"><label>Zertifikatsnummer</label><input name="grading_certificate" maxlength="120" placeholder="Optional"></div>
+            <div class="field"><label>Marktwert-Richtwert (EUR)</label><input name="market_price_eur" inputmode="decimal" placeholder="z.B. 14,90"></div>
+            <input type="hidden" name="market_price_source"><input type="hidden" name="market_price_checked_at">
+            <p class="subtle" id="marketPriceStatus" role="status" aria-live="polite">Noch kein Marktpreis.</p>
             <div class="field"><label>Notiz</label><textarea name="note" rows="2" maxlength="2000" placeholder="Optional"></textarea></div>
             <div class="article-photo-field">
               <div class="micro-label">ARTIKELBILD · OPTIONAL</div>
