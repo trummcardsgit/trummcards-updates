@@ -12,12 +12,12 @@
   const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const localDate = () => {const d = new Date();d.setMinutes(d.getMinutes()-d.getTimezoneOffset());return d.toISOString().slice(0,10);};
   let sb=null, user=null, refreshing=false, saving=false;
-  let state={products:[],inventory:[],lots:[],sales:[],images:[],productImages:[],shipments:[]};
+  let state={products:[],inventory:[],lots:[],sales:[],images:[],productImages:[],shipments:[],feeProfiles:[]};
   let activeTab='inventory';
   let lastPurchasePrice='unit';
   let lastSyncAt=0;
   let productPhotoFile=null,productPreviewUrl=null,cameraStream=null,desktopThumbObserver=null,productPreviewGeneration=0;
-  let catalogPicker11=null,financeUI11=null,shippingUI11=null,marketUI11=null;
+  let catalogPicker11=null,financeUI11=null,shippingUI11=null,marketUI11=null,feesUI11=null;
   const desktopThumbCache=new Map();
 
   const getForm = (form,name) => form.elements.namedItem(name);
@@ -88,11 +88,12 @@
         sb.from('tc_sales').select('id,product_id,sold_on,qty,price,shipping_income,shipping_cost,fees,other_cost,cogs_total,platform,note,status,created_at').order('created_at',{ascending:false}).limit(1000),
         sb.from('tc_lot_images').select('id,lot_id,storage_path,mime_type,display_order').limit(1000),
         sb.from('tc_product_images').select('id,product_id,storage_path,mime_type,created_at').limit(1000),
-        sb.from('tc_sale_shipments').select('sale_id,shipping_status,carrier,tracking_number,order_reference,shipped_on,tracking_url,updated_at').limit(1000)
+        sb.from('tc_sale_shipments').select('sale_id,shipping_status,carrier,tracking_number,order_reference,shipped_on,tracking_url,updated_at').limit(1000),
+        sb.from('tc_platform_fee_profiles').select('id,platform,percent_rate,fixed_eur,include_shipping,updated_at').limit(1000)
       ];
       const result=await Promise.all(requests);
       for(const r of result) if(r.error)throw r.error;
-      state={products:result[0].data||[],inventory:result[1].data||[],lots:result[2].data||[],sales:result[3].data||[],images:result[4].data||[],productImages:result[5].data||[],shipments:result[6].data||[]};
+      state={products:result[0].data||[],inventory:result[1].data||[],lots:result[2].data||[],sales:result[3].data||[],images:result[4].data||[],productImages:result[5].data||[],shipments:result[6].data||[],feeProfiles:result[7].data||[]};
       lastSyncAt=Date.now();
       render();setSync('Synchronisiert '+new Date().toLocaleTimeString('de-AT',{hour:'2-digit',minute:'2-digit',second:'2-digit'}),'online');
       if(!silent)flash('Lagerbestand, Einkaeufe und Verkaeufe aus Supabase aktualisiert.','success');
@@ -208,7 +209,7 @@
     $('lotsRows').innerHTML=state.lots.map(l=>`<tr><td>${escapeHtml(l.bought_on)}</td><td>${escapeHtml(productName(l.product_id))}</td><td>${Number(l.purchased_qty)}</td><td>${Number(l.available_qty)}</td><td>${L.euro(Number(l.purchase_total)+Number(l.extra_cost))}</td><td>${escapeHtml(l.source||'-')}</td></tr>`).join('')||'<tr><td colspan="6" class="empty">Noch keine Einkaufschargen.</td></tr>';
     renderPending(); updateSaleHint(); updatePurchaseHint();
     financeUI11?.render();
-    shippingUI11?.render();
+    shippingUI11?.render();feesUI11?.render();
     if(activeTab==='photos')renderImages().catch(e=>console.error('Picture display:',e));
   }
   function switchTab(name) {
@@ -336,6 +337,19 @@
       if(jumpToPurchase){switchTab('purchase');getForm($('purchaseForm'),'product').value=id;updatePurchaseHint();}
       flash(jumpToPurchase?'Karte gespeichert. Jetzt den Einkauf erfassen.':(editing?'Artikel und Bild aktualisiert.':'Neuer Artikel mit optionalem Bild gespeichert.'),'success');
     });
+  }
+  async function saveFeeProfile11(rule){
+    if(!WRITES_ENABLED)throw Error(REQUIRE_GO_LIVE_MESSAGE);
+    if(!user)throw Error('Bitte zuerst anmelden.');
+    const existing=state.feeProfiles.find(p=>p.platform===rule.platform);
+    const payload={percent_rate:rule.percent_rate,fixed_eur:rule.fixed_eur,include_shipping:rule.include_shipping};
+    const op=existing
+      ? sb.from('tc_platform_fee_profiles').update({...payload,updated_at:new Date().toISOString()}).eq('id',existing.id)
+      : sb.from('tc_platform_fee_profiles').insert({owner_id:user.id,platform:rule.platform,...payload});
+    const {error}=await op;
+    if(error)throw error;
+    state.feeProfiles=[...state.feeProfiles.filter(p=>p.platform!==rule.platform),{...existing,...payload,platform:rule.platform}];
+    await refreshAll(true);
   }
   async function saveShipment11(saleId,data){
     if(!WRITES_ENABLED)throw Error(REQUIRE_GO_LIVE_MESSAGE);
@@ -533,7 +547,7 @@
     $('changeSettings').addEventListener('click',()=>flash('TrummCards Production kann nicht auf TEST oder fremde Projekte umgestellt werden.','info'));
     $('logoutBtn').addEventListener('click',()=>withSaving(async()=>{
       if(sb) {const {error}=await sb.auth.signOut();if(error)throw error;}
-      user=null;state={products:[],inventory:[],lots:[],sales:[],images:[],productImages:[],shipments:[]};clearDesktopThumbnails();stopProductCamera();showStage('login');flash('Erfolgreich abgemeldet.','success');
+      user=null;state={products:[],inventory:[],lots:[],sales:[],images:[],productImages:[],shipments:[],feeProfiles:[]};clearDesktopThumbnails();stopProductCamera();showStage('login');flash('Erfolgreich abgemeldet.','success');
     }));
     $('refreshBtn').addEventListener('click',()=>refreshAll());
     $('tabs').addEventListener('click',e=>{const b=e.target.closest('button[data-tab]');if(b)switchTab(b.dataset.tab);});
@@ -542,6 +556,7 @@
     catalogPicker11=window.TrummCatalogUI11?.bind();
     financeUI11=window.TrummFinanceUI11?.bind(()=>({sales:state.sales,lots:state.lots,products:state.products}));
     shippingUI11=window.TrummShippingUI11?.bind({getSales:()=>state.sales,getShipments:()=>state.shipments,productName,save:saveShipment11});
+    feesUI11=window.TrummFeesUI11?.bind({getProfiles:()=>state.feeProfiles,save:saveFeeProfile11,parseEuro:v=>L.parseMoney(v,{optional:true}),onFeeApplied:updateSaleHint});
     $('productForm').addEventListener('submit',saveProduct);
     getForm($('productForm'),'productPicture').addEventListener('change',e=>{stopProductCamera();previewProductPicture(e.target.files?.[0]||null);});
     $('cameraStart').addEventListener('click',()=>{void startProductCamera();});
