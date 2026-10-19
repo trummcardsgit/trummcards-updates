@@ -73,7 +73,7 @@ test('Pokemon catalog is accessible from both apps and never auto-uploads third-
  assert.ok(source.includes('price:null'),'catalog module must not invent market prices');
  const picker=read('cloud/mobile-production/web/catalog11-ui.js');
  assert.ok(!picker.includes('sb.storage'),'third-party image must not auto-upload');
- assert.ok(picker.includes('low.webp'),'preview uses supported TCGdex URL');
+ assert.ok(picker.includes("quality='low'")&&picker.includes("+'.webp'"),'preview uses supported low.webp URL');
 });
 test('Finance dashboard & safe CSV export are wired to both Cloud apps',()=>{
  const pkg=JSON.parse(read('cloud/desktop-production/package.json'));
