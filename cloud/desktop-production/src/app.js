@@ -323,8 +323,10 @@
         try{await uploadProductPicture(id,productPhotoFile);}
         catch(err){await refreshAll(true);throw Error('Artikel wurde gespeichert, aber das Bild nicht: '+L.apiError(err)+'. Bitte den vorhandenen Artikel bearbeiten und erneut versuchen.');}
       }
+      const jumpToPurchase=!editing&&getForm(form,'after_save_purchase').checked;
       resetProductEdit();await refreshAll(true);
-      flash(editing?'Artikel und Bild aktualisiert.':'Neuer Artikel mit optionalem Bild gespeichert.','success');
+      if(jumpToPurchase){switchTab('purchase');getForm($('purchaseForm'),'product').value=id;updatePurchaseHint();}
+      flash(jumpToPurchase?'Karte gespeichert. Jetzt den Einkauf erfassen.':(editing?'Artikel und Bild aktualisiert.':'Neuer Artikel mit optionalem Bild gespeichert.'),'success');
     });
   }
   function updatePurchaseHint() {
