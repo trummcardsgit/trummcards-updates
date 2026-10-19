@@ -20,7 +20,8 @@ const files=[
  'cloud/supabase/migrations/20261015000200_cloud_test_session.sql',
  'cloud/supabase/migrations/20261015000300_product_images.sql',
  'cloud/supabase/migrations/20261016000400_backup_snapshot.sql',
- 'cloud/release/sql/harden_product_images_owner.sql'
+ 'cloud/release/sql/harden_product_images_owner.sql',
+ 'cloud/supabase/migrations/20261019000100_cloud_11_card_metadata.sql'
 ];
 const owner='123e4567-e89b-12d3-a456-426614174000';
 const stranger='123e4567-e89b-12d3-a456-426614174999';
@@ -45,6 +46,12 @@ try{
  await c.query("select set_config('request.jwt.claim.sub',$1,false)",[owner]);
  assert.equal((await c.query('select public.tc_is_authorized() as authorized')).rows[0].authorized,true);
  product=(await c.query('insert into public.tc_products(owner_id,sku,name) values($1,$2,$3) returning id',[owner,'DEMO-FAKE-001','Fiktive Pokémon-Karte'])).rows[0].id;
+ // 1.1 migration smoke: all extended columns persist under owner RLS.
+ await c.query("update public.tc_products set card_number=$1,rarity=$2,card_variant=$3,storage_location=$4,grading_company=$5,grading_grade=$6,grading_certificate=$7 where id=$8",
+ ['025/165','Illustration Rare','Holo','Box 2 / Fach 4','PSA','9','DEMO-NOT-REAL',product]);
+ const meta=(await c.query('select card_number,rarity,storage_location,grading_grade from public.tc_products where id=$1',[product])).rows[0];
+ assert.deepEqual(meta,{card_number:'025/165',rarity:'Illustration Rare',storage_location:'Box 2 / Fach 4',grading_grade:'9'});
+ await assert.rejects(()=>c.query("update public.tc_products set storage_location=repeat('X',161) where id=$1",[product]),/tc_products_11_storage_len/);
  const purchase=async(date,qty,total,key)=>{
    const r=await c.query("select public.tc_book_purchase($1,$2,$3,$4,$5,$6,$7,$8) as id",
      [product,date,qty,total,'0.00','Nur lokaler CI-Test','Nicht real',key]);
