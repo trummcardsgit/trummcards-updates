@@ -26,3 +26,9 @@ test('Spreadsheet export preserves cancelled status and protects CSV formulas',(
 test('Invalid amounts fail closed',()=>{
  assert.throws(()=>calculateSale({...sales[0],fees:'bad'}),/Ungültiger Geldbetrag/);
 });
+
+test('Negative profit remains a numeric EUR cell in Excel CSV',()=>{
+ const csv=financeCsv({sales:[{status:'booked',id:'loss',price:10,shipping_income:0,shipping_cost:0,fees:0,other_cost:0,cogs_total:15,sold_on:'2026-10-19',qty:1,platform:'Privat'}]});
+ assert.ok(csv.includes('"-5,00"'),'negative amount must remain numeric');
+ assert.ok(!csv.includes('"\'-5,00"'),'CSV formula guard must not convert numbers into text');
+});
