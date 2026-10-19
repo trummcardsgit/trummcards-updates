@@ -35,7 +35,7 @@ test('KartenDex is independent read-only catalog with card and set pagination',(
   const mod=read(root+'carddex12.js'),html=read(root+'index.html'),app=read(root+'app.js');
   for(const term of ['catalog.searchPokemonCards','catalog.listPokemonSets','catalog.getPokemonSet','catalog.getPokemonCard','catalog.getPokemonCard','PAGE=20','dexToArticle'])assert.ok(mod.includes(term),term);
   assert.ok(!mod.includes('supabase.co')&&!mod.includes("sb.from(")&&!mod.includes("authorizedRequest("));
-  for(const id of ['dexSearchForm','dexResults','dexPrev','dexNext','dexSets','dexMoreSets','dexDetail','dexToArticle','vintedDialog','vintedTitle','vintedDescription','vintedCopyTitle','vintedCopyDescription'])assert.ok(html.includes('id="'+id+'"'),root+id);
+  for(const id of ['dexSearchForm','dexResults','dexPrev','dexNext','dexSets','dexMoreSets','dexDetail','dexToArticle','vintedDialog','vintedTitle','vintedDescription','vintedCopyTitle','vintedCopyDescription','vintedPrice','vintedCopyPrice'])assert.ok(html.includes('id="'+id+'"'),root+id);
   assert.ok(html.includes('carddex12.js')&&html.includes('vinted12.js'));
   assert.ok(app.includes('TrummCardDex12?.bind')&&app.includes('TrummVinted12?.bind'));
   assert.ok(app.includes('data-vinted'));
