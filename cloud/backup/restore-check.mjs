@@ -43,6 +43,7 @@ try{
   'cloud/supabase/migrations/20261019000100_cloud_11_card_metadata.sql',
   'cloud/release/sql/cloud11_sale_shipments_staging.sql',
   'cloud/release/sql/cloud11_fee_profiles_staging.sql',
+  'cloud/release/sql/cloud11_cash_entries_staging.sql',
   'cloud/release/sql/cloud11_backup_snapshot_v2_staging.sql'
  ];
  const client=new Client({connectionString:connection,connectionTimeoutMillis:10000});
