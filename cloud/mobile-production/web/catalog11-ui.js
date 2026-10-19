@@ -65,6 +65,7 @@
        set('rarity',detail.rarity);set('catalog_card_id',detail.id);
        const languages={de:'Deutsch',en:'Englisch',ja:'Japanisch',it:'Italienisch'};
        set('language',languages[$('catalogSearchLanguage').value]);
+       window.TrummMarketInstance11?.applyCatalog(detail);
        const img=$('catalogSelectedImage'),url=imageUrl(detail.imageCandidate);
        selected.hidden=false;
        if(url){img.src=url;img.hidden=false;}else{img.hidden=true;img.removeAttribute('src');}
