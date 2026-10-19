@@ -10,6 +10,7 @@
 <script defer src="vendor.js"></script>
 <script defer src="catalog11.js"></script>
 <script defer src="catalog11-ui.js"></script>
+<script defer src="market11-ui.js"></script>
 <script defer src="finance11.js"></script>
 <script defer src="finance11-ui.js"></script>
 <script defer src="shipping11.js"></script>
@@ -94,6 +95,9 @@
             <label>Grading-Unternehmen <select name="grading_company"><option value="">Nicht gegradet</option><option>PSA</option><option>CGC</option><option>BGS</option><option>ACE</option><option>Andere</option></select></label>
             <label>Grading-Bewertung <input name="grading_grade" maxlength="30" placeholder="z.B. 9.5"></label>
             <label>Zertifikatsnummer <input name="grading_certificate" maxlength="120" placeholder="Optional"></label>
+            <label>Marktwert-Richtwert (EUR) <input name="market_price_eur" inputmode="decimal" placeholder="z.B. 14,90"></label>
+            <input type="hidden" name="market_price_source"><input type="hidden" name="market_price_checked_at">
+            <div class="market-price-info" id="marketPriceStatus" role="status" aria-live="polite">Noch kein Marktpreis.</div>
             <label>Notiz <input name="note" maxlength="2000"></label>
           </div>
           <div class="article-photo-panel">
