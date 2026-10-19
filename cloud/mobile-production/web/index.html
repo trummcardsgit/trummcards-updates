@@ -17,6 +17,8 @@
 <script src="./catalog11-ui.js?v=0.9.0" defer></script>
 <script src="./finance11.js?v=0.9.0" defer></script>
 <script src="./finance11-ui.js?v=0.9.0" defer></script>
+<script src="./shipping11.js?v=0.9.0" defer></script>
+<script src="./shipping11-ui.js?v=0.9.0" defer></script>
 <script src="./app.js?v=0.9.0" defer></script>
 </head>
 <body>
@@ -177,6 +179,23 @@
       <section id="page-sales" class="page" hidden>
         <div class="sectionhead"><h2>Verkäufe & Einkäufe</h2></div>
         <div id="salesList" class="stack"></div>
+        <div class="panel shipment-panel" id="shipmentPanel">
+  <h2>Versandverwaltung</h2>
+  <p class="small muted">Versanddaten werden getrennt von der FIFO-Verkaufsbuchung gespeichert und zwischen Windows und Handy synchronisiert. Keine Käuferadresse erforderlich.</p>
+  <form id="shipmentForm">
+    <div class="two-fields shipment-grid">
+      <label>Verkauf * <select id="shipmentSale" name="sale_id" required><option value="">Gebuchten Verkauf auswählen</option></select></label>
+      <label>Status <select name="shipping_status"><option value="offen">Offen</option><option value="verpackt">Verpackt</option><option value="versendet">Versendet</option><option value="zugestellt">Zugestellt</option></select></label>
+      <label>Versanddienstleister <input name="carrier" maxlength="100" placeholder="z.B. Österreichische Post"></label>
+      <label>Sendungsnummer <input name="tracking_number" maxlength="150"></label>
+      <label>Bestellnummer / Referenz <input name="order_reference" maxlength="150"></label>
+      <label>Versanddatum <input name="shipped_on" type="date"></label>
+      <label>Sendungsverfolgungslink (HTTPS) <input name="tracking_url" type="url" maxlength="500" placeholder="https://..."></label>
+    </div>
+    <div class="actions"><button id="shipmentSave" class="primary" type="submit">Versanddaten speichern</button></div>
+    <p id="shipmentStatus" class="small muted" role="status" aria-live="polite"></p>
+  </form>
+</div>
         <h2 class="subheading">Einkaufschargen</h2><div id="lotsList" class="stack"></div>
       </section>
 
