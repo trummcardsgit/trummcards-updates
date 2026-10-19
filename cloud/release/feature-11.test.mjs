@@ -135,3 +135,39 @@ test('Encrypted Cloud 1.1 shipment backups have v2 snapshot, retain v1 restore s
  assert.ok(validator.includes('trummcards-cloud-backup-v2'));
  assert.ok(read('cloud/backup/backup.test.mjs').includes('old v1 backups remain restorable'));
 });
+
+
+test('Verified EUR market quotes and custom fee profiles are fully wired in Windows and PWA',()=>{
+ const pkg=JSON.parse(read('cloud/desktop-production/package.json'));
+ const feesSql=read('cloud/release/sql/cloud11_fee_profiles_staging.sql');
+ const quote=read('cloud/features/tcgdex11.mjs');
+ assert.ok(quote.includes('euroMarketQuote'),'TCGdex quotes limited by variant and EUR');
+ assert.ok(feesSql.includes('alter table public.tc_platform_fee_profiles enable row level security'));
+ assert.ok(feesSql.includes('tc_platform_fee_profiles_update'));
+ assert.ok(!feesSql.includes('alter table public.tc_sales'),'FIFO sale ledger must remain untouched');
+ for(const [html,app,base] of [[wh,win,'cloud/desktop-production/src/'],[mh,mobile,'cloud/mobile-production/web/']]){
+   for(const p of ['market11-ui.js','fees11.js','fees11-ui.js']){
+     assert.ok(html.includes(p),'Missing asset '+p);
+     assert.ok(read(base+p).length>100,'Missing actual browser code '+p);
+   }
+   for(const name of ['market_price_eur','market_price_source','market_price_checked_at']){
+     assert.ok(html.includes('name="'+name+'"'),'Missing price attribute '+name);
+     assert.ok(app.includes(name),'Market quote must be saved with product');
+   }
+   assert.ok(html.includes('id="marketPriceStatus"'));
+   for(const id of ['feeProfileForm','feeProfileSave','feeProfileList','feeSuggest','feeSuggestStatus'])
+     assert.ok(html.includes('id="'+id+'"'),'Fee UI missing '+id);
+   assert.ok(app.includes('tc_platform_fee_profiles'),'Profile must be synchronized securely');
+   assert.ok(app.includes('TrummFeesUI11?.bind'),'UI wired to application');
+   assert.ok(app.includes('TrummMarketUI11?.bind'),'Manual/candidate market price editor wired');
+   assert.ok(app.includes('feeProfiles'),'Profile state must be loaded');
+   assert.ok(read(base+'fees11-ui.js').includes("dispatchEvent(new Event('input'"),'Fee suggestion must recalculate preview');
+ }
+ for(const file of ['market11-ui.js','fees11.js','fees11-ui.js'])
+   assert.ok(pkg.build.files.includes('src/'+file),'Windows installer missing '+file);
+ assert.ok(read('cloud/release/sql/cloud11_backup_snapshot_v2_staging.sql').includes("'tc_platform_fee_profiles'"));
+ assert.ok(read('cloud/backup/validate.mjs').includes("'tc_platform_fee_profiles'"));
+ assert.ok(read('cloud/backup/business-flow-check.mjs').includes('tc_platform_fee_profiles'));
+ assert.ok(read('cloud/backup/restore-check.mjs').includes('cloud11_fee_profiles_staging.sql'));
+ assert.ok(!read('.github/workflows/cloud-production-release.yml').includes('cloud11_fee_profiles_staging.sql'));
+});
