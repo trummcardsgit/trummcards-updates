@@ -36,6 +36,40 @@ async function searchPokemonCards({query,language='de',limit=20,fetchImpl=fetch,
  if(!Array.isArray(rows))throw Error('Katalogantwort hat ein unerwartetes Format.');
  return rows.filter(x=>x&&x.id&&x.name).slice(0,n).map(cardBrief);
 }
+// Browse public TCGdex sets in the chosen language without sharing inventory.
+const safeSetId=id=>{
+ const value=String(id||'');
+ if(!/^[A-Za-z0-9._-]{1,90}$/.test(value))throw Error('Ungültige Pokémon-Set-ID.');
+ return value;
+};
+const countOf=x=>Number.isSafeInteger(x)&&x>=0?x:null;
+async function listPokemonSets({query='',language='de',page=1,limit=40,fetchImpl=fetch,signal}={}){
+ const lang=languageCode(language),search=String(query??'').trim();
+ if(search.length>100)throw Error('Set-Suchtext zu lang (maximal 100 Zeichen).');
+ const numberPage=Number(page);
+ if(!Number.isSafeInteger(numberPage)||numberPage<1||numberPage>100)throw Error('Ungültige Katalogseite.');
+ const count=Math.max(1,Math.min(60,numberOr(limit,40)));
+ const params=new URLSearchParams({'pagination:page':String(numberPage),'pagination:itemsPerPage':String(count)});
+ if(search)params.set('name',search);
+ else {params.set('sort:field','releaseDate');params.set('sort:order','DESC');}
+ const data=await fetchJson(BASE+'/'+lang+'/sets?'+params.toString(),fetchImpl,signal);
+ if(!Array.isArray(data))throw Error('Set-Katalogantwort hat ein unerwartetes Format.');
+ return data.filter(x=>x&&typeof x.id==='string'&&typeof x.name==='string'&&/^[A-Za-z0-9._-]{1,90}$/.test(x.id))
+  .slice(0,count).map(x=>({id:x.id,name:x.name,releaseDate:String(x.releaseDate||''),
+   count:countOf(x.cardCount?.total),officialCount:countOf(x.cardCount?.official)}));
+}
+async function getPokemonSet({id,language='de',fetchImpl=fetch,signal}={}){
+ const lang=languageCode(language),value=safeSetId(id);
+ const data=await fetchJson(BASE+'/'+lang+'/sets/'+encodeURIComponent(value),fetchImpl,signal);
+ if(!data||data.id!==value||typeof data.name!=='string'||!Array.isArray(data.cards))
+  throw Error('Set-Antwort ist unvollständig. Bitte erneut versuchen.');
+ if(data.cards.length>3000)throw Error('Dieses Set enthält mehr Karten als die unterstützte Anzeige.');
+ return {id:data.id,name:data.name,releaseDate:String(data.releaseDate||''),
+  count:countOf(data.cardCount?.total)??data.cards.length,
+  officialCount:countOf(data.cardCount?.official),
+  cards:data.cards.filter(x=>x&&typeof x.id==='string'&&x.name&&/^[A-Za-z0-9._-]{2,100}$/.test(x.id))
+   .map(cardBrief)};
+}
 // TCGdex's documented card pricing provides Cardmarket EUR trend estimates.
 // Variant matching is not reliable for Reverse, First Edition, SIR or graded cards.
 // Avoid a misleading automated valuation for those combinations.
@@ -73,5 +107,5 @@ async function getPokemonCard({id,language='de',fetchImpl=fetch,signal}={}){
 }
 const CATALOG_SOURCE='TCGdex – tcgdex.dev';
 
-window.TrummCatalog11=Object.freeze({searchPokemonCards,getPokemonCard,euroMarketQuote,CATALOG_SOURCE});
+window.TrummCatalog11=Object.freeze({searchPokemonCards,listPokemonSets,getPokemonSet,getPokemonCard,euroMarketQuote,CATALOG_SOURCE});
 })();
