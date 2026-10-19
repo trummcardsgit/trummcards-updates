@@ -129,7 +129,7 @@ test('KartenDex shows canonical set name then separate card number in every resu
   assert.match(html,/id="dexSearchSet"/);
   assert.match(html,/id="dexSearchNumber"/);
   assert.match(js,/catalog\.getPokemonCard\(\{id:card\.id,language\}\)/);
-  assert.match(js,/setLabel\.textContent=value\|\|'Set nicht verfügbar'/);
+  assert.match(js,/label\.textContent=value\|\|'Set nicht verfügbar'/);
   assert.match(js,/card\.setName\|\|'Set wird geladen/);
   assert.match(js,/number\.textContent='Kartennummer: '/);
   assert.match(js,/setName:selectedSet\.name/);
