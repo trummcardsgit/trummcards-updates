@@ -40,3 +40,12 @@ Version 1.2 TEST mit eigenem KartenDex-Menü, Pokémon-Namenssuche mit Blättern
 - Für Treffer aus der globalen Suche wird der Set-Name aus den jeweiligen Kartendetails geladen und zeitweise pro Karten-ID/Sprache zwischengespeichert; beim direkten Durchsuchen eines Sets ist der Set-Name sofort verfügbar.
 - Tests für kombinierte Filter, Paginierung, Nummernnormalisierung, Set-Anzeige und Windows-/PWA-Gleichstand ergänzt.
 - TEST-Buildversion `1.2.0-test.3` mit neuer Service-Worker-Kennung; Release erfolgt isoliert nach `test-12/`. PRODUCTION 1.1 sowie TEST-Datenbankbestände bleiben unangetastet.
+
+## 19.10.2026 – Korrektur der Marktpreis-Varianten (1.2.0-test.4)
+- Ausgangspunkt: Glurak VMAX 74/73 aus „Weg des Champs“ zeigte gleichzeitig „Standard“ und „Holo“, obwohl dies nicht automatisch zwei reale Druckvarianten dieser Rainbow Secret Rare belegt.
+- Das Kartenmodell übernimmt jetzt die ausdrücklich in der TCGdex-Detailantwort aufgeführten Varianteneigenschaften normal, holo, reverse und firstEdition. Die bloße Existenz von zwei Cardmarket-Preisfeldern erzeugt keine Varianten.
+- Die KartenDex-Preisanzeige verwendet nur dann zwei getrennte Trendwerte, wenn TCGdex mindestens die Ausführungen Normal und Holo ausdrücklich bestätigt.
+- Bei nur einer oder unbekannten Ausführung wird höchstens ein allgemeiner Cardmarket-Trendwert ausgegeben. Zusätzliche Rohpreisfelder werden ausgeblendet und die Unsicherheit offen erläutert. Für Glurak VMAX wird somit der bisherige allgemeine Trend (Beispiel 174,81 €) nicht mehr durch einen nicht zugeordneten zweiten Holo-Trendwert (Beispiel 271,61 €) ergänzt.
+- Ein allgemeiner Trendwert ist keine Garantie für den richtigen Zustand, die konkrete Sprache, die Variante oder den Verkaufspreis; die externe TCGdex-Preiszuordnung kann selbst fehlerhaft sein.
+- Neue Regressionstests decken exakt die Glurak-VMAX-Situation, Karten mit bestätigten zwei Varianten und Karten ohne Variantendaten ab.
+- Nur die isolierte TEST-Version wurde geändert; die Produktionsdatenbank und Produktivversion 1.1 bleiben unverändert.
