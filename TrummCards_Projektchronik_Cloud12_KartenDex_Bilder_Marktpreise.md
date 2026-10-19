@@ -77,3 +77,14 @@ Version 1.2 TEST mit eigenem KartenDex-Menü, Pokémon-Namenssuche mit Blättern
 - Automatisierte Regressionstests für Vintage-Suche, Setgrößenfilter, englischen Fallback, führende Nullen und Set-Katalog-Folgeseiten.
 - PWA-Version `1.2.0-test.7` und eigener Service-Worker-Cache `trummcards-mobile-test12-shell-v1-1207`. Nur TEST unter `test-12/`; Produktivversion Cloud 1.1 samt vorhandenen Echtdaten unverändert.
 - Zu beachten: Die präzise Suche nach einer Nummer mit Nenner braucht beim ersten Aufruf unter Umständen mehrere TCGdex-Anfragen; Sets werden innerhalb derselben Anwendungssitzung zwischengespeichert. Nicht verifizierte Treffer werden dem Nutzer nicht automatisch als eigener Lagerartikel angelegt.
+
+## 19.10.2026 – Nutzergewähltes „Kein Bild“-Artwork in KartenDex (TEST 1.2.0-test.8)
+- Ausgangswunsch: Sobald weder das Kartenbild in der eingestellten Sprache noch das englische Ersatzbild heruntergeladen und angezeigt werden kann, darf in KartenDex keine leere Bildfläche und kein defektes Bildsymbol erscheinen.
+- Nach mehreren Gestaltungsvarianten entschied sich der Benutzer ausdrücklich für die **schlichte, dunkelblaue Karte mit goldfarbenem Rand und dezenter Monster-Silhouette samt Fragezeichen** und den beiden Textzeilen „Kein Bild“ sowie „Kein Kartenbild verfügbar“.
+- Die ausgewählte Bildvorlage wurde ohne Änderung ihrer Gestaltung in eine 220 × 330 Pixel große WebP-Datei für die kleinflächigen KartenDex-Ansichten verkleinert und auf 5,5 KB komprimiert. Asset: `cloud/desktop-production/src/kein-bild12.webp`. Verifizierter Git-Blob: `91a1eeb4b5503af3319bc1efa25613e68082e915`.
+- Die KartenDex-Bildladefunktion verwendet diese **lokal mitgelieferte** Grafik nur dann, wenn die bisherigen Kartenbilder inklusive englischem Fallback fehlschlagen. Die eigentlichen Bildfelder und Katalogdaten werden dabei nicht überschrieben.
+- Der Platzhalter wird als normales sichtbares IMG verwendet und erscheint **sowohl bei Suchtreffern als auch in den Kartendetails**. Gescheiterte Bildladeereignisse werden zurückgesetzt, damit ein früherer 404-Fehler die Ersatzgrafik nicht beeinflusst. Falls auch die lokale Datei wider Erwarten nicht geladen werden kann, erscheint ein Text-Hinweis.
+- Das bestehende englische Ersatzbild bleibt bevorzugt. Bei einem korrekt geladenen deutschen/englischen Bild wird der Platzhalter nicht angezeigt.
+- Windows-TEST-Paket enthält das WebP direkt unter `src/`. Der PWA-TEST-Build kopiert dieselben Bildbytes nach `web/`, prüft das RIFF/WebP-Format und speichert den lokalen Dateipfad im Service-Worker-Cache für Offline-Verfügbarkeit.
+- Testversion `1.2.0-test.8` mit Cache `trummcards-mobile-test12-shell-v1-1208`. Regressionstests für Suchergebnis und Detailansicht sowie Paket- und Cache-Vollständigkeit.
+- Nur der Entwicklungszweig und die TEST-Ausgabe werden geändert; Supabase-TEST- und PRODUKTIV-Daten sowie Cloud-PRODUCTION 1.1 bleiben unberührt.
