@@ -358,7 +358,8 @@ test('Approved artwork is included in Windows package and PWA service-worker pre
  const pkg=JSON.parse(read('cloud/desktop-production/package.json'));
  assert.ok(pkg.build.files.includes('src/kein-bild12.webp'));
  const sw=read('cloud/release/prepare-cloud-12-test.mjs');
- assert.match(sw,/\.\/kein-bild12\.webp/);
+ assert.match(sw,/img\.src=NO_IMAGE_DATA_URI/);
+ assert.doesNotMatch(sw,/const artworkEntry=/);
  for(const root of clients){
   const source=read(root+'carddex12.js');
   const encoded=source.match(/const NO_IMAGE_DATA_URI='data:image\/webp;base64,([^']+)'/);
