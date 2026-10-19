@@ -171,3 +171,30 @@ test('Verified EUR market quotes and custom fee profiles are fully wired in Wind
  assert.ok(read('cloud/backup/restore-check.mjs').includes('cloud11_fee_profiles_staging.sql'));
  assert.ok(!read('.github/workflows/cloud-production-release.yml').includes('cloud11_fee_profiles_staging.sql'));
 });
+
+
+test('Full multilingual Pokemon set browser is connected to catalog and card editor in both apps',()=>{
+ const catalog=read('cloud/features/tcgdex11.mjs');
+ const pkg=JSON.parse(read('cloud/desktop-production/package.json'));
+ assert.ok(catalog.includes("BASE+'/'+lang+'/sets?"),'paged API set list');
+ assert.ok(catalog.includes("BASE+'/'+lang+'/sets/'+"),'individual set detail API');
+ for(const [html,app,base] of [[wh,win,'cloud/desktop-production/src/'],[mh,mobile,'cloud/mobile-production/web/']]){
+   const picker=read(base+'sets11-ui.js');
+   const browser=read(base+'catalog11.js');
+   assert.ok(html.includes('sets11-ui.js'),'script loaded');
+   for(const id of ['catalogSetsForm','catalogSetQuery','catalogSetResults','catalogSetMore',
+       'catalogSetDetail','catalogSetCards','catalogSetCardFilter','catalogSetPrev','catalogSetNext','catalogSetStatus'])
+     assert.ok(html.includes('id="'+id+'"'),'missing '+id);
+   for(const method of ['listPokemonSets','getPokemonSet']) {
+     assert.ok(catalog.includes('function '+method),'module missing '+method);
+     assert.ok(browser.includes(method),'browser bundle missing '+method);
+     assert.ok(picker.includes(method),'set browser does not use '+method);
+   }
+   assert.ok(picker.includes("selectCard(card.id)"),'reuses checked card selection');
+   assert.ok(picker.includes('AbortController'),'cancels outdated network requests');
+   assert.ok(app.includes("TrummSetUI11?.bind"),'application must initialize set explorer');
+   assert.ok(app.includes("setPicker11?.clear()"),'article reset clears selected set');
+ }
+ assert.ok(pkg.build.files.includes('src/sets11-ui.js'),'Windows installer includes set picker');
+ assert.ok(!read('.github/workflows/cloud-production-release.yml').includes('sets11-ui.js'),'production deploy remains gated');
+});
