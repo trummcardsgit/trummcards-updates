@@ -198,3 +198,42 @@ test('Full multilingual Pokemon set browser is connected to catalog and card edi
  assert.ok(pkg.build.files.includes('src/sets11-ui.js'),'Windows installer includes set picker');
  assert.ok(!read('.github/workflows/cloud-production-release.yml').includes('sets11-ui.js'),'production deploy remains gated');
 });
+
+
+test('Austrian cash-flow journal works on Windows and mobile independently of booked FIFO sales',()=>{
+ const pkg=JSON.parse(read('cloud/desktop-production/package.json'));
+ const sql=read('cloud/release/sql/cloud11_cash_entries_staging.sql');
+ const snapshot=read('cloud/release/sql/cloud11_backup_snapshot_v2_staging.sql');
+ const validator=read('cloud/backup/validate.mjs');
+ assert.ok(sql.includes('create table public.tc_cash_entries'));
+ assert.ok(sql.includes('enable row level security'));
+ assert.ok(sql.includes('tc_cash_entries_sale_owner_fk'));
+ assert.ok(sql.includes('tc_cash_entries_lot_owner_fk'));
+ assert.ok(sql.includes('create policy tc_cash_entries_delete'));
+ assert.ok(!sql.includes('alter table public.tc_sales'));
+ assert.ok(!sql.includes('alter table public.tc_purchase_lots'));
+ assert.ok(!read('.github/workflows/cloud-production-release.yml').includes('cloud11_cash_entries_staging.sql'));
+ assert.ok(snapshot.includes("'tc_cash_entries'"));
+ assert.ok(validator.includes('tc_cash_entries'));
+ for(const [html,app,base] of [[wh,win,'cloud/desktop-production/src/'],[mh,mobile,'cloud/mobile-production/web/']]){
+  for(const script of ['cash11.js','cash11-ui.js']){
+   assert.ok(html.includes(script),'Cash browser script missing');
+   assert.ok(read(base+script).length>100);
+  }
+  for(const id of ['cashPanel','cashEntryForm','cashSave','cashCancel','cashYear','cashSummary','cashEntries','cashExport'])
+   assert.ok(html.includes('id="'+id+'"'),'Missing payment UI '+id);
+  for(const name of ['payment_on','direction','category','amount_eur','description','document_reference'])
+   assert.ok(html.includes('name="'+name+'"'),'Missing payment field '+name);
+  assert.ok(app.includes('tc_cash_entries'),'Real user cash transactions need cloud storage');
+  assert.ok(app.includes('TrummCashUI11?.bind'),'Cash UI not initialized');
+  assert.ok(app.includes('saveCash11')&&app.includes('deleteCash11'),'Payment journal CRUD required');
+  assert.ok(app.includes('cashEntries'),'Payment state not synchronized');
+  const ui=read(base+'cash11-ui.js');
+  assert.ok(ui.includes('cashCsv'),'Cash export must use explicit payment dates');
+  assert.ok(!ui.includes('tc_book_sale')&&!ui.includes('tc_book_purchase'),'Cash journal must not book FIFO items');
+ }
+ assert.ok(pkg.build.files.includes('src/cash11.js'));
+ assert.ok(pkg.build.files.includes('src/cash11-ui.js'));
+ assert.ok(read('cloud/backup/restore-check.mjs').includes('cloud11_cash_entries_staging.sql'));
+ assert.ok(read('cloud/backup/business-flow-check.mjs').includes('cloud11_cash_entries_staging.sql'));
+});
