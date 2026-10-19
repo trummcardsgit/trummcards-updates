@@ -45,8 +45,8 @@ jobs:
           git fetch --no-tags origin feature/cloud-1.2-carddex-vinted
           expected="$(git merge-base HEAD origin/feature/cloud-1.2-carddex-vinted)"
           test "$expected" = "$(git rev-parse origin/feature/cloud-1.2-carddex-vinted)"
-          gh api "repos/$GITHUB_REPOSITORY/actions/workflows/cloud-12-test-build.yml/runs?branch=feature%2Fcloud-1.2-carddex-vinted&per_page=100" \
-            --jq '.workflow_runs | map(select(.status=="completed" and .conclusion=="success")) | .[].head_sha' > "$RUNNER_TEMP/green-test12-shas.txt"
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs?branch=feature%2Fcloud-1.2-carddex-vinted&per_page=100" \
+            --jq '.workflow_runs | map(select(.name=="TrummCards Cloud 1.2 TEST - Isolated Build" and .status=="completed" and .conclusion=="success")) | .[].head_sha' > "$RUNNER_TEMP/green-test12-shas.txt"
           test -s "$RUNNER_TEMP/green-test12-shas.txt"
           matched=""
           while IFS= read -r successful; do
