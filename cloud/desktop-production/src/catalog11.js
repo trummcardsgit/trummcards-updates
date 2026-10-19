@@ -34,6 +34,82 @@ function normalizePrintedNumber(input){
  if(value.length>30||!(/^[a-zA-Z0-9-]*$/.test(value)))throw Error('Ungültige Kartennummer.');
  return /^0+[0-9]+$/.test(value)?String(Number(value)):value;
 }
+
+// Printed fraction 2/132 is NOT equivalent to localId 2: the denominator identifies
+// official set size. Resolve the matching sets first, then compare exact card numbers.
+// English is the canonical fallback for vintage sets absent from other languages.
+const printedSearchCache=new WeakMap();
+function printedParts(input){
+ const raw=String(input||'').trim().replace(/^#\s*/,'');
+ const m=raw.match(/^([A-Za-z]{0,3}\d{1,4}[A-Za-z]?)\s*[/／]\s*(\d{1,4})$/);
+ if(!m)return null;
+ const denominator=Number(m[2]);
+ if(!Number.isInteger(denominator)||denominator<1||denominator>9999)throw Error('Ungültige Setgröße.');
+ return {numerator:m[1].toUpperCase(),denominator};
+}
+function equalLocalId(a,b){
+ const norm=x=>String(x||'').toUpperCase().replace(/^([A-Z]*?)0+(\d)/,'$1$2');
+ return norm(a)===norm(b);
+}
+async function setsWithOfficialCount(count,fetchImpl,signal){
+ // Limit to 2,500 set briefs and stop after the last shorter page.
+ // Cache ONLY fully fetched sets, never an aborted/partial result.
+ let perFetch=printedSearchCache.get(fetchImpl);
+ if(!perFetch){perFetch=new Map();printedSearchCache.set(fetchImpl,perFetch);}
+ if(perFetch.has(count))return perFetch.get(count);
+ const request=(async()=>{
+  const found=[];
+  let complete=false;
+  for(let page=1;page<=25;page++){
+   const params=new URLSearchParams({'pagination:page':String(page),'pagination:itemsPerPage':'100'});
+   const sets=await fetchJson(BASE+'/en/sets?'+params,fetchImpl,signal);
+   if(!Array.isArray(sets))throw Error('Set-Katalogantwort ist ungültig.');
+   for(const set of sets){
+    if(set&&set.id&&set.cardCount?.official===count)found.push({id:String(set.id),name:String(set.name||'')});
+   }
+   if(sets.length<100){complete=true;break;}
+  }
+  if(!complete)throw Error('Die Set-Liste ist zu umfangreich für eine sichere Suche.');
+  return found;
+ })();
+ perFetch.set(count,request);
+ try{return await request;}
+ catch(err){perFetch.delete(count);throw err;}
+}
+async function searchPrintedFraction({cardNumber,query,set,language,page,limit,fetchImpl,signal}){
+ const fraction=printedParts(cardNumber),nameQuery=query.toLocaleLowerCase(),setQuery=set.toLocaleLowerCase();
+ const candidates=await setsWithOfficialCount(fraction.denominator,fetchImpl,signal);
+ const found=[];
+ // Preserve catalog order; do not silently cap to the first 20/100 new sets.
+ for(const candidate of candidates){
+  if(setQuery&&!candidate.name.toLocaleLowerCase().includes(setQuery)&&!candidate.id.toLowerCase().includes(setQuery))continue;
+  if(signal?.aborted)throw Error('Suche abgebrochen.');
+  let setData;
+  try{setData=await fetchJson(BASE+'/en/sets/'+encodeURIComponent(candidate.id),fetchImpl,signal);}
+  catch(e){if(signal?.aborted)throw e;continue;}
+  if(!setData||!Array.isArray(setData.cards))continue;
+  for(const raw of setData.cards){
+   if(!equalLocalId(raw.localId,fraction.numerator)||!raw.id||!raw.name)continue;
+   const brief=cardBrief(raw);
+   let resolved={...brief,setName:String(setData.name||candidate.name),setOfficial:fraction.denominator,catalogLanguage:'en'};
+   if(language!=='en'){
+    try{
+     const localized=await fetchJson(BASE+'/'+language+'/cards/'+encodeURIComponent(cardId(raw.id)),fetchImpl,signal);
+     if(localized?.id===raw.id&&localized?.name)resolved={
+      ...cardBrief(localized),setName:String(localized.set?.name||setData.name||candidate.name),
+      setOfficial:fraction.denominator,catalogLanguage:language
+     };
+    }catch(e){if(signal?.aborted)throw e;}
+   }
+   // Names are matched using actual localized/English card names, never fictitious translations.
+   if(nameQuery&&!resolved.name.toLocaleLowerCase().includes(nameQuery)&&!brief.name.toLocaleLowerCase().includes(nameQuery))continue;
+   found.push(resolved);
+  }
+ }
+ const offset=(page-1)*limit;
+ return found.slice(offset,offset+limit);
+}
+
 async function searchPokemonCards({query='',set='',cardNumber='',language='de',page=1,limit=20,fetchImpl=fetch,signal}={}){
  const q=String(query||'').trim(),setFilter=String(set||'').trim(),number=normalizePrintedNumber(cardNumber);
  if(q.length>100||setFilter.length>100)throw Error('Suchtext zu lang (maximal 100 Zeichen).');
@@ -43,6 +119,9 @@ async function searchPokemonCards({query='',set='',cardNumber='',language='de',p
  const selectedPage=Number(page);
  if(!Number.isSafeInteger(selectedPage)||selectedPage<1||selectedPage>100)throw Error('Ungültige Kartensuchseite.');
  const lang=languageCode(language),n=Math.min(30,numberOr(limit,20));
+ if(printedParts(cardNumber)){
+  return searchPrintedFraction({cardNumber,query:q,set:setFilter,language:lang,page:selectedPage,limit:n,fetchImpl,signal});
+ }
  const params=new URLSearchParams({'pagination:page':String(selectedPage),'pagination:itemsPerPage':String(n)});
  if(q)params.set('name',q);
  if(setFilter)params.set('set',setFilter);
