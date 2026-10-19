@@ -3,11 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self' https://hgdexyvtgfffcasfpjyu.supabase.co wss://hgdexyvtgfffcasfpjyu.supabase.co; img-src 'self' data: blob: https://hgdexyvtgfffcasfpjyu.supabase.co; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self' https://hgdexyvtgfffcasfpjyu.supabase.co wss://hgdexyvtgfffcasfpjyu.supabase.co https://api.tcgdex.net; img-src 'self' data: blob: https://hgdexyvtgfffcasfpjyu.supabase.co https://assets.tcgdex.net; object-src 'none'; base-uri 'none'; form-action 'none'">
 <title>TrummCards Cloud</title>
 <link rel="stylesheet" href="styles.css">
 <script defer src="logic.js"></script>
 <script defer src="vendor.js"></script>
+<script defer src="catalog11.js"></script>
 <script defer src="app.js"></script>
 </head>
 <body>
@@ -61,7 +62,19 @@
 
     <section class="tab" id="tab-inventory">
       <div class="panel"><h2 id="productFormTitle">Artikel anlegen</h2>
-        <form id="productForm"><input type="hidden" name="edit_id">
+        <section class="catalog-panel" aria-label="Pokémon-Kartenkatalog">
+          <h3>Pokémon-Karte automatisch suchen</h3>
+          <form id="catalogSearchForm" class="catalog-search-form">
+            <label>Kartenname <input id="catalogSearchQuery" type="search" minlength="2" maxlength="100" placeholder="z.B. Pikachu, Glurak" required></label>
+            <label>Katalogsprache <select id="catalogSearchLanguage"><option value="de">Deutsch</option><option value="en">Englisch</option><option value="ja">Japanisch</option><option value="it">Italienisch</option></select></label>
+            <button type="submit">Karten suchen</button>
+          </form>
+          <p class="small muted">TCGdex-Katalog: Kartendaten nach Auswahl übernehmen. Katalogbilder sind nur Vorschauen; eigene Fotos bleiben privat. Fehlende Karten kannst du weiterhin manuell anlegen.</p>
+          <p id="catalogSearchStatus" class="small muted" role="status" aria-live="polite"></p>
+          <div id="catalogSearchResults" class="catalog-results"></div>
+          <div id="catalogSelected" class="catalog-selected" hidden><img id="catalogSelectedImage" alt="Katalogbild-Vorschau" hidden><span id="catalogSelectedInfo"></span></div>
+        </section>
+        <form id="productForm"><input type="hidden" name="edit_id"><input type="hidden" name="catalog_card_id">
           <div class="grid">
             <label>Artikelname * <input name="name" maxlength="300" required placeholder="z.B. Delta Herrschaft"></label>
             <label>Artikelnummer / SKU <input name="sku" maxlength="120" placeholder="z.B. PKM-001"></label>
