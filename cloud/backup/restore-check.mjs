@@ -41,6 +41,7 @@ try{
   'cloud/supabase/migrations/20261016000400_backup_snapshot.sql',
   'cloud/release/sql/harden_product_images_owner.sql',
   'cloud/supabase/migrations/20261019000100_cloud_11_card_metadata.sql',
+  'cloud/release/sql/cloud11_catalog_image_link_staging.sql',
   'cloud/release/sql/cloud11_sale_shipments_staging.sql',
   'cloud/release/sql/cloud11_fee_profiles_staging.sql',
   'cloud/release/sql/cloud11_cash_entries_staging.sql',
