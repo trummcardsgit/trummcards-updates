@@ -21,6 +21,10 @@ jobs:
       - name: Production PWA und Konfigurationsgrenzen pruefen
         run: |
           node --check cloud/mobile-production/web/app.js
+          node --check cloud/mobile-production/web/catalog11.js
+          node --check cloud/mobile-production/web/catalog11-ui.js
+          node --check cloud/mobile-production/web/finance11.js
+          node --check cloud/mobile-production/web/finance11-ui.js
           node --check cloud/mobile-production/web/reset-password.js
           node --check cloud/mobile-production/web/sw.js
           node --test cloud/mobile-production/tests/production.test.mjs
