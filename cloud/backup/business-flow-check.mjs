@@ -21,7 +21,8 @@ const files=[
  'cloud/supabase/migrations/20261015000300_product_images.sql',
  'cloud/supabase/migrations/20261016000400_backup_snapshot.sql',
  'cloud/release/sql/harden_product_images_owner.sql',
- 'cloud/supabase/migrations/20261019000100_cloud_11_card_metadata.sql'
+ 'cloud/supabase/migrations/20261019000100_cloud_11_card_metadata.sql',
+ 'cloud/release/sql/cloud11_sale_shipments_staging.sql'
 ];
 const owner='123e4567-e89b-12d3-a456-426614174000';
 const stranger='123e4567-e89b-12d3-a456-426614174999';
@@ -72,6 +73,17 @@ try{
  assert.equal(toNum(booking.cogs_total),55,'FIFO cost 3*10 + 1*25');
  assert.equal(toNum(booking.price)+toNum(booking.shipping_income)-toNum(booking.shipping_cost)-toNum(booking.fees)-toNum(booking.other_cost)-toNum(booking.cogs_total),38,'Net sale profit');
  assert.equal(booking.status,'booked');
+ // Shipping is independent per-sale metadata. Authorized owner can insert and edit it;
+ // no stock, FIFO or sale-money fields are ever directly updated.
+ await c.query(`insert into public.tc_sale_shipments
+   (sale_id,owner_id,shipping_status,carrier,tracking_number,order_reference,shipped_on,tracking_url)
+   values ($1,$2,'verpackt','Österreichische Post','','ORDER-TEST-1',null,'')`,[saleId,owner]);
+ assert.equal((await c.query('select shipping_status from public.tc_sale_shipments where sale_id=$1',[saleId])).rows[0].shipping_status,'verpackt');
+ await c.query("update public.tc_sale_shipments set shipping_status='versendet',tracking_number='TEST-123',shipped_on='2026-10-19' where sale_id=$1",[saleId]);
+ assert.equal((await c.query('select tracking_number from public.tc_sale_shipments where sale_id=$1',[saleId])).rows[0].tracking_number,'TEST-123');
+ await assert.rejects(()=>c.query("insert into public.tc_sale_shipments (sale_id,owner_id) values ($1,$2)",['723e4567-e89b-12d3-a456-426614174999',owner]),/foreign key/);
+ const bookedAfterShipping=(await c.query('select qty,cogs_total,status from public.tc_sales where id=$1',[saleId])).rows[0];
+ assert.deepEqual(bookedAfterShipping,{qty:4,cogs_total:'55.00',status:'booked'});
  const left=await c.query('select id,available_qty,allocated_cost from public.tc_purchase_lots where product_id=$1',[product]);
  const map=new Map(left.rows.map(row=>[row.id,row]));
  assert.equal(toNum(map.get(lot1).available_qty),0);
@@ -87,6 +99,7 @@ try{
  await assert.rejects(()=>sale(3,saleKey),/Buchungsschlüssel/,'Reused request key mismatch blocked');
  assert.equal((await c.query('select public.tc_void_sale($1) as result',[saleId])).rows[0].result,true,'Storno');
  assert.equal((await c.query('select public.tc_void_sale($1) as result',[saleId])).rows[0].result,false,'Storno idempotence');
+ assert.equal((await c.query('select shipping_status from public.tc_sale_shipments where sale_id=$1',[saleId])).rows[0].shipping_status,'versendet','Historical shipment preserved after cancellation');
  const after=(await c.query('select available_qty,remaining_cost from public.tc_inventory where product_id=$1',[product])).rows[0];
  assert.equal(toNum(after.available_qty),5);
  assert.equal(toNum(after.remaining_cost),80);
@@ -101,11 +114,13 @@ try{
  // A different authenticated account is not allowed to inspect/write even with the valid IDs.
  await c.query("select set_config('request.jwt.claim.sub',$1,false)",[stranger]);
  assert.equal((await c.query('select public.tc_is_authorized() as authorized')).rows[0].authorized,false);
- for(const name of ['tc_products','tc_purchase_lots','tc_sales','tc_product_images']){
+ for(const name of ['tc_products','tc_purchase_lots','tc_sales','tc_sale_shipments','tc_product_images']){
    const res=await c.query('select count(*)::int as n from public.'+name);
    assert.equal(res.rows[0].n,0,'Foreign account leaked '+name);
  }
  assert.equal((await c.query('select count(*)::int as n from storage.objects')).rows[0].n,0);
+ await assert.rejects(()=>c.query("insert into public.tc_sale_shipments(sale_id,owner_id) values ($1,$2)",[saleId,stranger]),/row-level security|permission denied|foreign key/i,'Foreign account cannot add shipment to owner sale');
+ assert.equal((await c.query("update public.tc_sale_shipments set shipping_status='zugestellt' where sale_id=$1 returning sale_id",[saleId])).rowCount,0,'Foreign account cannot edit shipment');
  await assert.rejects(()=>purchase('2026-10-13',1,'10.00','623e4567-e89b-12d3-a456-426614174777'),/Nicht autorisiert/);
  await c.query('reset role');
  const totals=await c.query('select (select count(*) from public.tc_products) products,(select count(*) from public.tc_purchase_lots) lots,(select count(*) from public.tc_sales) sales');
