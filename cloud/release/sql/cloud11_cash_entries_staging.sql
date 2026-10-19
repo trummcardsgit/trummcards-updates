@@ -8,6 +8,11 @@ create table public.tc_cash_entries (
  direction text not null check (direction in ('income','expense')),
  category text not null check (category in (
   'sale_receipt','purchase_payment','platform_fee','shipping','business_expense','other_income','other_expense','refund')),
+ constraint tc_cash_entries_category_direction_check check (
+  (category in ('sale_receipt','other_income') and direction='income') or
+  (category in ('purchase_payment','platform_fee','shipping','business_expense','other_expense') and direction='expense') or
+  (category='refund' and direction in ('income','expense'))
+ ),
  amount_eur numeric(12,2) not null check (amount_eur>0 and amount_eur<=9999999999.99),
  description text not null default '' check (length(description)<=500),
  document_reference text not null default '' check (length(document_reference)<=160),
