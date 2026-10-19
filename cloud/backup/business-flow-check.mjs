@@ -20,7 +20,13 @@ const files=[
  'cloud/supabase/migrations/20261015000200_cloud_test_session.sql',
  'cloud/supabase/migrations/20261015000300_product_images.sql',
  'cloud/supabase/migrations/20261016000400_backup_snapshot.sql',
- 'cloud/release/sql/harden_product_images_owner.sql'
+ 'cloud/release/sql/harden_product_images_owner.sql',
+ 'cloud/supabase/migrations/20261019000100_cloud_11_card_metadata.sql',
+ 'cloud/release/sql/cloud11_catalog_image_link_staging.sql',
+ 'cloud/release/sql/cloud11_sale_shipments_staging.sql',
+ 'cloud/release/sql/cloud11_fee_profiles_staging.sql',
+ 'cloud/release/sql/cloud11_cash_entries_staging.sql',
+ 'cloud/release/sql/cloud11_backup_snapshot_v2_staging.sql'
 ];
 const owner='123e4567-e89b-12d3-a456-426614174000';
 const stranger='123e4567-e89b-12d3-a456-426614174999';
@@ -45,6 +51,17 @@ try{
  await c.query("select set_config('request.jwt.claim.sub',$1,false)",[owner]);
  assert.equal((await c.query('select public.tc_is_authorized() as authorized')).rows[0].authorized,true);
  product=(await c.query('insert into public.tc_products(owner_id,sku,name) values($1,$2,$3) returning id',[owner,'DEMO-FAKE-001','Fiktive Pokémon-Karte'])).rows[0].id;
+ // 1.1 migration smoke: all extended columns persist under owner RLS.
+ await c.query("update public.tc_products set card_number=$1,rarity=$2,card_variant=$3,storage_location=$4,grading_company=$5,grading_grade=$6,grading_certificate=$7 where id=$8",
+ ['025/165','Illustration Rare','Holo','Box 2 / Fach 4','PSA','9','DEMO-NOT-REAL',product]);
+ const meta=(await c.query('select card_number,rarity,storage_location,grading_grade from public.tc_products where id=$1',[product])).rows[0];
+ assert.deepEqual(meta,{card_number:'025/165',rarity:'Illustration Rare',storage_location:'Box 2 / Fach 4',grading_grade:'9'});
+ const link='https://assets.tcgdex.net/de/base/base1/4';
+ await c.query('update public.tc_products set catalog_image_url=$1 where id=$2',[link,product]);
+ assert.equal((await c.query('select catalog_image_url from public.tc_products where id=$1',[product])).rows[0].catalog_image_url,link);
+ await assert.rejects(()=>c.query("update public.tc_products set catalog_image_url='https://not-trusted.example/card' where id=$1",[product]),/tc_products_11_catalog_image_url_safe/);
+ assert.equal((await c.query('select catalog_image_url from public.tc_products where id=$1',[product])).rows[0].catalog_image_url,link);
+ await assert.rejects(()=>c.query("update public.tc_products set storage_location=repeat('X',161) where id=$1",[product]),/tc_products_11_storage_len/);
  const purchase=async(date,qty,total,key)=>{
    const r=await c.query("select public.tc_book_purchase($1,$2,$3,$4,$5,$6,$7,$8) as id",
      [product,date,qty,total,'0.00','Nur lokaler CI-Test','Nicht real',key]);
@@ -65,6 +82,51 @@ try{
  assert.equal(toNum(booking.cogs_total),55,'FIFO cost 3*10 + 1*25');
  assert.equal(toNum(booking.price)+toNum(booking.shipping_income)-toNum(booking.shipping_cost)-toNum(booking.fees)-toNum(booking.other_cost)-toNum(booking.cogs_total),38,'Net sale profit');
  assert.equal(booking.status,'booked');
+ // Shipping is independent per-sale metadata. Authorized owner can insert and edit it;
+ // no stock, FIFO or sale-money fields are ever directly updated.
+ await c.query(`insert into public.tc_sale_shipments
+   (sale_id,owner_id,shipping_status,carrier,tracking_number,order_reference,shipped_on,tracking_url)
+   values ($1,$2,'verpackt','Österreichische Post','','ORDER-TEST-1',null,'')`,[saleId,owner]);
+ assert.equal((await c.query('select shipping_status from public.tc_sale_shipments where sale_id=$1',[saleId])).rows[0].shipping_status,'verpackt');
+ await c.query("update public.tc_sale_shipments set shipping_status='versendet',tracking_number='TEST-123',shipped_on='2026-10-19' where sale_id=$1",[saleId]);
+ assert.equal((await c.query('select tracking_number from public.tc_sale_shipments where sale_id=$1',[saleId])).rows[0].tracking_number,'TEST-123');
+ await assert.rejects(()=>c.query("insert into public.tc_sale_shipments (sale_id,owner_id) values ($1,$2)",['723e4567-e89b-12d3-a456-426614174999',owner]),/foreign key/);
+ const bookedAfterShipping=(await c.query('select qty,cogs_total,status from public.tc_sales where id=$1',[saleId])).rows[0];
+ assert.deepEqual(bookedAfterShipping,{qty:4,cogs_total:'55.00',status:'booked'});
+ // Platform commission profiles are separate user-specific configuration, not ledger mutations.
+ const feeProfile=(await c.query("insert into public.tc_platform_fee_profiles(owner_id,platform,percent_rate,fixed_eur,include_shipping) values($1,'eBay',10.00,0.35,true) returning id",[owner])).rows[0].id;
+ await c.query('update public.tc_platform_fee_profiles set fixed_eur=0.50 where id=$1',[feeProfile]);
+ assert.equal(Number((await c.query('select fixed_eur from public.tc_platform_fee_profiles where id=$1',[feeProfile])).rows[0].fixed_eur),0.5);
+ // Cash payments are separate owner-scoped records; partial receipts need not
+ // equal booked sales and cash year can differ from the original invoice year.
+ const cash1=(await c.query(`insert into public.tc_cash_entries
+ (owner_id,payment_on,direction,category,amount_eur,description,document_reference,sale_id)
+ values($1,'2026-10-12','income','sale_receipt',60.00,'erste Teilzahlung','BELEG-1',$2) returning id`,[owner,saleId])).rows[0].id;
+ const cash2=(await c.query(`insert into public.tc_cash_entries
+ (owner_id,payment_on,direction,category,amount_eur,sale_id)
+ values($1,'2026-10-15','income','sale_receipt',45.00,$2) returning id`,[owner,saleId])).rows[0].id;
+ const cashPurchase=(await c.query(`insert into public.tc_cash_entries
+ (owner_id,payment_on,direction,category,amount_eur,purchase_lot_id)
+ values($1,'2026-10-16','expense','purchase_payment',30.00,$2) returning id`,[owner,lot1])).rows[0].id;
+ const extraExpense=(await c.query(`insert into public.tc_cash_entries
+ (owner_id,payment_on,direction,category,amount_eur,description)
+ values($1,'2026-10-19','expense','business_expense',4.50,'Verpackungsmaterial') returning id`,[owner])).rows[0].id;
+ await c.query("update public.tc_cash_entries set document_reference='RE-TEST-1' where id=$1",[extraExpense]);
+ assert.equal((await c.query('select document_reference from public.tc_cash_entries where id=$1',[extraExpense])).rows[0].document_reference,'RE-TEST-1');
+ assert.equal((await c.query("select sum(amount_eur)::numeric as sum from public.tc_cash_entries where direction='income'")).rows[0].sum,'105.00');
+ assert.equal((await c.query("select sum(amount_eur)::numeric as sum from public.tc_cash_entries where direction='expense'")).rows[0].sum,'34.50');
+ await assert.rejects(()=>c.query("insert into public.tc_cash_entries(owner_id,payment_on,direction,category,amount_eur,sale_id,purchase_lot_id) values($1,'2026-10-19','expense','business_expense',5,$2,$3)",[owner,saleId,lot1]),/tc_cash_entries_single_link/);
+ await assert.rejects(()=>c.query("insert into public.tc_cash_entries(owner_id,payment_on,direction,category,amount_eur,sale_id) values($1,'2026-10-19','income','sale_receipt',5,$2)",[owner,'723e4567-e89b-12d3-a456-426614174999']),/foreign key/);
+ const beforeCash=(await c.query('select available_qty from public.tc_purchase_lots where id=$1',[lot2])).rows[0].available_qty;
+ assert.equal(beforeCash,1,'Cash journal must never change FIFO stock');
+ const cloudBackupV2=(await c.query('select public.tc_backup_snapshot() as snapshot')).rows[0].snapshot;
+ assert.equal(cloudBackupV2.format,'trummcards-cloud-backup-v2','Shipping backup must be v2');
+ assert.equal(cloudBackupV2.tables.tc_sale_shipments.length,1,'Shipping included in encrypted backup source');
+ assert.equal(cloudBackupV2.tables.tc_sale_shipments[0].tracking_number,'TEST-123');
+ assert.equal(cloudBackupV2.tables.tc_platform_fee_profiles.length,1,'Private platform fee rules included in backup v2');
+ assert.equal(cloudBackupV2.tables.tc_platform_fee_profiles[0].platform,'eBay');
+ assert.equal(cloudBackupV2.tables.tc_cash_entries.length,4,'Backup must include separate cash movements');
+ assert.ok(cloudBackupV2.tables.tc_cash_entries.some(row=>row.id===cash1&&row.sale_id===saleId));
  const left=await c.query('select id,available_qty,allocated_cost from public.tc_purchase_lots where product_id=$1',[product]);
  const map=new Map(left.rows.map(row=>[row.id,row]));
  assert.equal(toNum(map.get(lot1).available_qty),0);
@@ -80,6 +142,8 @@ try{
  await assert.rejects(()=>sale(3,saleKey),/Buchungsschlüssel/,'Reused request key mismatch blocked');
  assert.equal((await c.query('select public.tc_void_sale($1) as result',[saleId])).rows[0].result,true,'Storno');
  assert.equal((await c.query('select public.tc_void_sale($1) as result',[saleId])).rows[0].result,false,'Storno idempotence');
+ assert.equal((await c.query('select shipping_status from public.tc_sale_shipments where sale_id=$1',[saleId])).rows[0].shipping_status,'versendet','Historical shipment preserved after cancellation');
+ assert.equal((await c.query('select count(*)::int n from public.tc_cash_entries where sale_id=$1',[saleId])).rows[0].n,2,'Cash events remain auditable after cancellation');
  const after=(await c.query('select available_qty,remaining_cost from public.tc_inventory where product_id=$1',[product])).rows[0];
  assert.equal(toNum(after.available_qty),5);
  assert.equal(toNum(after.remaining_cost),80);
@@ -94,11 +158,19 @@ try{
  // A different authenticated account is not allowed to inspect/write even with the valid IDs.
  await c.query("select set_config('request.jwt.claim.sub',$1,false)",[stranger]);
  assert.equal((await c.query('select public.tc_is_authorized() as authorized')).rows[0].authorized,false);
- for(const name of ['tc_products','tc_purchase_lots','tc_sales','tc_product_images']){
+ for(const name of ['tc_products','tc_purchase_lots','tc_sales','tc_sale_shipments','tc_platform_fee_profiles','tc_cash_entries','tc_product_images']){
    const res=await c.query('select count(*)::int as n from public.'+name);
    assert.equal(res.rows[0].n,0,'Foreign account leaked '+name);
  }
  assert.equal((await c.query('select count(*)::int as n from storage.objects')).rows[0].n,0);
+ await assert.rejects(()=>c.query("insert into public.tc_sale_shipments(sale_id,owner_id) values ($1,$2)",[saleId,stranger]),/row-level security|permission denied|foreign key/i,'Foreign account cannot add shipment to owner sale');
+ assert.equal((await c.query("update public.tc_sale_shipments set shipping_status='zugestellt' where sale_id=$1 returning sale_id",[saleId])).rowCount,0,'Foreign account cannot edit shipment');
+ await assert.rejects(()=>c.query("insert into public.tc_platform_fee_profiles(owner_id,platform,percent_rate) values($1,'eBay',99)",[stranger]),/row-level security|permission denied/i);
+ assert.equal((await c.query("update public.tc_platform_fee_profiles set percent_rate=99 where id=$1 returning id",[feeProfile])).rowCount,0,'Foreign account cannot change fees');
+ await assert.rejects(()=>c.query("insert into public.tc_cash_entries(owner_id,payment_on,direction,category,amount_eur) values($1,'2026-10-19','expense','business_expense',1)",[stranger]),/row-level security|permission denied/i,'Stranger must not create cash movements');
+ assert.equal((await c.query("update public.tc_cash_entries set amount_eur=999 where id=$1 returning id",[cash1])).rowCount,0,'Stranger cannot modify cash movement');
+ assert.equal((await c.query("delete from public.tc_cash_entries where id=$1 returning id",[cash2])).rowCount,0,'Stranger cannot delete cash movement');
+
  await assert.rejects(()=>purchase('2026-10-13',1,'10.00','623e4567-e89b-12d3-a456-426614174777'),/Nicht autorisiert/);
  await c.query('reset role');
  const totals=await c.query('select (select count(*) from public.tc_products) products,(select count(*) from public.tc_purchase_lots) lots,(select count(*) from public.tc_sales) sales');

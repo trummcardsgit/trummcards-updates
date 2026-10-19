@@ -3,11 +3,23 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self' https://hgdexyvtgfffcasfpjyu.supabase.co wss://hgdexyvtgfffcasfpjyu.supabase.co; img-src 'self' data: blob: https://hgdexyvtgfffcasfpjyu.supabase.co; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self' https://hgdexyvtgfffcasfpjyu.supabase.co wss://hgdexyvtgfffcasfpjyu.supabase.co https://api.tcgdex.net; img-src 'self' data: blob: https://hgdexyvtgfffcasfpjyu.supabase.co https://assets.tcgdex.net; object-src 'none'; base-uri 'none'; form-action 'none'">
 <title>TrummCards Cloud</title>
 <link rel="stylesheet" href="styles.css">
 <script defer src="logic.js"></script>
 <script defer src="vendor.js"></script>
+<script defer src="catalog11.js"></script>
+<script defer src="catalog11-ui.js"></script>
+<script defer src="sets11-ui.js"></script>
+<script defer src="market11-ui.js"></script>
+<script defer src="fees11.js"></script>
+<script defer src="fees11-ui.js"></script>
+<script defer src="finance11.js"></script>
+<script defer src="finance11-ui.js"></script>
+<script defer src="cash11.js"></script>
+<script defer src="cash11-ui.js"></script>
+<script defer src="shipping11.js"></script>
+<script defer src="shipping11-ui.js"></script>
 <script defer src="app.js"></script>
 </head>
 <body>
@@ -55,19 +67,68 @@
       <button type="button" data-tab="purchase">Einkauf erfassen</button>
       <button type="button" data-tab="sale">Verkauf erfassen</button>
       <button type="button" data-tab="bookings">Buchungen</button>
+      <button type="button" data-tab="finance">Finanzcenter</button>
       <button type="button" data-tab="photos">Artikelbilder</button>
       <button type="button" data-tab="updates">Programm-Updates</button>
     </nav>
 
     <section class="tab" id="tab-inventory">
       <div class="panel"><h2 id="productFormTitle">Artikel anlegen</h2>
-        <form id="productForm"><input type="hidden" name="edit_id">
+        <section class="catalog-panel" aria-label="Pokémon-Kartenkatalog">
+          <h3>Pokémon-Karte automatisch suchen</h3>
+          <form id="catalogSearchForm" class="catalog-search-form">
+            <label>Kartenname <input id="catalogSearchQuery" type="search" minlength="2" maxlength="100" placeholder="z.B. Pikachu, Glurak" required></label>
+            <label>Katalogsprache <select id="catalogSearchLanguage"><option value="de">Deutsch</option><option value="en">Englisch</option><option value="ja">Japanisch</option><option value="it">Italienisch</option></select></label>
+            <button type="submit">Karten suchen</button>
+          </form>
+          <section class="catalog-set-browser" aria-label="Pokémon-Sets durchsuchen">
+  <h3>Oder direkt ein Pokémon-Set auswählen</h3>
+  <form id="catalogSetsForm" class="catalog-search-form">
+    <label>Set-Name (optional) <input id="catalogSetQuery" type="search" maxlength="100" placeholder="z.B. 151, Basis-Set"></label>
+    <button type="submit">Sets anzeigen</button>
+  </form>
+  <p id="catalogSetStatus" class="small muted" role="status" aria-live="polite">Wähle oben eine Katalogsprache und klicke auf „Sets anzeigen“.</p>
+  <div id="catalogSetResults" class="catalog-set-results"></div>
+  <button id="catalogSetMore" type="button" hidden>Weitere Sets laden</button>
+  <section id="catalogSetDetail" class="catalog-set-detail" hidden aria-label="Karten des ausgewählten Sets">
+    <h3 id="catalogSetTitle">Karten im Set</h3>
+    <label>Karte im Set suchen <input id="catalogSetCardFilter" type="search" maxlength="100" placeholder="Name oder Kartennummer"></label>
+    <p id="catalogSetCardStatus" class="small muted" role="status" aria-live="polite"></p>
+    <div id="catalogSetCards" class="catalog-results"></div>
+    <div class="catalog-page-actions">
+      <button id="catalogSetPrev" type="button" disabled>Vorherige Karten</button>
+      <span id="catalogSetPageLabel" aria-live="polite"></span>
+      <button id="catalogSetNext" type="button" disabled>Weitere Karten</button>
+    </div>
+  </section>
+</section>
+          <p class="small muted">TCGdex-Katalog: Kartendaten nach Auswahl übernehmen. Beim Import wird das Katalogbild automatisch dem Artikel zugeordnet (externe Verknüpfung). Eigene Fotos haben Vorrang und bleiben privat. Fehlende Karten kannst du weiterhin manuell anlegen.</p>
+          <p id="catalogSearchStatus" class="small muted" role="status" aria-live="polite"></p>
+          <div id="catalogSearchResults" class="catalog-results"></div>
+          <div class="catalog-page-actions" aria-label="Weitere Pokémon-Suchtreffer">
+            <button type="button" id="catalogSearchPrev" disabled>← Vorherige Treffer</button>
+            <span id="catalogSearchPageLabel" aria-live="polite">Noch keine Suche</span>
+            <button type="button" id="catalogSearchNext" disabled>Weitere 20 Treffer →</button>
+          </div>
+          <div id="catalogSelected" class="catalog-selected" hidden><img id="catalogSelectedImage" alt="Katalogbild-Vorschau" hidden><span id="catalogSelectedInfo"></span></div>
+        </section>
+        <form id="productForm"><input type="hidden" name="edit_id"><input type="hidden" name="catalog_card_id"><input type="hidden" name="catalog_image_url">
           <div class="grid">
             <label>Artikelname * <input name="name" maxlength="300" required placeholder="z.B. Delta Herrschaft"></label>
             <label>Artikelnummer / SKU <input name="sku" maxlength="120" placeholder="z.B. PKM-001"></label>
             <label>Set <input name="set_name" maxlength="150" placeholder="z.B. Promo"></label>
             <label>Sprache <select name="language"><option>Deutsch</option><option>Englisch</option><option>Japanisch</option><option>Italienisch</option><option>Andere</option></select></label>
             <label>Zustand <select name="card_condition"><option value="">Bitte waehlen</option><option>Near Mint</option><option>Excellent</option><option>Good</option><option>Played</option><option>Poor</option><option>Sealed</option></select></label>
+            <label>Kartennummer <input name="card_number" maxlength="60" placeholder="z.B. 025/165"></label>
+            <label>Seltenheit <input name="rarity" maxlength="100" placeholder="z.B. Illustration Rare"></label>
+            <label>Kartenvariante <select name="card_variant"><option value="">Standard</option><option>Holo</option><option>Reverse Holo</option><option>Full Art</option><option>Illustration Rare</option><option>Special Illustration Rare</option><option>1st Edition</option><option>Sonstige</option></select></label>
+            <label>Lagerplatz <input name="storage_location" maxlength="160" placeholder="z.B. Box 2 / Fach 4"></label>
+            <label>Grading-Unternehmen <select name="grading_company"><option value="">Nicht gegradet</option><option>PSA</option><option>CGC</option><option>BGS</option><option>ACE</option><option>Andere</option></select></label>
+            <label>Grading-Bewertung <input name="grading_grade" maxlength="30" placeholder="z.B. 9.5"></label>
+            <label>Zertifikatsnummer <input name="grading_certificate" maxlength="120" placeholder="Optional"></label>
+            <label>Marktwert-Richtwert (EUR) <input name="market_price_eur" inputmode="decimal" placeholder="z.B. 14,90"></label>
+            <input type="hidden" name="market_price_source"><input type="hidden" name="market_price_checked_at">
+            <div class="market-price-info" id="marketPriceStatus" role="status" aria-live="polite">Noch kein Marktpreis.</div>
             <label>Notiz <input name="note" maxlength="2000"></label>
           </div>
           <div class="article-photo-panel">
@@ -80,9 +141,19 @@
             <video id="productCameraVideo" autoplay muted playsinline hidden></video>
             <div class="product-preview"><img id="productImagePreview" alt="Artikelbild-Vorschau" hidden><div class="product-preview-details"><span id="productImageSelection">Noch kein neues Bild ausgewählt.</span><button id="productCurrentImageOpen" type="button" class="preview-enlarge" hidden>Bild vergrößern ↗</button></div></div>
           </div>
+          <label class="quick-entry-option"><input type="checkbox" name="after_save_purchase"> Nach dem Speichern direkt den Einkauf für diese Karte erfassen</label>
           <div class="actions"><button class="primary" id="productSubmit" type="submit">Artikel und Bild speichern</button><button id="productCancel" type="button" hidden>Bearbeitung abbrechen</button></div>
         </form></div>
-      <div class="panel"><h2>Lagerbestand</h2><div class="table-wrap"><table><thead><tr><th>Bild</th><th>Artikel</th><th>SKU</th><th>Set</th><th>Zustand</th><th>Bestand</th><th>Lagerwert</th><th>Aktion</th></tr></thead><tbody id="inventoryRows"></tbody></table></div></div>
+      <div class="panel"><h2>Lagerbestand</h2>
+        <div class="grid inventory-search-filters" role="search" aria-label="Lager durchsuchen und filtern">
+          <label>Suche <input id="inventorySearch" type="search" autocomplete="off" placeholder="Name, SKU, Set, Nummer, Variante, Lagerplatz ..."></label>
+          <label>Sprache <select id="inventoryLanguageFilter"><option value="">Alle Sprachen</option></select></label>
+          <label>Bestand <select id="inventoryStockFilter"><option value="all">Alle Artikel</option><option value="available">Nur auf Lager</option><option value="empty">Ohne Bestand</option></select></label>
+          <label>Sortierung <select id="inventorySort"><option value="name">Name A–Z</option><option value="set">Set A–Z</option><option value="stock">Bestand absteigend</option><option value="location">Lagerplatz A–Z</option></select></label>
+        </div>
+        <p id="inventoryFilterCount" class="small muted" aria-live="polite"></p>
+        <p class="small muted">* Marktwert-Richtwert pro Karte; die Differenz zum durchschnittlichen Einstand ist vor Gebühren und Steuern. Varianten, Zustand und Aktualisierungsdatum beachten.</p>
+        <div class="table-wrap"><table><thead><tr><th>Bild</th><th>Artikel</th><th>SKU</th><th>Set / Nr.</th><th>Zustand</th><th>Lagerplatz</th><th>Bestand</th><th>Lagerwert</th><th>Marktwert je Karte*</th><th>Aktion</th></tr></thead><tbody id="inventoryRows"></tbody></table></div></div>
     </section>
 
     <section class="tab" id="tab-purchase" hidden>
@@ -112,17 +183,83 @@
         <label>Versandkosten (EUR) <input name="shippingCost" type="text" inputmode="decimal" value="0,00"></label>
         <label>Plattform-Gebuehren (EUR) <input name="fees" type="text" inputmode="decimal" value="0,00"></label>
         <label>Weitere Kosten (EUR) <input name="other" type="text" inputmode="decimal" value="0,00"></label>
-        <label>Plattform <select name="platform"><option>eBay</option><option>Cardmarket</option><option>Vinted</option><option>Whatnot</option><option>Privat</option><option>Sonstige</option></select></label>
+        <label>Plattform <select name="platform"><option>eBay</option><option>Cardmarket</option><option>Vinted</option><option>Whatnot</option><option>Willhaben</option><option>Privat</option><option>Sonstige</option></select></label>
         <label>Notiz <input name="note"></label>
-      </div><p class="hint" id="saleHint" aria-live="polite"></p><div class="actions"><button class="primary" type="submit">Verkauf buchen &amp; Bestand reduzieren</button></div></form></div>
+      </div><button type="button" id="feeSuggest">Gebühren aus Profil berechnen</button><p class="small muted" id="feeSuggestStatus" role="status"></p><p class="hint" id="saleHint" aria-live="polite"></p><div class="actions"><button class="primary" type="submit">Verkauf buchen &amp; Bestand reduzieren</button></div></form></div>
     </section>
 
     <section class="tab" id="tab-bookings" hidden>
       <div class="panel"><h2>Verkaeufe</h2><p class="small muted">Buchungen koennen storniert werden. Ein Storno stellt den Lagerbestand wieder her, entfernt die Historie aber nicht.</p>
       <div class="table-wrap"><table><thead><tr><th>Datum</th><th>Artikel</th><th>Stk.</th><th>Preis</th><th>Einstand</th><th>Gewinn</th><th>Status</th><th>Aktion</th></tr></thead><tbody id="salesRows"></tbody></table></div></div>
-      <div class="panel"><h2>Einkaufschargen</h2><div class="table-wrap"><table><thead><tr><th>Datum</th><th>Artikel</th><th>Gekauft</th><th>Verfuegbar</th><th>Gesamtkosten</th><th>Quelle</th></tr></thead><tbody id="lotsRows"></tbody></table></div></div>
+      <div class="panel shipment-panel" id="shipmentPanel">
+  <h2>Versandverwaltung</h2>
+  <p class="small muted">Versanddaten werden getrennt von der FIFO-Verkaufsbuchung gespeichert und zwischen Windows und Handy synchronisiert. Keine Käuferadresse erforderlich.</p>
+  <form id="shipmentForm">
+    <div class="grid shipment-grid">
+      <label>Verkauf * <select id="shipmentSale" name="sale_id" required><option value="">Gebuchten Verkauf auswählen</option></select></label>
+      <label>Status <select name="shipping_status"><option value="offen">Offen</option><option value="verpackt">Verpackt</option><option value="versendet">Versendet</option><option value="zugestellt">Zugestellt</option></select></label>
+      <label>Versanddienstleister <input name="carrier" maxlength="100" placeholder="z.B. Österreichische Post"></label>
+      <label>Sendungsnummer <input name="tracking_number" maxlength="150"></label>
+      <label>Bestellnummer / Referenz <input name="order_reference" maxlength="150"></label>
+      <label>Versanddatum <input name="shipped_on" type="date"></label>
+      <label>Sendungsverfolgungslink (HTTPS) <input name="tracking_url" type="url" maxlength="500" placeholder="https://..."></label>
+    </div>
+    <div class="actions"><button id="shipmentSave" class="primary" type="submit">Versanddaten speichern</button></div>
+    <p id="shipmentStatus" class="small muted" role="status" aria-live="polite"></p>
+  </form>
+</div>
+      <div class="panel"><h2>Einkaufschargen</h2><div class="table-wrap"><table><thead><tr><th>Datum</th><th>Artikel</th><th>Gekauft</th><th>Verfuegbar</th><th>Gesamtkosten</th><th>Quelle</th><th>Zahlung</th></tr></thead><tbody id="lotsRows"></tbody></table></div></div>
     </section>
 
+    <section class="tab" id="tab-finance" hidden>
+      <div class="panel">
+        <h2>TrummCards Finanzcenter</h2>
+        <p class="small muted">Umsatz, Gebühren, Wareneinsatz und FIFO-Gewinn. Für die österreichische Einnahmen-Ausgaben-Rechnung sind tatsächliche Zahlungsdaten zusätzlich zu berücksichtigen.</p>
+        <div class="actions"><label>Zeitraum <select id="financePeriod"><option value="all">Gesamter Zeitraum</option><option value="year">Dieses Jahr</option><option value="month">Dieser Monat</option></select></label><button id="financeExport" type="button">CSV für Excel exportieren</button></div>
+<div class="panel fee-panel" id="feePanel">
+<h3>Gebührenprofile für Verkaufsplattformen</h3>
+<p class="small muted">Eigene Schätzwerte eintragen; keine offiziellen Gebührensätze vorausgesetzt. Beim Verkauf wird der Vorschlag nur nach Klick übernommen und bleibt bearbeitbar.</p>
+<form id="feeProfileForm" class="fee-profile-form">
+<div class="grid">
+<label>Plattform <select name="platform"><option>eBay</option><option>Cardmarket</option><option>Vinted</option><option>Whatnot</option><option>Privat</option><option>Willhaben</option><option>Sonstige</option></select></label>
+<label>Prozent auf Verkauf (und optional Versand) <input name="percent_rate" inputmode="decimal" value="0,00"></label>
+<label>Fixgebühr EUR <input name="fixed_eur" inputmode="decimal" value="0,00"></label>
+<label><input name="include_shipping" type="checkbox" checked> Versand-Einnahmen bei Prozenten mitrechnen</label>
+</div>
+<button type="submit" id="feeProfileSave" class="secondary">Gebührenprofil speichern</button>
+<p id="feeProfileStatus" role="status" aria-live="polite"></p>
+</form><div id="feeProfileList" class="fee-profile-list"></div></div>
+        <section class="cash-panel" id="cashPanel" aria-label="Zahlungseingänge und Betriebsausgaben">
+<h3>Geldfluss & Betriebsausgaben</h3>
+<p class="small muted">Nur tatsächlich bezahlte oder erhaltene Beträge eintragen. Verkaufs-/Einkaufsbuchungen erzeugen <strong>keine</strong> automatischen Zahlungen, damit nichts doppelt gezählt wird. Zahlungstermine, Teilzahlungen, Plattformgebühren und weitere Ausgaben lassen sich getrennt dokumentieren. Dies ist eine Arbeitshilfe, keine Steuererklärung.</p>
+<form id="cashEntryForm">
+ <input type="hidden" name="edit_id">
+ <div class="cash-grid">
+  <label>Zahlungsdatum * <input type="date" name="payment_on" required></label>
+  <label>Bewegung * <select name="direction"><option value="income">Einnahme</option><option value="expense">Ausgabe</option></select></label>
+  <label>Kategorie * <select name="category" required></select></label>
+  <label>Betrag EUR * <input name="amount_eur" inputmode="decimal" required placeholder="z.B. 20,50"></label>
+  <label>Bezug zu Verkauf oder Einkauf (optional) <select name="relation"><option value="">Keine Zuordnung</option></select></label>
+  <label>Belegnummer / Referenz <input name="document_reference" maxlength="160" placeholder="z.B. Rechnung 2026-14"></label>
+  <label class="cash-description">Beschreibung <input name="description" maxlength="500" placeholder="z.B. Verpackungsmaterial"></label>
+ </div>
+ <div class="actions"><button type="submit" id="cashSave">Zahlung speichern</button><button type="button" id="cashCancel" hidden>Bearbeitung abbrechen</button></div>
+ <p id="cashEntryStatus" class="small muted" role="status" aria-live="polite"></p>
+</form>
+<div class="cash-summary-row">
+ <label>Jahr der Zahlung <select id="cashYear"><option value="">Alle Jahre</option></select></label>
+ <button type="button" id="cashExport">Zahlungen als CSV exportieren</button>
+</div>
+<div id="cashSummary" class="finance-metrics" aria-live="polite"></div>
+<p class="small muted">Die Übersicht zeigt nur erfasste Geldflüsse, nicht automatisch den steuerlichen Gewinn. Bei Retouren und Rückzahlungen eine eigene Gegenbuchung eintragen; Buchungen nicht unbemerkt doppelt erfassen. Steuerliche Sonderregeln, Umsatzsteuer und Abschreibungen gesondert prüfen.</p>
+<div id="cashEntries" class="cash-entries"></div>
+</section>
+<div id="financeSummary" class="finance-metrics"></div>
+        <p id="financeStatus" class="small muted" role="status" aria-live="polite"></p>
+        <h3>Umsatz je Monat</h3><div id="financeMonths" class="finance-bars"></div>
+        <h3>Gewinn nach Verkaufsplattform</h3><div id="financePlatforms" class="finance-bars"></div>
+      </div>
+    </section>
     <section class="tab" id="tab-photos" hidden>
       <div class="panel"><h2>Artikelbilder im privaten Cloud-Speicher</h2>
         <p class="muted">Das Bild gehoert zu einem konkreten Einkaufslos. Maximal 10 MB pro Bild; JPG, PNG oder WebP.</p>

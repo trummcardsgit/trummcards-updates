@@ -1,27 +1,38 @@
 import {createHash} from 'node:crypto';
 export const PROD_REF='hgdexyvtgfffcasfpjyu';
 export const TABLES=['tc_products','tc_purchase_lots','tc_sales','tc_sale_allocations','tc_stock_movements','tc_lot_images','tc_product_images'];
+export const TABLES_V2=[...TABLES,'tc_sale_shipments','tc_platform_fee_profiles','tc_cash_entries'];
+export const tablesForSnapshot=snapshot=>snapshot.format==='trummcards-cloud-backup-v2'?TABLES_V2:TABLES;
 export const sha256=data=>createHash('sha256').update(data).digest('hex');
 const validOwner=x=>typeof x==='string'&&/^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(x);
 export function validateSnapshot(snapshot){
- if(!snapshot||snapshot.format!=='trummcards-cloud-backup-v1'||!validOwner(snapshot.owner_id))
+ if(!snapshot||!['trummcards-cloud-backup-v1','trummcards-cloud-backup-v2'].includes(snapshot.format)||!validOwner(snapshot.owner_id))
    throw Error('Ungültiges Datenbank-Backupformat oder Benutzerkonto.');
  const map=snapshot.tables;
  if(!map||typeof map!=='object')throw Error('Backup-Tabellen fehlen.');
  const by={},counts={};
- for(const name of TABLES){
+ for(const name of tablesForSnapshot(snapshot)){
   const rows=map[name];if(!Array.isArray(rows))throw Error('Backup-Tabelle fehlt: '+name);
   counts[name]=rows.length;
   by[name]=new Set();
   for(const r of rows){
-   if(!r||r.owner_id!==snapshot.owner_id||r.id===undefined)throw Error('Ungültiger Eigentümer in '+name);
-   if(by[name].has(String(r.id)))throw Error('Doppelte ID in '+name);
-   by[name].add(String(r.id));
+   const key=name==='tc_sale_shipments'?r?.sale_id:r?.id;
+   if(!r||r.owner_id!==snapshot.owner_id||key===undefined)throw Error('Ungültiger Eigentümer in '+name);
+   if(by[name].has(String(key)))throw Error('Doppelte ID in '+name);
+   by[name].add(String(key));
   }
  }
  const ref=(name,value,target)=>{if(!by[target].has(String(value)))throw Error('Verwaister Verweis: '+name);};
  for(const lot of map.tc_purchase_lots)ref('Einkauf',lot.product_id,'tc_products');
  for(const sale of map.tc_sales)ref('Verkauf',sale.product_id,'tc_products');
+ if(snapshot.format==='trummcards-cloud-backup-v2'){
+  for(const shipment of map.tc_sale_shipments)ref('Versand',shipment.sale_id,'tc_sales');
+  for(const cash of map.tc_cash_entries){
+   if(cash.sale_id!=null)ref('Zahlung Verkauf',cash.sale_id,'tc_sales');
+   if(cash.purchase_lot_id!=null)ref('Zahlung Einkauf',cash.purchase_lot_id,'tc_purchase_lots');
+   if(cash.sale_id!=null&&cash.purchase_lot_id!=null)throw Error('Doppelte Zahlungsreferenz');
+  }
+ }
  for(const a of map.tc_sale_allocations){
   ref('Verkaufszuordnung',a.sale_id,'tc_sales');
   ref('Verkaufszuordnung',a.lot_id,'tc_purchase_lots');
