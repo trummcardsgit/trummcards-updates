@@ -208,9 +208,9 @@
     $('salesRows').innerHTML=state.sales.map(s=>{
       const earned=L.profit({price:Number(s.price),shippingIncome:Number(s.shipping_income),shippingCost:Number(s.shipping_cost),fees:Number(s.fees),other:Number(s.other_cost),cost:Number(s.cogs_total)});
       const sh=state.shipments.find(row=>row.sale_id===s.id);
-      return `<tr><td>${escapeHtml(s.sold_on)}</td><td>${escapeHtml(productName(s.product_id))}</td><td>${Number(s.qty)}</td><td>${L.euro(s.price)}</td><td>${L.euro(s.cogs_total)}</td><td class="${earned<0?'negative':'positive'}">${L.euro(earned)}</td><td>${s.status==='booked'?'Gebucht':'Storniert'}</td><td><button type="button" data-shipping-sale="${s.id}">Versand${sh?' ('+escapeHtml(sh.shipping_status)+')':''}</button>${s.status==='booked'?` <button type="button" data-void-sale="${s.id}">Stornieren</button>`:''}</td></tr>`;
+      return `<tr><td>${escapeHtml(s.sold_on)}</td><td>${escapeHtml(productName(s.product_id))}</td><td>${Number(s.qty)}</td><td>${L.euro(s.price)}</td><td>${L.euro(s.cogs_total)}</td><td class="${earned<0?'negative':'positive'}">${L.euro(earned)}</td><td>${s.status==='booked'?'Gebucht':'Storniert'}</td><td><button type="button" data-cash-sale="${s.id}">Zahlung erfassen</button> <button type="button" data-shipping-sale="${s.id}">Versand${sh?' ('+escapeHtml(sh.shipping_status)+')':''}</button>${s.status==='booked'?` <button type="button" data-void-sale="${s.id}">Stornieren</button>`:''}</td></tr>`;
     }).join('')||'<tr><td colspan="8" class="empty">Noch keine Verkaeufe in Production.</td></tr>';
-    $('lotsRows').innerHTML=state.lots.map(l=>`<tr><td>${escapeHtml(l.bought_on)}</td><td>${escapeHtml(productName(l.product_id))}</td><td>${Number(l.purchased_qty)}</td><td>${Number(l.available_qty)}</td><td>${L.euro(Number(l.purchase_total)+Number(l.extra_cost))}</td><td>${escapeHtml(l.source||'-')}</td></tr>`).join('')||'<tr><td colspan="6" class="empty">Noch keine Einkaufschargen.</td></tr>';
+    $('lotsRows').innerHTML=state.lots.map(l=>`<tr><td>${escapeHtml(l.bought_on)}</td><td>${escapeHtml(productName(l.product_id))}</td><td>${Number(l.purchased_qty)}</td><td>${Number(l.available_qty)}</td><td>${L.euro(Number(l.purchase_total)+Number(l.extra_cost))}</td><td>${escapeHtml(l.source||'-')}</td><td><button type="button" data-cash-lot="${l.id}">Zahlung erfassen</button></td></tr>`).join('')||'<tr><td colspan="7" class="empty">Noch keine Einkaufschargen.</td></tr>';
     renderPending(); updateSaleHint(); updatePurchaseHint();
     financeUI11?.render();
     shippingUI11?.render();feesUI11?.render();cashUI11?.render();
@@ -605,7 +605,8 @@
     $('saleForm').addEventListener('submit',saveSale);
     $('saleForm').addEventListener('input',updateSaleHint);
     $('saleForm').addEventListener('change',updateSaleHint);
-    $('salesRows').addEventListener('click',e=>{const shipment=e.target.closest('[data-shipping-sale]');if(shipment){switchTab('bookings');shippingUI11?.load(shipment.dataset.shippingSale,true);$('shipmentPanel').scrollIntoView({behavior:'smooth',block:'nearest'});return;}const b=e.target.closest('[data-void-sale]');if(b)voidSale(b.dataset.voidSale);});
+    $('salesRows').addEventListener('click',e=>{const cash=e.target.closest('[data-cash-sale]');if(cash){switchTab('finance');cashUI11?.beginLinkedPayment('sale',cash.dataset.cashSale);return;}const shipment=e.target.closest('[data-shipping-sale]');if(shipment){switchTab('bookings');shippingUI11?.load(shipment.dataset.shippingSale,true);$('shipmentPanel').scrollIntoView({behavior:'smooth',block:'nearest'});return;}const b=e.target.closest('[data-void-sale]');if(b)voidSale(b.dataset.voidSale);});
+    $('lotsRows').addEventListener('click',e=>{const cash=e.target.closest('[data-cash-lot]');if(cash){switchTab('finance');cashUI11?.beginLinkedPayment('lot',cash.dataset.cashLot);}});
     $('imageForm').addEventListener('submit',saveImage);
     window.addEventListener('focus',()=>{if(user&&Date.now()-lastSyncAt>5000)refreshAll(true);});
     window.addEventListener('beforeunload',stopProductCamera);
