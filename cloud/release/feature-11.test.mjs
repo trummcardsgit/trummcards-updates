@@ -129,6 +129,8 @@ test('Encrypted Cloud 1.1 shipment backups have v2 snapshot, retain v1 restore s
  assert.ok(backup.includes("'tc_sale_shipments'"));
  assert.ok(validator.includes('tablesForSnapshot'));
  assert.ok(validator.includes('tc_sale_shipments'));
+ assert.ok(validator.includes('tc_platform_fee_profiles'));
+ assert.ok(backup.includes("'tc_platform_fee_profiles'"));
  assert.ok(validator.includes('trummcards-cloud-backup-v1'));
  assert.ok(validator.includes('trummcards-cloud-backup-v2'));
  assert.ok(read('cloud/backup/backup.test.mjs').includes('old v1 backups remain restorable'));
