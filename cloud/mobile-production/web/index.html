@@ -78,6 +78,27 @@
             <div class="field"><label for="catalogSearchLanguage">Sprache</label><select id="catalogSearchLanguage"><option value="de">Deutsch</option><option value="en">Englisch</option><option value="ja">Japanisch</option><option value="it">Italienisch</option></select></div>
             <button class="secondary full" type="submit">Pokémon-Karte suchen</button>
           </form>
+          <section class="catalog-set-browser" aria-label="Pokémon-Sets durchsuchen">
+  <h3>Oder direkt ein Pokémon-Set auswählen</h3>
+  <form id="catalogSetsForm" class="catalog-search-form">
+    <label>Set-Name (optional) <input id="catalogSetQuery" type="search" maxlength="100" placeholder="z.B. 151, Basis-Set"></label>
+    <button type="submit">Sets anzeigen</button>
+  </form>
+  <p id="catalogSetStatus" class="small muted" role="status" aria-live="polite">Wähle oben eine Katalogsprache und klicke auf „Sets anzeigen“.</p>
+  <div id="catalogSetResults" class="catalog-set-results"></div>
+  <button id="catalogSetMore" type="button" hidden>Weitere Sets laden</button>
+  <section id="catalogSetDetail" class="catalog-set-detail" hidden aria-label="Karten des ausgewählten Sets">
+    <h3 id="catalogSetTitle">Karten im Set</h3>
+    <label>Karte im Set suchen <input id="catalogSetCardFilter" type="search" maxlength="100" placeholder="Name oder Kartennummer"></label>
+    <p id="catalogSetCardStatus" class="small muted" role="status" aria-live="polite"></p>
+    <div id="catalogSetCards" class="catalog-results"></div>
+    <div class="catalog-page-actions">
+      <button id="catalogSetPrev" type="button" disabled>Vorherige Karten</button>
+      <span id="catalogSetPageLabel" aria-live="polite"></span>
+      <button id="catalogSetNext" type="button" disabled>Weitere Karten</button>
+    </div>
+  </section>
+</section>
           <p class="subtle">Wähle einen Treffer, um Set, Nummer und Seltenheit einzutragen. Katalogbilder sind nur Vorschauen; eigene Fotos speicherst du weiterhin privat.</p>
           <p id="catalogSearchStatus" class="subtle" role="status" aria-live="polite"></p>
           <div id="catalogSearchResults" class="catalog-results"></div>
