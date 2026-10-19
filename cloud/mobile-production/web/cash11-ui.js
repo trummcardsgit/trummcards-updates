@@ -132,8 +132,19 @@
     say('Zahlungs-CSV vorbereitet: Die tatsächlichen Zahlungen prüfen, Belege aufbewahren und steuerliche Behandlung klären.');
    }catch(err){say('Export fehlgeschlagen: '+String(err.message||err));}
   });
+  function beginLinkedPayment(type,id){
+   if(!['sale','lot'].includes(type)||!id)return;
+   reset();renderRelations();
+   field('direction').value=type==='sale'?'income':'expense';renderCategories();
+   field('category').value=type==='sale'?'sale_receipt':'purchase_payment';
+   const link=(type==='sale'?'s:':'l:')+id;
+   if(Array.from(field('relation').options).some(o=>o.value===link))field('relation').value=link;
+   say(type==='sale'?'Bitte den tatsächlich erhaltenen Verkaufserlös und das Zahlungsdatum eintragen.':
+      'Bitte den tatsächlich bezahlten Wareneinkauf und das Zahlungsdatum erfassen.');
+   form.scrollIntoView?.({behavior:'smooth',block:'nearest'});
+  }
   reset();render();
-  return Object.freeze({render});
+  return Object.freeze({render,beginLinkedPayment});
  }
  window.TrummCashUI11=Object.freeze({bind});
 })();
