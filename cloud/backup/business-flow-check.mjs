@@ -23,6 +23,7 @@ const files=[
  'cloud/release/sql/harden_product_images_owner.sql',
  'cloud/supabase/migrations/20261019000100_cloud_11_card_metadata.sql',
  'cloud/release/sql/cloud11_sale_shipments_staging.sql',
+ 'cloud/release/sql/cloud11_fee_profiles_staging.sql',
  'cloud/release/sql/cloud11_backup_snapshot_v2_staging.sql'
 ];
 const owner='123e4567-e89b-12d3-a456-426614174000';
