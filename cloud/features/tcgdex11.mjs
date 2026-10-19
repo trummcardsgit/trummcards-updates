@@ -31,7 +31,7 @@ export async function searchPokemonCards({query,language='de',page=1,limit=20,fe
  if(q.length<2||q.length>100)throw Error('Bitte 2 bis 100 Zeichen als Kartenname angeben.');
  const selectedPage=Number(page);
  if(!Number.isSafeInteger(selectedPage)||selectedPage<1||selectedPage>100)throw Error('Ungültige Kartensuchseite.');
- const lang=languageCode(language),n=Math.min(60,numberOr(limit,20));
+ const lang=languageCode(language),n=Math.min(30,numberOr(limit,20));
  const params=new URLSearchParams({name:q,'pagination:page':String(selectedPage),'pagination:itemsPerPage':String(n)});
  const rows=await fetchJson(BASE+'/'+lang+'/cards?'+params.toString(),fetchImpl,signal);
  if(!Array.isArray(rows))throw Error('Katalogantwort hat ein unerwartetes Format.');
