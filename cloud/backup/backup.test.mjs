@@ -63,3 +63,35 @@ test('never silently accept empty passwords or incomplete archive',async()=>{
   assert.throws(()=>v.report(),/unvollständig/);
  }finally{await rm(dir,{recursive:true,force:true});}
 });
+
+
+test('Cloud 1.1 encrypted archive includes shipment metadata; old v1 backups remain restorable',async()=>{
+ const v1=sample();
+ assert.equal(validateSnapshot(v1).counts.tc_sales,0);
+ const v2=sample();
+ v2.format='trummcards-cloud-backup-v2';
+ const sid='723e4567-e89b-12d3-a456-426614174000';
+ v2.tables.tc_sales.push({id:sid,owner_id:owner,product_id:pid,status:'booked'});
+ v2.tables.tc_sale_shipments=[{sale_id:sid,owner_id:owner,shipping_status:'versendet',carrier:'Österreichische Post',
+   tracking_number:'FAKE-123',order_reference:'FAKE-ORDER',shipped_on:'2026-10-19',tracking_url:'https://www.post.at/test'}];
+ const valid=validateSnapshot(v2);
+ assert.equal(valid.counts.tc_sale_shipments,1);
+ const dir=await mkdtemp(path.join(os.tmpdir(),'tc-shipbackup-'));
+ try{
+  const file=path.join(dir,'shipping.tcbackup');
+  async function* rows(){
+   const img=Buffer.from('synthetic-picture-only');
+   yield {type:'snapshot',project:PROD_REF,data:v2};
+   yield {type:'image',path:v2.tables.tc_product_images[0].storage_path,mime:'image/jpeg',bytes:img.length,sha256:sha256(img),base64:img.toString('base64')};
+   yield {type:'end',imageCount:1};
+  }
+  await encryptLines(file,password,rows());
+  const verifier=createVerifier();await decryptLines(file,password,row=>verifier.accept(row));
+  assert.equal(verifier.report().tables.tc_sale_shipments,1);
+  const damaged=structuredClone(v2);
+  damaged.tables.tc_sale_shipments[0].sale_id='99999999-9999-9999-9999-999999999999';
+  assert.throws(()=>validateSnapshot(damaged),/Verwaister Verweis/);
+  const withoutShipments=structuredClone(v2);delete withoutShipments.tables.tc_sale_shipments;
+  assert.throws(()=>validateSnapshot(withoutShipments),/Backup-Tabelle fehlt/);
+ }finally{await rm(dir,{recursive:true,force:true});}
+});
