@@ -26,11 +26,13 @@ const cardBrief=x=>({
  id:String(x.id||''),localId:String(x.localId||''),name:String(x.name||''),
  imageCandidate:(typeof x.image==='string'&&x.image.startsWith('https://assets.tcgdex.net/'))?x.image:null
 });
-export async function searchPokemonCards({query,language='de',limit=20,fetchImpl=fetch,signal}={}){
+export async function searchPokemonCards({query,language='de',page=1,limit=20,fetchImpl=fetch,signal}={}){
  const q=String(query||'').trim();
  if(q.length<2||q.length>100)throw Error('Bitte 2 bis 100 Zeichen als Kartenname angeben.');
- const lang=languageCode(language),n=Math.min(30,numberOr(limit,20));
- const params=new URLSearchParams({name:q,'pagination:page':'1','pagination:itemsPerPage':String(n)});
+ const selectedPage=Number(page);
+ if(!Number.isSafeInteger(selectedPage)||selectedPage<1||selectedPage>100)throw Error('Ungültige Kartensuchseite.');
+ const lang=languageCode(language),n=Math.min(60,numberOr(limit,20));
+ const params=new URLSearchParams({name:q,'pagination:page':String(selectedPage),'pagination:itemsPerPage':String(n)});
  const rows=await fetchJson(BASE+'/'+lang+'/cards?'+params.toString(),fetchImpl,signal);
  if(!Array.isArray(rows))throw Error('Katalogantwort hat ein unerwartetes Format.');
  return rows.filter(x=>x&&x.id&&x.name).slice(0,n).map(cardBrief);
