@@ -354,6 +354,7 @@ function bind(){
   navigate('article');$('catalogSearchLanguage').value=language;
   void catalogPicker11.selectCard(id);
  }});
+ window.TrummCardScan12?.bind();
  vintedUI12=window.TrummVinted12?.bind({
   getProducts:()=>state.products,
   getOwnImage:async p=>{
