@@ -162,7 +162,9 @@
     <section class="tab" id="tab-carddex" hidden><div class="panel dex-panel">
 <div class="dex-head"><div><span class="dex-eyebrow">POKÉMON KARTENKATALOG · TCGDEX</span><h2>KartenDex</h2><p>Karten und komplette Sets nachschlagen – unabhängig vom Lager, ohne einen Artikel anzulegen.</p></div></div>
 <form id="dexSearchForm" class="dex-form">
- <label>Pokémon / Kartenname<input id="dexQuery" type="search" required minlength="2" maxlength="100" placeholder="z. B. Pikachu, Glurak"></label>
+ <label>Pokémon / Kartenname<input id="dexQuery" type="search" maxlength="100" placeholder="z. B. Glurak-GX"></label>
+ <label>Set-Name<input id="dexSearchSet" type="search" maxlength="100" placeholder="z. B. Verborgenes Schicksal"></label>
+ <label>Kartennummer<input id="dexSearchNumber" type="text" inputmode="text" maxlength="30" placeholder="z. B. 9 oder 009/147"></label>
  <label>Sprache<select id="dexLanguage"><option value="de">Deutsch</option><option value="en">Englisch</option><option value="ja">Japanisch</option><option value="it">Italienisch</option></select></label>
  <button type="submit" class="dex-action">Karten suchen</button>
 </form>
