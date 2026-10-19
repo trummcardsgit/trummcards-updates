@@ -20,6 +20,8 @@
 <script defer src="cash11-ui.js"></script>
 <script defer src="shipping11.js"></script>
 <script defer src="shipping11-ui.js"></script>
+<script defer src="carddex12.js"></script>
+<script defer src="vinted12.js"></script>
 <script defer src="app.js"></script>
 </head>
 <body>
@@ -64,6 +66,7 @@
     </div>
     <nav id="tabs" aria-label="Bereiche">
       <button type="button" data-tab="inventory" class="active">Lager &amp; Artikel</button>
+      <button type="button" data-tab="carddex">KartenDex</button>
       <button type="button" data-tab="purchase">Einkauf erfassen</button>
       <button type="button" data-tab="sale">Verkauf erfassen</button>
       <button type="button" data-tab="bookings">Buchungen</button>
@@ -156,6 +159,35 @@
         <div class="table-wrap"><table><thead><tr><th>Bild</th><th>Artikel</th><th>SKU</th><th>Set / Nr.</th><th>Zustand</th><th>Lagerplatz</th><th>Bestand</th><th>Lagerwert</th><th>Marktwert je Karte*</th><th>Aktion</th></tr></thead><tbody id="inventoryRows"></tbody></table></div></div>
     </section>
 
+    <section class="tab" id="tab-carddex" hidden><div class="panel dex-panel">
+<div class="dex-head"><div><span class="dex-eyebrow">POKÉMON KARTENKATALOG · TCGDEX</span><h2>KartenDex</h2><p>Karten und komplette Sets nachschlagen – unabhängig vom Lager, ohne einen Artikel anzulegen.</p></div></div>
+<form id="dexSearchForm" class="dex-form">
+ <label>Pokémon / Kartenname<input id="dexQuery" type="search" required minlength="2" maxlength="100" placeholder="z. B. Pikachu, Glurak"></label>
+ <label>Sprache<select id="dexLanguage"><option value="de">Deutsch</option><option value="en">Englisch</option><option value="ja">Japanisch</option><option value="it">Italienisch</option></select></label>
+ <button type="submit" class="dex-action">Karten suchen</button>
+</form>
+<p id="dexSearchStatus" role="status" class="dex-status">Kartenname eingeben oder unten ein Set auswählen.</p>
+<div id="dexResults" class="dex-grid"></div>
+<div class="dex-pager"><button type="button" id="dexPrev" disabled>← Vorherige</button><span id="dexPageLabel">Noch keine Suche</span><button type="button" id="dexNext" disabled>Weitere 20 →</button></div>
+<div id="dexDetail" class="dex-detail" hidden>
+ <img id="dexDetailImage" hidden alt="Kartenbild aus TCGdex">
+ <div class="dex-detail-text"><h3 id="dexDetailTitle"></h3><div id="dexDetailMeta"></div>
+ <button type="button" class="dex-action" id="dexToArticle">Diese Karte als Artikel übernehmen</button>
+ <p class="dex-status">Katalogbilder sind externe Vorschaubilder. Für Verkaufsinserate eigene Fotos verwenden.</p></div>
+</div>
+<hr class="dex-rule">
+<h3>Pokémon-Sets durchsuchen</h3>
+<form id="dexSetForm" class="dex-form">
+ <label>Set-Name (optional)<input id="dexSetQuery" type="search" maxlength="100" placeholder="z. B. 151, Basis-Set"></label>
+ <button type="submit" class="dex-action">Sets anzeigen</button>
+</form>
+<p id="dexSetStatus" role="status" class="dex-status"></p>
+<div id="dexSets" class="dex-set-grid"></div>
+<button type="button" id="dexMoreSets" hidden>Weitere Sets laden</button>
+<p id="dexSetCardsStatus" role="status" class="dex-status"></p>
+<div id="dexSetCards" class="dex-grid"></div>
+<div class="dex-pager"><button type="button" id="dexSetPrev" disabled>← Karten</button><span>Set-Karten</span><button type="button" id="dexSetNext" disabled>Weitere Karten →</button></div>
+</div></section>
     <section class="tab" id="tab-purchase" hidden>
       <div class="panel"><h2>Einkauf ins Cloud-Lager buchen</h2>
       <p class="muted">Beim Einkauf wird ein neues FIFO-Los angelegt. Der Einzelpreis und der Gesamtpreis rechnen sich automatisch gegenseitig aus.</p>
@@ -284,6 +316,20 @@
     </section>
   </div>
 </main>
+
+<dialog id="vintedDialog" class="vinted-dialog" aria-label="Vinted-Inserat vorbereiten">
+  <div class="vinted-dialog-head"><div><span class="dex-eyebrow">TRUMMCARDS · INSERATSVORLAGE</span><h2>Auf Vinted inserieren</h2></div><button id="vintedClose" type="button" aria-label="Schließen">✕</button></div>
+  <p class="dex-status">Erstelle den Inseratstext aus deinen Kartendaten. Es wird nichts automatisch auf Vinted hochgeladen.</p>
+  <label>Artikel aus deinem Lager<select id="vintedProduct"></select></label>
+  <div class="vinted-preview"><img id="vintedOwnImage" alt="Eigenes Kartenfoto" hidden><p>Verwende auf Vinted eigene Fotos deiner tatsächlichen Karte, keine fremden Katalogbilder.</p></div>
+  <label>Verkaufsüberschrift<input id="vintedTitle" type="text" maxlength="100" autocomplete="off"></label>
+  <button id="vintedCopyTitle" type="button" class="dex-action">Überschrift kopieren</button>
+  <label>Beschreibung<textarea id="vintedDescription" rows="8"></textarea></label>
+  <button id="vintedCopyDescription" type="button" class="dex-action">Beschreibung kopieren</button>
+  <p id="vintedStatus" role="status" class="dex-status"></p>
+  <a class="vinted-link" href="https://www.vinted.at/" target="_blank" rel="noopener noreferrer">Vinted öffnen ↗</a>
+</dialog>
+
 <dialog id="desktopImageViewer" class="desktop-image-viewer"><button type="button" id="desktopImageClose" aria-label="Bild schließen">✕</button><img id="desktopViewerImage" alt="Großes Artikelbild"><p id="desktopViewerCaption"></p></dialog>
 <footer><span>TRUMMCARDS &middot; EST. 2026</span><span>CLOUD PRODUCTION &ndash; GETRENNTE PRODUCTIONDATEN</span></footer>
 </div>
