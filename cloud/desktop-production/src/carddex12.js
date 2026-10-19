@@ -4,6 +4,18 @@ const $=id=>document.getElementById(id),PAGE=20,SET_PAGE=40;
 function imageUrl(root,quality='low'){
  return typeof root==='string'&&/^https:\/\/assets\.tcgdex\.net\/[A-Za-z0-9/._-]+$/.test(root)?root+'/'+quality+'.webp':'';
 }
+
+function cardmarketValues(pricing){
+ const data=pricing?.cardmarket;
+ if(!data||data.unit!=='EUR')return null;
+ const valid=n=>typeof n==='number'&&Number.isFinite(n)&&n>0&&n<100000000?n:null;
+ const standard=valid(data.trend),holo=valid(data['trend-holo']);
+ if(standard===null&&holo===null)return null;
+ const ms=Date.parse(data.updated||'');
+ const updatedAt=Number.isFinite(ms)&&ms<=Date.now()+86400000?new Date(ms).toISOString():null;
+ return {standard,holo,updatedAt};
+}
+
 function bind({onUseCard}={}){
  const catalog=window.TrummCatalog11;
  if(!catalog)throw Error('KartenDex benötigt den vorhandenen TCGdex-Katalog.');
@@ -13,17 +25,96 @@ function bind({onUseCard}={}){
  const cardsBox=$('dexSetCards'),setCardsStatus=$('dexSetCardsStatus'),setPrev=$('dexSetPrev'),setNext=$('dexSetNext');
  const detail=$('dexDetail'),detailImage=$('dexDetailImage'),detailTitle=$('dexDetailTitle'),detailMeta=$('dexDetailMeta');
  let searchGeneration=0,setsGeneration=0,detailGeneration=0,setCardsGeneration=0;
+
+ const englishCache=new Map();
+ let lookups=0;
+ const pending=[];
+ async function limitLookup(task){
+  if(lookups>=4)await new Promise(resolve=>pending.push(resolve));
+  lookups++;
+  try{return await task();}finally{lookups--;pending.shift()?.();}
+ }
+ async function englishRoot(id){
+  if(!/^[A-Za-z0-9._-]{2,100}$/.test(id))return '';
+  if(englishCache.has(id))return englishCache.get(id);
+  const promise=limitLookup(async()=>{
+   try{
+    const card=await catalog.getPokemonCard({id,language:'en'});
+    return card.id===id&&imageUrl(card.imageCandidate)?card.imageCandidate:'';
+   }catch{return '';}
+  });
+  if(englishCache.size>=400)englishCache.clear();
+  englishCache.set(id,promise);
+  return promise;
+ }
+ function renderImage(img,notice,card,language,quality='low',isCurrent=()=>true){
+  const active=()=>img.isConnected&&isCurrent();
+  function unavailable(){
+   if(!active())return;
+   img.hidden=true;img.style.visibility='hidden';img.removeAttribute('src');
+   notice.textContent='Kein Kartenbild verfügbar.';
+  }
+  function display(url,label){
+   return new Promise(resolve=>{
+    if(!url){resolve(false);return;}
+    img.onload=()=>{
+     if(active()){img.hidden=false;img.style.visibility='visible';notice.textContent=label;}
+     resolve(true);
+    };
+    img.onerror=()=>{resolve(false);};
+    // A lazy-loaded image must not stay [hidden] while waiting for its load event.
+    img.hidden=false;img.style.visibility='hidden';img.src=url;
+   });
+  }
+  void (async()=>{
+   const own=imageUrl(card.imageCandidate,quality);
+   if(own&&await display(own,''))return;
+   if(!active())return;
+   if(language==='en'){unavailable();return;}
+   notice.textContent='Prüfe englisches Ersatzbild …';
+   const fallback=await englishRoot(card.id);
+   if(!active())return;
+   if(fallback&&await display(imageUrl(fallback,quality),'Englisches Ersatzbild · Kartendaten bleiben '+language.toUpperCase()))return;
+   unavailable();
+  })();
+ }
+ function renderPrice(pricing){
+  const quote=cardmarketValues(pricing),wrap=document.createElement('div');
+  wrap.className='dex-market-panel';
+  const heading=document.createElement('strong');heading.textContent='Marktpreis (Cardmarket-Trend, EUR)';
+  wrap.append(heading);
+  if(!quote){
+   const p=document.createElement('p');p.textContent='Für diese Karte ist derzeit kein verlässlicher Trendpreis verfügbar.';wrap.append(p);return wrap;
+  }
+  for(const [label,amount] of [['Standard',quote.standard],['Holo',quote.holo]]){
+   if(amount===null)continue;
+   const row=document.createElement('div');row.className='dex-info-row';
+   const name=document.createElement('span');name.textContent=label;
+   const value=document.createElement('strong');value.textContent=new Intl.NumberFormat('de-AT',{style:'currency',currency:'EUR'}).format(amount);
+   row.append(name,value);wrap.append(row);
+  }
+  const note=document.createElement('p');note.className='dex-status';
+  const date=quote.updatedAt?new Date(quote.updatedAt):null;
+  const stale=date&&Date.now()-date.getTime()>14*86400000;
+  note.textContent='Richtwert, nicht garantierter Verkaufspreis. Zustand und Kartenausführung beachten.'
+   +(date?' Stand: '+date.toLocaleDateString('de-AT')+'.':' Preisstand nicht bekannt.')
+   +(stale?' Preisquelle möglicherweise veraltet.':'');
+  wrap.append(note);return wrap;
+ }
+
  let searchAbort=null,setsAbort=null,detailAbort=null,setCardsAbort=null;
  let currentPage=0,lastCount=0,searchTerm='',searchLang='',setPage=0,sets=[],selectedSet=null,cardPage=1,selectedCard=null;
  function setPaging(){
   pageLabel.textContent=currentPage?'Seite '+currentPage:'Noch keine Suche';
   prev.disabled=currentPage<=1;next.disabled=currentPage<1||lastCount<PAGE||currentPage>=100;
  }
- function clearDetail(){selectedCard=null;detail.hidden=true;detailImage.hidden=true;detailImage.removeAttribute('src');detailMeta.replaceChildren();}
+ function clearDetail(){detailGeneration++;detailAbort?.abort();selectedCard=null;detail.hidden=true;detailImage.hidden=true;detailImage.removeAttribute('src');detailMeta.replaceChildren();}
  function cardButton(card){
   const b=document.createElement('button');b.type='button';b.className='dex-card';
-  const src=imageUrl(card.imageCandidate);
-  if(src){const image=document.createElement('img');image.src=src;image.alt='';image.loading='lazy';b.append(image);}
+  const img=document.createElement('img');img.alt='Pokémon-Kartenbild';img.loading='lazy';img.className='dex-card-picture';
+  const notice=document.createElement('small');notice.className='dex-image-status';
+  b.append(img,notice);
+  renderImage(img,notice,card,lang.value);
   const label=document.createElement('span');label.textContent=card.name+(card.localId?' · Nr. '+card.localId:'');
   b.append(label);b.addEventListener('click',()=>{void selectCard(card.id);});return b;
  }
@@ -54,8 +145,9 @@ function bind({onUseCard}={}){
     const key=document.createElement('span');key.textContent=name;
     const val=document.createElement('strong');val.textContent=String(value||'Nicht angegeben');row.append(key,val);detailMeta.append(row);
    }
-   const src=imageUrl(card.imageCandidate,'high');
-   if(src){detailImage.src=src;detailImage.hidden=false;}
+   const imageNotice=document.createElement('p');imageNotice.className='dex-status dex-image-status';detailMeta.append(imageNotice);
+   renderImage(detailImage,imageNotice,card,lang.value,'high',()=>current===detailGeneration);
+   detailMeta.append(renderPrice(card.pricing));
    detail.scrollIntoView?.({behavior:'smooth',block:'nearest'});
   }catch(e){if(current===detailGeneration&&e.name!=='AbortError')detailTitle.textContent='Kartendetails nicht verfügbar: '+String(e.message||e);}
  }
@@ -114,5 +206,5 @@ function bind({onUseCard}={}){
  setPaging();clearDetail();clearSetCards();
  return Object.freeze({clearDetail});
 }
-window.TrummCardDex12=Object.freeze({bind});
+window.TrummCardDex12=Object.freeze({bind,cardmarketValues});
 })();
