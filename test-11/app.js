@@ -51,7 +51,7 @@ function fifoPreview(productId,quantity){const list=state.lots.filter(l=>l.produ
 function profit(s){return money(Number(s.price||0)+Number(s.shipping_income||0)-Number(s.shipping_cost||0)-Number(s.fees||0)-Number(s.other_cost||0)-Number(s.cogs_total||0));}
 function updateOptions(element,rows,makeLabel,placeholder){const chosen=element.value;const sig=JSON.stringify(rows.map(p=>[p.id,makeLabel(p)]));if(element.dataset.signature===sig)return;element.dataset.signature=sig;element.replaceChildren();const opt=document.createElement('option');opt.value='';opt.textContent=placeholder;element.append(opt);for(const p of rows){const option=document.createElement('option');option.value=p.id;option.textContent=makeLabel(p);element.append(option);}if(rows.some(r=>r.id===chosen))element.value=chosen;}
 async function refreshAll(opts={}){if(!session||loading||document.visibilityState==='hidden')return;loading=true;connected('Synchronisiere …');try{const [products,inventory,lots,sales,images,productImages,shipments,feeProfiles,cashEntries]=await Promise.all([
- tableGet('tc_products','select=id,sku,name,set_name,language,card_condition,card_number,rarity,card_variant,storage_location,grading_company,grading_grade,grading_certificate,catalog_card_id,market_price_eur,market_price_source,market_price_checked_at,note,created_at&order=name.asc&limit=1000'),
+ tableGet('tc_products','select=id,sku,name,set_name,language,card_condition,card_number,rarity,card_variant,storage_location,grading_company,grading_grade,grading_certificate,catalog_card_id,catalog_image_url,market_price_eur,market_price_source,market_price_checked_at,note,created_at&order=name.asc&limit=1000'),
  tableGet('tc_inventory','select=product_id,available_qty,remaining_cost&limit=1000'),
  tableGet('tc_purchase_lots','select=id,product_id,bought_on,purchased_qty,available_qty,purchase_total,extra_cost,allocated_cost,source,note,created_at&order=bought_on.asc&limit=1000'),
  tableGet('tc_sales','select=id,product_id,sold_on,qty,price,shipping_income,shipping_cost,fees,other_cost,cogs_total,platform,note,status,created_at&order=created_at.desc&limit=1000'),
@@ -70,7 +70,10 @@ function imagePathForProduct(productId){
  const hero=state.productImages.find(i=>i.product_id===productId);
  if(hero)return hero.storage_path;
  const lotIds=new Set(state.lots.filter(l=>l.product_id===productId).map(l=>l.id));
- return state.images.find(i=>lotIds.has(i.lot_id))?.storage_path||null;
+ const ownPhoto=state.images.find(i=>lotIds.has(i.lot_id))?.storage_path;
+ if(ownPhoto)return ownPhoto;
+ const catalog=productById(productId)?.catalog_image_url||'';
+ return /^https:\/\/assets\.tcgdex\.net\/[A-Za-z0-9/._-]+$/.test(catalog)?catalog:null;
 }
 function filteredInventory11(){
  const term=$('search').value.trim().toLocaleLowerCase('de');
@@ -122,7 +125,8 @@ function clearThumbnailCache(){
  for(const url of thumbnailCache.values())URL.revokeObjectURL(url);
  thumbnailCache.clear();thumbnailLoading.clear();
 }
-async function privateImageUrl(path){
+async function privateImageUrl(path,quality='low'){
+ if(/^https:\/\/assets\.tcgdex\.net\/[A-Za-z0-9/._-]+$/.test(path))return path+'/'+(quality==='high'?'high':'low')+'.webp';
  if(thumbnailCache.has(path))return thumbnailCache.get(path);
  if(thumbnailLoading.has(path))return thumbnailLoading.get(path);
  const task=(async()=>{
@@ -173,7 +177,7 @@ function prepareInventoryThumbnails(){
 async function openProductImage(id){
  const path=imagePathForProduct(id);if(!path)return;
  try{
-  const url=await privateImageUrl(path);
+  const url=await privateImageUrl(path,'high');
   $('viewerImage').src=url;$('viewerCaption').textContent=productName(id);
   if(!$('imageViewer').open)$('imageViewer').showModal();
  }catch(e){notice(errorText(e),'error');}
@@ -216,7 +220,7 @@ function renderHistory(){const sales=state.sales.slice(0,70),lots=state.lots.sli
 }
 
 function resetArticle(){
- $('articleForm').reset();f($('articleForm'),'id').value='';f($('articleForm'),'catalog_card_id').value='';
+ $('articleForm').reset();f($('articleForm'),'id').value='';f($('articleForm'),'catalog_card_id').value='';f($('articleForm'),'catalog_image_url').value='';
  catalogPicker11?.clear();setPicker11?.clear();marketUI11?.reset();
  previewArticlePhoto(null);
  $('articleTitle').textContent='Artikel anlegen';
@@ -225,7 +229,7 @@ function resetArticle(){
 function editArticle(id){
  const p=productById(id);if(!p)return;
  navigate('article');
- for(const field of ['id','name','sku','set_name','language','card_condition','card_number','rarity','card_variant','storage_location','grading_company','grading_grade','grading_certificate','catalog_card_id','note'])f($('articleForm'),field).value=p[field]||'';
+ for(const field of ['id','name','sku','set_name','language','card_condition','card_number','rarity','card_variant','storage_location','grading_company','grading_grade','grading_certificate','catalog_card_id','catalog_image_url','note'])f($('articleForm'),field).value=p[field]||'';
  marketUI11?.load(p);
  $('articleTitle').textContent='Artikel bearbeiten';
  $('articleSubmit').textContent='Änderungen speichern';
@@ -242,7 +246,7 @@ async function saveArticle(e){
  e.preventDefault();if(!WRITES_ENABLED){notice(NO_WRITES,'error');return;}const form=e.currentTarget;
  await withBusy(async()=>{
   let id=val(form,'id');
-  const fields={...marketUI11.values(),name:val(form,'name'),sku:val(form,'sku')||null,set_name:val(form,'set_name'),language:val(form,'language'),card_condition:val(form,'card_condition'),card_number:val(form,'card_number'),rarity:val(form,'rarity'),card_variant:val(form,'card_variant'),storage_location:val(form,'storage_location'),grading_company:val(form,'grading_company'),grading_grade:val(form,'grading_grade'),grading_certificate:val(form,'grading_certificate'),catalog_card_id:val(form,'catalog_card_id'),note:val(form,'note')};
+  const fields={...marketUI11.values(),name:val(form,'name'),sku:val(form,'sku')||null,set_name:val(form,'set_name'),language:val(form,'language'),card_condition:val(form,'card_condition'),card_number:val(form,'card_number'),rarity:val(form,'rarity'),card_variant:val(form,'card_variant'),storage_location:val(form,'storage_location'),grading_company:val(form,'grading_company'),grading_grade:val(form,'grading_grade'),grading_certificate:val(form,'grading_certificate'),catalog_card_id:val(form,'catalog_card_id'),catalog_image_url:val(form,'catalog_image_url'),note:val(form,'note')};
   if(!fields.name)throw Error('Bitte Artikelname eingeben.');
   if(fields.sku&&state.products.some(p=>p.id!==id&&String(p.sku||'').toLocaleLowerCase('de')===fields.sku.toLocaleLowerCase('de')))throw Error('Artikelnummer bereits verwendet bitte andere wählen.');
   const editing=Boolean(id);
