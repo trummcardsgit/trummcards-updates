@@ -115,13 +115,17 @@ function bind({onUseCard}={}){
   const key=language+'/'+card.id;
   if(!setNameCache.has(key)){
    const task=limitLookup(async()=>{
-    try{const detail=await catalog.getPokemonCard({id:card.id,language});return detail.setName||'';}catch{return '';}
+    try{const detail=await catalog.getPokemonCard({id:card.id,language});return {name:detail.setName||'',official:detail.setOfficial};}catch{return {name:'',official:null};}
    });
    if(setNameCache.size>500)setNameCache.clear();
    setNameCache.set(key,task);
   }
   const value=await setNameCache.get(key);
-  if(label.isConnected&&revision===searchGeneration)label.textContent=value||'Set nicht verfügbar';
+  if(label.isConnected&&revision===searchGeneration){
+   label.textContent=value.name||'Set nicht verfügbar';
+   const number=label.parentElement?.querySelector('.dex-card-number');
+   if(number&&card.localId&&value.official>0)number.textContent='Kartennummer: '+card.localId+'/'+value.official;
+  }
  }
  function cardButton(card,revision=null){
   const b=document.createElement('button');b.type='button';b.className='dex-card';
@@ -133,7 +137,7 @@ function bind({onUseCard}={}){
   const setLabel=document.createElement('span');setLabel.className='dex-card-set';
   setLabel.textContent=card.setName||'Set wird geladen …';
   const number=document.createElement('span');number.className='dex-card-number';
-  number.textContent='Kartennummer: '+(card.localId||'Nicht verfügbar');
+  number.textContent='Kartennummer: '+(card.localId?(card.localId+(card.setOfficial>0?'/'+card.setOfficial:'')):'Nicht verfügbar');
   b.append(name,setLabel,number);
   b.addEventListener('click',()=>{void selectCard(card.id);});
   if(!card.setName&&revision!==null)void lookUpSetName(card,lang.value,setLabel,revision);
@@ -159,8 +163,8 @@ function bind({onUseCard}={}){
    const card=await catalog.getPokemonCard({id,language:lang.value,signal:detailAbort.signal});
    if(current!==detailGeneration)return;
    selectedCard={id:card.id,language:lang.value};
-   detailTitle.textContent=card.name+(card.localId?' · #'+card.localId:'');
-   const fields=[['Set',card.setName],['Kartennummer',card.localId],['Seltenheit',card.rarity],['Sprache',lang.selectedOptions[0]?.textContent],['Katalog-ID',card.id]];
+   detailTitle.textContent=card.name+(card.localId?' · #'+card.localId+(card.setOfficial>0?'/'+card.setOfficial:''):'');
+   const fields=[['Set',card.setName],['Kartennummer',card.localId+(card.setOfficial>0?'/'+card.setOfficial:'')],['Seltenheit',card.rarity],['Sprache',lang.selectedOptions[0]?.textContent],['Katalog-ID',card.id]];
    for(const [name,value] of fields){
     const row=document.createElement('div');row.className='dex-info-row';
     const key=document.createElement('span');key.textContent=name;
@@ -195,7 +199,7 @@ function bind({onUseCard}={}){
  function showSetCards(){
   if(!selectedSet)return;
   const start=(cardPage-1)*PAGE,all=selectedSet.cards;
-  cardsBox.replaceChildren();for(const card of all.slice(start,start+PAGE))cardsBox.append(cardButton({...card,setName:selectedSet.name}));
+  cardsBox.replaceChildren();for(const card of all.slice(start,start+PAGE))cardsBox.append(cardButton({...card,setName:selectedSet.name,setOfficial:selectedSet.officialCount}));
   setPrev.disabled=cardPage===1;setNext.disabled=cardPage*PAGE>=all.length;
   setCardsStatus.textContent=selectedSet.name+' · '+all.length+' Karten · Seite '+cardPage+' von '+Math.max(1,Math.ceil(all.length/PAGE));
  }
