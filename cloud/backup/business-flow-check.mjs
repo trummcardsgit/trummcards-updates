@@ -22,7 +22,8 @@ const files=[
  'cloud/supabase/migrations/20261016000400_backup_snapshot.sql',
  'cloud/release/sql/harden_product_images_owner.sql',
  'cloud/supabase/migrations/20261019000100_cloud_11_card_metadata.sql',
- 'cloud/release/sql/cloud11_sale_shipments_staging.sql'
+ 'cloud/release/sql/cloud11_sale_shipments_staging.sql',
+ 'cloud/release/sql/cloud11_backup_snapshot_v2_staging.sql'
 ];
 const owner='123e4567-e89b-12d3-a456-426614174000';
 const stranger='123e4567-e89b-12d3-a456-426614174999';
@@ -84,6 +85,10 @@ try{
  await assert.rejects(()=>c.query("insert into public.tc_sale_shipments (sale_id,owner_id) values ($1,$2)",['723e4567-e89b-12d3-a456-426614174999',owner]),/foreign key/);
  const bookedAfterShipping=(await c.query('select qty,cogs_total,status from public.tc_sales where id=$1',[saleId])).rows[0];
  assert.deepEqual(bookedAfterShipping,{qty:4,cogs_total:'55.00',status:'booked'});
+ const cloudBackupV2=(await c.query('select public.tc_backup_snapshot() as snapshot')).rows[0].snapshot;
+ assert.equal(cloudBackupV2.format,'trummcards-cloud-backup-v2','Shipping backup must be v2');
+ assert.equal(cloudBackupV2.tables.tc_sale_shipments.length,1,'Shipping included in encrypted backup source');
+ assert.equal(cloudBackupV2.tables.tc_sale_shipments[0].tracking_number,'TEST-123');
  const left=await c.query('select id,available_qty,allocated_cost from public.tc_purchase_lots where product_id=$1',[product]);
  const map=new Map(left.rows.map(row=>[row.id,row]));
  assert.equal(toNum(map.get(lot1).available_qty),0);
