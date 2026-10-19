@@ -20,13 +20,13 @@ function listing(product){
 }
 function bind({getProducts,getOwnImage}={}){
  if(typeof getProducts!=='function')throw Error('Vinted: Artikelquelle fehlt.');
- const dialog=$('vintedDialog'),picker=$('vintedProduct'),title=$('vintedTitle'),description=$('vintedDescription'),status=$('vintedStatus'),preview=$('vintedOwnImage');
+ const dialog=$('vintedDialog'),picker=$('vintedProduct'),title=$('vintedTitle'),description=$('vintedDescription'),status=$('vintedStatus'),preview=$('vintedOwnImage'),price=$('vintedPrice');
  let generation=0;
  function products(){return getProducts().filter(p=>p&&p.id);}
  async function select(id){
   const product=products().find(x=>x.id===id);
   if(!product){status.textContent='Bitte einen Artikel auswählen.';return;}
-  const ad=listing(product);title.value=ad.title;description.value=ad.description;
+  const ad=listing(product);title.value=ad.title;description.value=ad.description;price.value='';
   status.textContent='Titel und Beschreibung sind bearbeitbar. Inserat bitte manuell auf Vinted veröffentlichen.';
   preview.hidden=true;preview.removeAttribute('src');
   const current=++generation;
@@ -66,6 +66,7 @@ function bind({getProducts,getOwnImage}={}){
  picker.addEventListener('change',()=>{void select(picker.value);});
  $('vintedCopyTitle').addEventListener('click',()=>{void copy(title,'Titel');});
  $('vintedCopyDescription').addEventListener('click',()=>{void copy(description,'Beschreibung');});
+ $('vintedCopyPrice').addEventListener('click',()=>{void copy(price,'Preis');});
  $('vintedClose').addEventListener('click',()=>dialog.close());
  dialog.addEventListener('close',()=>{generation++;preview.removeAttribute('src');});
  return Object.freeze({open});
