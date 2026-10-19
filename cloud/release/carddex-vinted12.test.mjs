@@ -70,7 +70,9 @@ test('KartenDex picture fallback uses same ID in English, keeps localized card d
   assert.ok(js.includes("catalog.getPokemonCard({id,language:'en'})"));
   assert.ok(js.includes("card.id===id"));
   assert.ok(js.includes("Englisches Ersatzbild"));
-  assert.ok(js.includes('renderImage(img,notice,card,lang.value)'));
+  assert.ok(js.includes("if(b.isConnected)renderImage(img,notice,card,lang.value,'low'"));
+  assert.ok(js.includes('queueMicrotask(()=>{'));
+  assert.ok(js.indexOf('queueMicrotask(()=>{')>js.indexOf('b.append(img,notice);'));
   assert.ok(js.includes("renderImage(detailImage,imageNotice,card,lang.value,'high'"));
   assert.ok(js.includes("detailMeta.append(renderPrice(card.pricing,card.variants))"));
   assert.ok(!js.includes('supabase.co'));
@@ -192,5 +194,50 @@ test('TCGdex detail returns explicit variant flags, never derives variants from 
    id:'swsh3.5-74',language:'de',fetchImpl:async()=>({ok:true,json:async()=>({...card,variants:undefined})})
   });
   assert.equal(missing.variants,null);
+ }
+});
+
+
+test('Missing preview image fetches English image after search card is mounted',async()=>{
+ for(const root of clients){
+  function element(rootNode=false){
+   const e={_root:rootNode,children:[],parentElement:null,listeners:{},
+    style:{},hidden:false,value:'',textContent:'',
+    append(...items){for(const item of items){item.parentElement=this;this.children.push(item);}},
+    replaceChildren(...items){for(const child of this.children)child.parentElement=null;this.children=[];this.append(...items);},
+    removeAttribute(name){if(name==='src')this._src='';},
+    addEventListener(event,fn){this.listeners[event]=fn;},
+    set src(value){this._src=value;queueMicrotask(()=>this.onload?.());},
+    get src(){return this._src;},
+    get isConnected(){return this._root||!!this.parentElement?.isConnected;}
+   };
+   return e;
+  }
+  const nodes=new Map();
+  const get=id=>{if(!nodes.has(id))nodes.set(id,element(true));return nodes.get(id);};
+  get('dexQuery').value='Glurak';
+  get('dexLanguage').value='de';
+  get('dexLanguage').selectedOptions=[{textContent:'Deutsch'}];
+  const attempts=[];
+  const catalog={
+   searchPokemonCards:async()=>[{id:'base5-21',name:'Dunkles Glurak',localId:'21',setName:'Team Rocket',imageCandidate:null}],
+   getPokemonCard:async({id,language})=>{attempts.push({id,language});return {
+    id,language,name:'Dunkles Glurak',setName:'Team Rocket',
+    imageCandidate:'https://assets.tcgdex.net/en/base/base5/21'
+   };},
+   listPokemonSets:async()=>[],getPokemonSet:async()=>({name:'',cards:[]})
+  };
+  const env={window:{TrummCatalog11:catalog},document:{getElementById:get,createElement:()=>element()},
+   queueMicrotask,AbortController,Intl,Date};
+  runInNewContext(read(root+'carddex12.js'),env,{filename:root+'carddex12.js'});
+  env.window.TrummCardDex12.bind();
+  get('dexSearchForm').listeners.submit({preventDefault(){}});
+  await new Promise(resolve=>setImmediate(resolve));
+  await new Promise(resolve=>setImmediate(resolve));
+  assert.ok(attempts.some(v=>v.id==='base5-21'&&v.language==='en'),'No English fallback attempt on search thumbnail');
+  const card=get('dexResults').children[0],picture=card.children[0],label=card.children[1];
+  assert.ok(picture.isConnected);
+  assert.equal(picture.src,'https://assets.tcgdex.net/en/base/base5/21/low.webp');
+  assert.match(label.textContent,/Englisches Ersatzbild/);
  }
 });
