@@ -36,6 +36,11 @@
   field('card_variant')?.addEventListener('change',()=>{
     if(source.value.startsWith('TCGdex /')){reset();notice.textContent='Variante geändert. Bitte neuen Marktpreis prüfen oder manuell eintragen.';}
   });
+  field('card_condition')?.addEventListener('change',()=>{
+    if(source.value.startsWith('TCGdex /')){
+      reset();notice.textContent='Zustand geändert: Bitte einen passenden Marktpreis manuell prüfen.';
+    }
+  });
   field('grading_company')?.addEventListener('change',()=>{
     if(field('grading_company').value&&source.value.startsWith('TCGdex /')){
       reset();notice.textContent='Grading-Karten benötigen einen eigenen Preisvergleich.';
@@ -43,7 +48,7 @@
   });
   function applyCatalog(detail){
    const price=window.TrummCatalog11.euroMarketQuote(detail.pricing,{
-    variant:field('card_variant')?.value||'',gradingCompany:field('grading_company')?.value||''
+    variant:field('card_variant')?.value||'',gradingCompany:field('grading_company')?.value||'',condition:field('card_condition')?.value||''
    });
    if(!price){reset();notice.textContent='Für diese Karte/Variante gibt es keinen eindeutig passenden EUR-Marktpreis. Manuelle Eingabe möglich.';return;}
    input.value=display(price.value);source.value=price.source;updated.value=price.updatedAt;status();
