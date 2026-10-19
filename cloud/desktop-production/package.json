@@ -35,6 +35,8 @@
       "src/logic.js",
       "src/catalog11.js",
       "src/catalog11-ui.js",
+      "src/finance11.js",
+      "src/finance11-ui.js",
       "src/vendor.js",
       "assets/**/*",
       "package.json"
