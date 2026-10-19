@@ -51,7 +51,13 @@
           <div class="stat"><span>Gewinn</span><strong id="statProfit">0,00 €</strong><small>gebuchte Verkäufe</small></div>
         </div>
         <div class="sectionhead"><h2>Dein Lager</h2><button class="text-button" data-go="article">+ Artikel</button></div>
-        <label class="searchbox"><span>⌕</span><input id="search" aria-label="Artikel suchen" placeholder="Artikel oder SKU suchen …" autocomplete="off" type="search"></label>
+        <label class="searchbox"><span>⌕</span><input id="search" aria-label="Artikel suchen" placeholder="Karte, Set, Nummer, Lagerplatz suchen …" autocomplete="off" type="search"></label>
+        <div class="two-fields inventory-filters" role="search" aria-label="Lagerfilter">
+          <div class="field"><label for="inventoryLanguageFilter">Sprache</label><select id="inventoryLanguageFilter"><option value="">Alle Sprachen</option></select></div>
+          <div class="field"><label for="inventoryStockFilter">Bestand</label><select id="inventoryStockFilter"><option value="all">Alle</option><option value="available">Auf Lager</option><option value="empty">Nicht auf Lager</option></select></div>
+          <div class="field"><label for="inventorySort">Sortierung</label><select id="inventorySort"><option value="name">Name A–Z</option><option value="set">Set A–Z</option><option value="stock">Meiste Stück</option><option value="location">Lagerplatz</option></select></div>
+        </div>
+        <p class="subtle" id="inventoryFilterCount" aria-live="polite"></p>
         <div id="productsList" class="stack"></div>
       </section>
 
@@ -61,6 +67,10 @@
             <div class="field"><label>Artikelname *</label><input name="name" required maxlength="300" placeholder="z. B. Delta Herrschaft"></div>
             <div class="two-fields"><div class="field"><label>Artikelnummer / SKU</label><input name="sku" maxlength="120" placeholder="z. B. PKM-001"></div><div class="field"><label>Set</label><input name="set_name" maxlength="150" placeholder="z. B. Promokarte"></div></div>
             <div class="two-fields"><div class="field"><label>Sprache</label><select name="language"><option>Deutsch</option><option>Englisch</option><option>Japanisch</option><option>Italienisch</option><option>Andere</option></select></div><div class="field"><label>Zustand</label><select name="card_condition"><option value="">Bitte wählen</option><option>Near Mint</option><option>Excellent</option><option>Good</option><option>Played</option><option>Poor</option><option>Sealed</option></select></div></div>
+            <div class="two-fields"><div class="field"><label>Kartennummer</label><input name="card_number" maxlength="60" placeholder="025/165"></div><div class="field"><label>Seltenheit</label><input name="rarity" maxlength="100" placeholder="Illustration Rare"></div></div>
+            <div class="two-fields"><div class="field"><label>Variante</label><select name="card_variant"><option value="">Standard</option><option>Holo</option><option>Reverse Holo</option><option>Full Art</option><option>Illustration Rare</option><option>Special Illustration Rare</option><option>1st Edition</option><option>Sonstige</option></select></div><div class="field"><label>Lagerplatz</label><input name="storage_location" maxlength="160" placeholder="Box 2 / Fach 4"></div></div>
+            <div class="two-fields"><div class="field"><label>Grading</label><select name="grading_company"><option value="">Nicht gegradet</option><option>PSA</option><option>CGC</option><option>BGS</option><option>ACE</option><option>Andere</option></select></div><div class="field"><label>Bewertung</label><input name="grading_grade" maxlength="30" placeholder="9.5"></div></div>
+            <div class="field"><label>Zertifikatsnummer</label><input name="grading_certificate" maxlength="120" placeholder="Optional"></div>
             <div class="field"><label>Notiz</label><textarea name="note" rows="2" maxlength="2000" placeholder="Optional"></textarea></div>
             <div class="article-photo-field">
               <div class="micro-label">ARTIKELBILD · OPTIONAL</div>
