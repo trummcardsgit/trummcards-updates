@@ -337,14 +337,14 @@ test('Selected local Kein-Bild artwork appears only when no card artwork exists,
   get('dexSearchForm').listeners.submit({preventDefault(){}});
   for(let i=0;i<5;i++)await new Promise(resolve=>setImmediate(resolve));
   const tile=get('dexResults').children[0],pic=tile.children[0];
-  assert.equal(pic.src,'./kein-bild12.webp');
+  assert.match(pic.src,/^data:image\/webp;base64,UklGR/);
   assert.equal(pic.hidden,false);
   assert.equal(pic.style.visibility,'visible');
   assert.ok(attempts.includes('en'),'must try English first');
   tile.listeners.click();
   for(let i=0;i<5;i++)await new Promise(resolve=>setImmediate(resolve));
   const detail=get('dexDetailImage');
-  assert.equal(detail.src,'./kein-bild12.webp');
+  assert.equal(detail.src,pic.src);
   assert.equal(detail.hidden,false);
   assert.equal(detail.style.visibility,'visible');
  }
@@ -360,6 +360,10 @@ test('Approved artwork is included in Windows package and PWA service-worker pre
  const sw=read('cloud/release/prepare-cloud-12-test.mjs');
  assert.match(sw,/\.\/kein-bild12\.webp/);
  for(const root of clients){
-  assert.match(read(root+'carddex12.js'),/img\.src='\.\/kein-bild12\.webp'/);
+  const source=read(root+'carddex12.js');
+  const encoded=source.match(/const NO_IMAGE_DATA_URI='data:image\/webp;base64,([^']+)'/);
+  assert.ok(encoded,'Embedded fallback missing');
+  assert.deepEqual(Buffer.from(encoded[1],'base64'),image);
+  assert.match(source,/img\.src=NO_IMAGE_DATA_URI;/);
  }
 });
