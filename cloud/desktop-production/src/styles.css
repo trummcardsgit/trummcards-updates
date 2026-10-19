@@ -187,3 +187,12 @@ header .test-pill{background:#2e405b;border-color:#96a9c5;color:#f8d691}
 .vinted-preview p{font-size:12px;color:#a9bdd7}
 .vinted-link{display:inline-block;padding:12px 17px;background:#365f70;border:1px solid #658e9e;color:#fff;border-radius:10px;text-decoration:none;font-weight:700;margin-top:6px}
 @media(max-width:520px){.dex-detail{flex-direction:column}.dex-detail img{width:50%;max-width:170px;align-self:center}.dex-form{display:block}.dex-form label{display:block;margin:10px 0}.dex-form button{width:100%}.dex-pager{gap:6px}.dex-pager button{padding:8px 9px}.bottom-nav button{min-width:45px;font-size:9px}}
+
+
+/* Cloud 1.2 KartenDex: readable image fallback state and Cardmarket reference quotes. */
+.dex-image-status{display:block;font-size:11px;line-height:1.35;color:#e8c88d;overflow-wrap:anywhere;text-align:center;margin:3px 0 8px}
+.dex-card-picture{object-fit:contain;max-width:100%;min-height:90px}
+.dex-market-panel{margin:15px 0;padding:14px;border:1px solid #6a7e97;background:#102239;border-radius:12px}
+.dex-market-panel>strong{display:block;color:#f4ce89;margin-bottom:10px;font-size:15px}
+.dex-market-panel .dex-info-row strong{color:#f2d18a}
+.dex-market-panel .dex-status{margin:10px 0 0;font-size:12px}
