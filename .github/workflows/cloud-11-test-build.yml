@@ -111,7 +111,7 @@ jobs:
         run: |
           npm run dist
           if ($LASTEXITCODE -ne 0) { throw 'TEST Windows build failed' }
-          $exe = 'dist/TrummCards-Cloud-11-TEST-Setup-1.1.0-test.1.exe'
+          $exe = 'dist/TrummCards-Cloud-11-TEST-Setup-1.1.0-test.2.exe'
           if (-not (Test-Path $exe)) { throw 'TEST installer missing' }
           if ((Get-Item $exe).Length -lt 10000000) { throw 'TEST installer unusually small' }
           Write-Host 'Windows TEST installer OK - not published to PROD update feed'
@@ -119,6 +119,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: TrummCards-Cloud-11-TEST-Windows
-          path: cloud/desktop-production/dist/TrummCards-Cloud-11-TEST-Setup-1.1.0-test.1.exe
+          path: cloud/desktop-production/dist/TrummCards-Cloud-11-TEST-Setup-1.1.0-test.2.exe
           if-no-files-found: error
           retention-days: 14
