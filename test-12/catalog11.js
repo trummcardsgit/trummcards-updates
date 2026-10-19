@@ -118,6 +118,13 @@ async function getPokemonCard({id,language='de',fetchImpl=fetch,signal}={}){
  return {
   ...cardBrief(detail),
   rarity:String(detail.rarity||''),
+  // Explicit catalog variants describe existing printings; market price fields alone do not.
+  variants:detail.variants&&typeof detail.variants==='object'&&!Array.isArray(detail.variants)?{
+   normal:detail.variants.normal===true,
+   holo:detail.variants.holo===true,
+   reverse:detail.variants.reverse===true,
+   firstEdition:detail.variants.firstEdition===true
+  }:null,
   setName:String(detail.set?.name||''),
   setId:String(detail.set?.id||''),
   setOfficial:Number.isSafeInteger(detail.set?.cardCount?.official)&&detail.set.cardCount.official>0?detail.set.cardCount.official:null,

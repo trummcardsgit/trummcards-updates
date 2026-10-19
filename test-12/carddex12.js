@@ -16,6 +16,39 @@ function cardmarketValues(pricing){
  return {standard,holo,updatedAt};
 }
 
+
+/* Convert raw market fields into labels only when the TCGdex variant flags justify them. */
+function filteredMarketQuote(pricing,variants){
+ const quote=cardmarketValues(pricing);
+ if(!quote)return null;
+ const known=variants&&typeof variants==='object'&&!Array.isArray(variants)
+  &&['normal','holo','reverse','firstEdition'].every(k=>typeof variants[k]==='boolean');
+ const active=known?['normal','holo','reverse','firstEdition'].filter(k=>variants[k]):[];
+ const both=known&&variants.normal&&variants.holo;
+ const rows=[];
+ if(both){
+  if(quote.standard!==null)rows.push({label:'Normal (ohne Holo)',value:quote.standard});
+  if(quote.holo!==null)rows.push({label:'Holo',value:quote.holo});
+ }else{
+  const amount=quote.standard??quote.holo;
+  if(amount!==null)rows.push({
+   label:'Cardmarket-Trendwert',
+   value:amount
+  });
+ }
+ const variantLabel=!known||active.length===0?'Kartenausführungen im Katalog nicht eindeutig hinterlegt.'
+  :active.length===1?'Nur eine Kartenausführung laut TCGdex.'
+  :'Weitere Kartenausführungen können existieren; nicht alle lassen sich anhand der Preisfelder unterscheiden.';
+ const ambiguous=!both&&quote.standard!==null&&quote.holo!==null;
+ const priceNote=ambiguous
+  ?'TCGdex liefert mehrere Preisfelder, obwohl keine separate Normal-/Holo-Ausführung bestätigt ist. Der zusätzliche Holo-Rohwert wird ausgeblendet.'
+  :!both&&quote.standard===null&&quote.holo!==null
+   ?'Nur ein Holo-Preisfeld verfügbar; Zuordnung zur konkreten Karte prüfen.'
+   :!both?'Ein allgemeiner Trendwert – keine gesondert belegte zweite Preisvariante.'
+   :'Separate Normal- und Holo-Ausführungen sind im Katalog hinterlegt.';
+ return {rows,updatedAt:quote.updatedAt,variantLabel,priceNote};
+}
+
 function bind({onUseCard}={}){
  const catalog=window.TrummCatalog11;
  if(!catalog)throw Error('KartenDex benötigt den vorhandenen TCGdex-Katalog.');
@@ -78,25 +111,25 @@ function bind({onUseCard}={}){
    unavailable();
   })();
  }
- function renderPrice(pricing){
-  const quote=cardmarketValues(pricing),wrap=document.createElement('div');
+ function renderPrice(pricing,variants){
+  const filtered=filteredMarketQuote(pricing,variants),wrap=document.createElement('div');
   wrap.className='dex-market-panel';
   const heading=document.createElement('strong');heading.textContent='Marktpreis (Cardmarket-Trend, EUR)';
   wrap.append(heading);
-  if(!quote){
+  if(!filtered||filtered.rows.length===0){
    const p=document.createElement('p');p.textContent='Für diese Karte ist derzeit kein verlässlicher Trendpreis verfügbar.';wrap.append(p);return wrap;
   }
-  for(const [label,amount] of [['Standard',quote.standard],['Holo',quote.holo]]){
-   if(amount===null)continue;
+  for(const rowInfo of filtered.rows){
    const row=document.createElement('div');row.className='dex-info-row';
-   const name=document.createElement('span');name.textContent=label;
-   const value=document.createElement('strong');value.textContent=new Intl.NumberFormat('de-AT',{style:'currency',currency:'EUR'}).format(amount);
-   row.append(name,value);wrap.append(row);
+   const label=document.createElement('span');label.textContent=rowInfo.label;
+   const value=document.createElement('strong');value.textContent=new Intl.NumberFormat('de-AT',{style:'currency',currency:'EUR'}).format(rowInfo.value);
+   row.append(label,value);wrap.append(row);
   }
   const note=document.createElement('p');note.className='dex-status';
-  const date=quote.updatedAt?new Date(quote.updatedAt):null;
+  const date=filtered.updatedAt?new Date(filtered.updatedAt):null;
   const stale=date&&Date.now()-date.getTime()>14*86400000;
-  note.textContent='Richtwert, nicht garantierter Verkaufspreis. Zustand und Kartenausführung beachten.'
+  note.textContent='Unverbindlicher Richtwert, kein garantierter Verkaufspreis. '
+   +filtered.variantLabel+' '+filtered.priceNote
    +(date?' Stand: '+date.toLocaleDateString('de-AT')+'.':' Preisstand nicht bekannt.')
    +(stale?' Preisquelle möglicherweise veraltet.':'');
   wrap.append(note);return wrap;
@@ -172,7 +205,7 @@ function bind({onUseCard}={}){
    }
    const imageNotice=document.createElement('p');imageNotice.className='dex-status dex-image-status';detailMeta.append(imageNotice);
    renderImage(detailImage,imageNotice,card,lang.value,'high',()=>current===detailGeneration);
-   detailMeta.append(renderPrice(card.pricing));
+   detailMeta.append(renderPrice(card.pricing,card.variants));
    detail.scrollIntoView?.({behavior:'smooth',block:'nearest'});
   }catch(e){if(current===detailGeneration&&e.name!=='AbortError')detailTitle.textContent='Kartendetails nicht verfügbar: '+String(e.message||e);}
  }
@@ -242,5 +275,5 @@ function bind({onUseCard}={}){
  setPaging();clearDetail();clearSetCards();
  return Object.freeze({clearDetail});
 }
-window.TrummCardDex12=Object.freeze({bind,cardmarketValues});
+window.TrummCardDex12=Object.freeze({bind,cardmarketValues,filteredMarketQuote});
 })();
