@@ -68,6 +68,13 @@
             <label>Set <input name="set_name" maxlength="150" placeholder="z.B. Promo"></label>
             <label>Sprache <select name="language"><option>Deutsch</option><option>Englisch</option><option>Japanisch</option><option>Italienisch</option><option>Andere</option></select></label>
             <label>Zustand <select name="card_condition"><option value="">Bitte waehlen</option><option>Near Mint</option><option>Excellent</option><option>Good</option><option>Played</option><option>Poor</option><option>Sealed</option></select></label>
+            <label>Kartennummer <input name="card_number" maxlength="60" placeholder="z.B. 025/165"></label>
+            <label>Seltenheit <input name="rarity" maxlength="100" placeholder="z.B. Illustration Rare"></label>
+            <label>Kartenvariante <select name="card_variant"><option value="">Standard</option><option>Holo</option><option>Reverse Holo</option><option>Full Art</option><option>Illustration Rare</option><option>Special Illustration Rare</option><option>1st Edition</option><option>Sonstige</option></select></label>
+            <label>Lagerplatz <input name="storage_location" maxlength="160" placeholder="z.B. Box 2 / Fach 4"></label>
+            <label>Grading-Unternehmen <select name="grading_company"><option value="">Nicht gegradet</option><option>PSA</option><option>CGC</option><option>BGS</option><option>ACE</option><option>Andere</option></select></label>
+            <label>Grading-Bewertung <input name="grading_grade" maxlength="30" placeholder="z.B. 9.5"></label>
+            <label>Zertifikatsnummer <input name="grading_certificate" maxlength="120" placeholder="Optional"></label>
             <label>Notiz <input name="note" maxlength="2000"></label>
           </div>
           <div class="article-photo-panel">
@@ -82,7 +89,15 @@
           </div>
           <div class="actions"><button class="primary" id="productSubmit" type="submit">Artikel und Bild speichern</button><button id="productCancel" type="button" hidden>Bearbeitung abbrechen</button></div>
         </form></div>
-      <div class="panel"><h2>Lagerbestand</h2><div class="table-wrap"><table><thead><tr><th>Bild</th><th>Artikel</th><th>SKU</th><th>Set</th><th>Zustand</th><th>Bestand</th><th>Lagerwert</th><th>Aktion</th></tr></thead><tbody id="inventoryRows"></tbody></table></div></div>
+      <div class="panel"><h2>Lagerbestand</h2>
+        <div class="grid inventory-search-filters" role="search" aria-label="Lager durchsuchen und filtern">
+          <label>Suche <input id="inventorySearch" type="search" autocomplete="off" placeholder="Name, SKU, Set, Nummer, Variante, Lagerplatz ..."></label>
+          <label>Sprache <select id="inventoryLanguageFilter"><option value="">Alle Sprachen</option></select></label>
+          <label>Bestand <select id="inventoryStockFilter"><option value="all">Alle Artikel</option><option value="available">Nur auf Lager</option><option value="empty">Ohne Bestand</option></select></label>
+          <label>Sortierung <select id="inventorySort"><option value="name">Name A–Z</option><option value="set">Set A–Z</option><option value="stock">Bestand absteigend</option><option value="location">Lagerplatz A–Z</option></select></label>
+        </div>
+        <p id="inventoryFilterCount" class="small muted" aria-live="polite"></p>
+        <div class="table-wrap"><table><thead><tr><th>Bild</th><th>Artikel</th><th>SKU</th><th>Set / Nr.</th><th>Zustand</th><th>Lagerplatz</th><th>Bestand</th><th>Lagerwert</th><th>Aktion</th></tr></thead><tbody id="inventoryRows"></tbody></table></div></div>
     </section>
 
     <section class="tab" id="tab-purchase" hidden>
