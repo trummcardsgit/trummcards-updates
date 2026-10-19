@@ -11,6 +11,8 @@
 <script defer src="catalog11.js"></script>
 <script defer src="catalog11-ui.js"></script>
 <script defer src="market11-ui.js"></script>
+<script defer src="fees11.js"></script>
+<script defer src="fees11-ui.js"></script>
 <script defer src="finance11.js"></script>
 <script defer src="finance11-ui.js"></script>
 <script defer src="shipping11.js"></script>
@@ -153,7 +155,7 @@
         <label>Weitere Kosten (EUR) <input name="other" type="text" inputmode="decimal" value="0,00"></label>
         <label>Plattform <select name="platform"><option>eBay</option><option>Cardmarket</option><option>Vinted</option><option>Whatnot</option><option>Privat</option><option>Sonstige</option></select></label>
         <label>Notiz <input name="note"></label>
-      </div><p class="hint" id="saleHint" aria-live="polite"></p><div class="actions"><button class="primary" type="submit">Verkauf buchen &amp; Bestand reduzieren</button></div></form></div>
+      </div><button type="button" id="feeSuggest">Gebühren aus Profil berechnen</button><p class="small muted" id="feeSuggestStatus" role="status"></p><p class="hint" id="saleHint" aria-live="polite"></p><div class="actions"><button class="primary" type="submit">Verkauf buchen &amp; Bestand reduzieren</button></div></form></div>
     </section>
 
     <section class="tab" id="tab-bookings" hidden>
@@ -184,6 +186,19 @@
         <h2>TrummCards Finanzcenter</h2>
         <p class="small muted">Umsatz, Gebühren, Wareneinsatz und FIFO-Gewinn. Für die österreichische Einnahmen-Ausgaben-Rechnung sind tatsächliche Zahlungsdaten zusätzlich zu berücksichtigen.</p>
         <div class="actions"><label>Zeitraum <select id="financePeriod"><option value="all">Gesamter Zeitraum</option><option value="year">Dieses Jahr</option><option value="month">Dieser Monat</option></select></label><button id="financeExport" type="button">CSV für Excel exportieren</button></div>
+<div class="panel fee-panel" id="feePanel">
+<h3>Gebührenprofile für Verkaufsplattformen</h3>
+<p class="small muted">Eigene Schätzwerte eintragen; keine offiziellen Gebührensätze vorausgesetzt. Beim Verkauf wird der Vorschlag nur nach Klick übernommen und bleibt bearbeitbar.</p>
+<form id="feeProfileForm" class="fee-profile-form">
+<div class="grid">
+<label>Plattform <select name="platform"><option>eBay</option><option>Cardmarket</option><option>Vinted</option><option>Whatnot</option><option>Privat</option><option>Willhaben</option><option>Sonstige</option></select></label>
+<label>Prozent auf Verkauf (und optional Versand) <input name="percent_rate" inputmode="decimal" value="0,00"></label>
+<label>Fixgebühr EUR <input name="fixed_eur" inputmode="decimal" value="0,00"></label>
+<label><input name="include_shipping" type="checkbox" checked> Versand-Einnahmen bei Prozenten mitrechnen</label>
+</div>
+<button type="submit" id="feeProfileSave" class="secondary">Gebührenprofil speichern</button>
+<p id="feeProfileStatus" role="status" aria-live="polite"></p>
+</form><div id="feeProfileList" class="fee-profile-list"></div></div>
         <div id="financeSummary" class="finance-metrics"></div>
         <p id="financeStatus" class="small muted" role="status" aria-live="polite"></p>
         <h3>Umsatz je Monat</h3><div id="financeMonths" class="finance-bars"></div>
