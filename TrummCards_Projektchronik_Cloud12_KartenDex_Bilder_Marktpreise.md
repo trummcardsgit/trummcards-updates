@@ -31,3 +31,12 @@ Version 1.2 TEST mit eigenem KartenDex-Menü, Pokémon-Namenssuche mit Blättern
 - Kein Bild vorhanden: lesbarer Platzhalter.
 - Standard/Holo-Preis mit Stand, fehlender Preis, veralteter Preis.
 - Karte über den KartenDex aufrufen, Sprache wechseln, Suchseiten und Sets durchblättern.
+
+## 19.10.2026 – KartenDex-Suche mit drei Feldern
+- Suchmaske ergänzt um den Pokémon-/Kartennamen, den Set-Namen und die Kartennummer. Alle Felder können einzeln oder kombiniert verwendet werden, ohne dass ein Artikel angelegt werden muss.
+- REST-Abfrage mit den TCGdex-Filtern `name`, `set` und `localId` (exakte Nummer, ggf. nach führenden Nullen normalisiert). Die bisherige 20er-Seitennavigation übernimmt alle Filter.
+- Nummern wie `009/147` werden als gedruckte Kartennummer plus offizielle Setgröße verstanden; bei abweichender Katalognummer erfolgt eine zweite gezielte Abfrage.
+- Kartenansicht zeigt unter dem Bild künftig jeweils den Kartennamen, den tatsächlichen Set-Namen und in einer eigenen Zeile die Nummer (mit offizieller Setgröße, soweit von TCGdex geliefert).
+- Für Treffer aus der globalen Suche wird der Set-Name aus den jeweiligen Kartendetails geladen und zeitweise pro Karten-ID/Sprache zwischengespeichert; beim direkten Durchsuchen eines Sets ist der Set-Name sofort verfügbar.
+- Tests für kombinierte Filter, Paginierung, Nummernnormalisierung, Set-Anzeige und Windows-/PWA-Gleichstand ergänzt.
+- TEST-Buildversion `1.2.0-test.3` mit neuer Service-Worker-Kennung; Release erfolgt isoliert nach `test-12/`. PRODUCTION 1.1 sowie TEST-Datenbankbestände bleiben unangetastet.
