@@ -102,13 +102,18 @@
     </div>
   </section>
 </section>
-          <p class="subtle">Wähle einen Treffer, um Set, Nummer und Seltenheit einzutragen. Katalogbilder sind nur Vorschauen; eigene Fotos speicherst du weiterhin privat.</p>
+          <p class="subtle">Wähle einen Treffer, um Set, Nummer und Seltenheit einzutragen. Das Katalogbild wird beim Import automatisch verknüpft und im Lager angezeigt. Eigene Fotos haben Vorrang und bleiben privat.</p>
           <p id="catalogSearchStatus" class="subtle" role="status" aria-live="polite"></p>
           <div id="catalogSearchResults" class="catalog-results"></div>
+          <div class="catalog-page-actions" aria-label="Weitere Pokémon-Suchtreffer">
+            <button type="button" id="catalogSearchPrev" disabled>← Vorherige Treffer</button>
+            <span id="catalogSearchPageLabel" aria-live="polite">Noch keine Suche</span>
+            <button type="button" id="catalogSearchNext" disabled>Weitere 20 Treffer →</button>
+          </div>
           <div id="catalogSelected" class="catalog-selected" hidden><img id="catalogSelectedImage" alt="Katalogbild-Vorschau" hidden><span id="catalogSelectedInfo"></span></div>
         </div>
         <div class="panel"><div class="micro-label">KARTENVERWALTUNG</div><h2 id="articleTitle">Artikel anlegen</h2>
-          <form id="articleForm"><input type="hidden" name="id"><input type="hidden" name="catalog_card_id">
+          <form id="articleForm"><input type="hidden" name="id"><input type="hidden" name="catalog_card_id"><input type="hidden" name="catalog_image_url">
             <div class="field"><label>Artikelname *</label><input name="name" required maxlength="300" placeholder="z. B. Delta Herrschaft"></div>
             <div class="two-fields"><div class="field"><label>Artikelnummer / SKU</label><input name="sku" maxlength="120" placeholder="z. B. PKM-001"></div><div class="field"><label>Set</label><input name="set_name" maxlength="150" placeholder="z. B. Promokarte"></div></div>
             <div class="two-fields"><div class="field"><label>Sprache</label><select name="language"><option>Deutsch</option><option>Englisch</option><option>Japanisch</option><option>Italienisch</option><option>Andere</option></select></div><div class="field"><label>Zustand</label><select name="card_condition"><option value="">Bitte wählen</option><option>Near Mint</option><option>Excellent</option><option>Good</option><option>Played</option><option>Poor</option><option>Sealed</option></select></div></div>
