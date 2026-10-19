@@ -16,6 +16,8 @@
 <script defer src="fees11-ui.js"></script>
 <script defer src="finance11.js"></script>
 <script defer src="finance11-ui.js"></script>
+<script defer src="cash11.js"></script>
+<script defer src="cash11-ui.js"></script>
 <script defer src="shipping11.js"></script>
 <script defer src="shipping11-ui.js"></script>
 <script defer src="app.js"></script>
@@ -222,7 +224,32 @@
 <button type="submit" id="feeProfileSave" class="secondary">Gebührenprofil speichern</button>
 <p id="feeProfileStatus" role="status" aria-live="polite"></p>
 </form><div id="feeProfileList" class="fee-profile-list"></div></div>
-        <div id="financeSummary" class="finance-metrics"></div>
+        <section class="cash-panel" id="cashPanel" aria-label="Zahlungseingänge und Betriebsausgaben">
+<h3>Geldfluss & Betriebsausgaben</h3>
+<p class="small muted">Nur tatsächlich bezahlte oder erhaltene Beträge eintragen. Verkaufs-/Einkaufsbuchungen erzeugen <strong>keine</strong> automatischen Zahlungen, damit nichts doppelt gezählt wird. Zahlungstermine, Teilzahlungen, Plattformgebühren und weitere Ausgaben lassen sich getrennt dokumentieren. Dies ist eine Arbeitshilfe, keine Steuererklärung.</p>
+<form id="cashEntryForm">
+ <input type="hidden" name="edit_id">
+ <div class="cash-grid">
+  <label>Zahlungsdatum * <input type="date" name="payment_on" required></label>
+  <label>Bewegung * <select name="direction"><option value="income">Einnahme</option><option value="expense">Ausgabe</option></select></label>
+  <label>Kategorie * <select name="category" required></select></label>
+  <label>Betrag EUR * <input name="amount_eur" inputmode="decimal" required placeholder="z.B. 20,50"></label>
+  <label>Bezug zu Verkauf oder Einkauf (optional) <select name="relation"><option value="">Keine Zuordnung</option></select></label>
+  <label>Belegnummer / Referenz <input name="document_reference" maxlength="160" placeholder="z.B. Rechnung 2026-14"></label>
+  <label class="cash-description">Beschreibung <input name="description" maxlength="500" placeholder="z.B. Verpackungsmaterial"></label>
+ </div>
+ <div class="actions"><button type="submit" id="cashSave">Zahlung speichern</button><button type="button" id="cashCancel" hidden>Bearbeitung abbrechen</button></div>
+ <p id="cashEntryStatus" class="small muted" role="status" aria-live="polite"></p>
+</form>
+<div class="cash-summary-row">
+ <label>Jahr der Zahlung <select id="cashYear"><option value="">Alle Jahre</option></select></label>
+ <button type="button" id="cashExport">Zahlungen als CSV exportieren</button>
+</div>
+<div id="cashSummary" class="finance-metrics" aria-live="polite"></div>
+<p class="small muted">Die Übersicht zeigt nur erfasste Geldflüsse, nicht automatisch den steuerlichen Gewinn. Bei Retouren und Rückzahlungen eine eigene Gegenbuchung eintragen; Buchungen nicht unbemerkt doppelt erfassen. Steuerliche Sonderregeln, Umsatzsteuer und Abschreibungen gesondert prüfen.</p>
+<div id="cashEntries" class="cash-entries"></div>
+</section>
+<div id="financeSummary" class="finance-metrics"></div>
         <p id="financeStatus" class="small muted" role="status" aria-live="polite"></p>
         <h3>Umsatz je Monat</h3><div id="financeMonths" class="finance-bars"></div>
         <h3>Gewinn nach Verkaufsplattform</h3><div id="financePlatforms" class="finance-bars"></div>
