@@ -74,8 +74,10 @@ test('Cloud 1.1 encrypted archive includes shipment metadata; old v1 backups rem
  v2.tables.tc_sales.push({id:sid,owner_id:owner,product_id:pid,status:'booked'});
  v2.tables.tc_sale_shipments=[{sale_id:sid,owner_id:owner,shipping_status:'versendet',carrier:'Österreichische Post',
    tracking_number:'FAKE-123',order_reference:'FAKE-ORDER',shipped_on:'2026-10-19',tracking_url:'https://www.post.at/test'}];
+ v2.tables.tc_platform_fee_profiles=[{id:'723e4567-e89b-12d3-a456-426614174100',owner_id:owner,platform:'eBay',percent_rate:10.0,fixed_eur:0.3,include_shipping:true}];
  const valid=validateSnapshot(v2);
  assert.equal(valid.counts.tc_sale_shipments,1);
+ assert.equal(valid.counts.tc_platform_fee_profiles,1);
  const dir=await mkdtemp(path.join(os.tmpdir(),'tc-shipbackup-'));
  try{
   const file=path.join(dir,'shipping.tcbackup');
@@ -88,6 +90,7 @@ test('Cloud 1.1 encrypted archive includes shipment metadata; old v1 backups rem
   await encryptLines(file,password,rows());
   const verifier=createVerifier();await decryptLines(file,password,row=>verifier.accept(row));
   assert.equal(verifier.report().tables.tc_sale_shipments,1);
+  assert.equal(verifier.report().tables.tc_platform_fee_profiles,1);
   const damaged=structuredClone(v2);
   damaged.tables.tc_sale_shipments[0].sale_id='99999999-9999-9999-9999-999999999999';
   assert.throws(()=>validateSnapshot(damaged),/Verwaister Verweis/);
