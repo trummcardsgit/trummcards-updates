@@ -11,13 +11,13 @@ const preload=get('preload.cjs');
 const app=get('src/app.js');
 const html=get('src/index.html');
 const css=get('src/styles.css');
-const isRelease=pkg.version==='1.0.0';
-assert.ok(['0.9.0','1.0.0'].includes(pkg.version),'Unsupported Cloud version');
+const isRelease=['1.0.0','1.1.0'].includes(pkg.version);
+assert.ok(['0.9.0','1.0.0','1.1.0'].includes(pkg.version),'Unsupported Cloud version');
 
 test('Cloud production uses a distinct Windows identity and profile',()=>{
  assert.equal(pkg.build.appId,'at.trummcards.cloudproduction');
  assert.equal(pkg.build.productName,'TrummCards Cloud');
- assert.equal(pkg.version,isRelease?'1.0.0':'0.9.0');
+ assert.equal(pkg.version,isRelease?pkg.version:'0.9.0');
  assert.ok(main.includes("trummcards-cloud-production"));
  assert.ok(!main.includes("'trummcards-cloud-test'"));
  assert.ok(!main.includes("'trummcards_inventory_v1'"));
@@ -60,7 +60,7 @@ test('Preview remains read-only; released version enables controlled business wr
   const end=app.indexOf('\n  }',start);
   assert.ok(app.slice(start,end).includes('if(!WRITES_ENABLED)'),fun);
  }
- if(isRelease)assert.ok(html.includes('TrummCards Cloud 1.0 – Produktivbetrieb'));
+ if(isRelease)assert.ok(html.includes(pkg.version==='1.0.0'?'TrummCards Cloud 1.0 – Produktivbetrieb':'TrummCards Cloud 1.1.0'));
  else assert.ok(html.includes('Produktionsvorschau – noch nicht freigegeben'));
 });
 test('Windows UI has dedicated update tab and secure preload',()=>{
