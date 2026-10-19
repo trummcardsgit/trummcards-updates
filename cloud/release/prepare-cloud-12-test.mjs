@@ -6,7 +6,7 @@ if(process.env.GITHUB_ACTIONS==='true'&&process.env.GITHUB_REF!=='refs/heads/fea
 const PROD='hgdexyvtgfffcasfpjyu',TEST='cpycfxolqpidfjbhhsmr';
 const PROD_KEY='sb_publishable_JDdbnEq3muaOhp3LsNhBkQ_eJZ0uYEf';
 const TEST_KEY='sb_publishable_oS2Ri8VlhEqv1XDBwkUahQ_zVEEtyHG';
-const VERSION='1.2.0-test.7',desk='cloud/desktop-production',web='cloud/mobile-production/web';
+const VERSION='1.2.0-test.8',desk='cloud/desktop-production',web='cloud/mobile-production/web';
 const read=f=>fs.readFileSync(path.resolve(f),'utf8');
 const write=(f,s)=>fs.writeFileSync(path.resolve(f),s,'utf8');
 const changed=[];
@@ -34,7 +34,7 @@ change(desk+'/package.json',s=>{
  p.name='trummcards-cloud-test12';p.version=VERSION;p.description='TrummCards Cloud 1.2 TEST on existing TEST Supabase';
  p.build.appId='at.trummcards.cloudtest12';p.build.productName='TrummCards Cloud 1.2 TEST';
  p.build.nsis.shortcutName='TrummCards Cloud 1.2 TEST';
- p.build.artifactName='TrummCards-Cloud-12-TEST-Setup-1.2.0-test.7.exe';
+ p.build.artifactName='TrummCards-Cloud-12-TEST-Setup-1.2.0-test.8.exe';
  p.build.publish=[{provider:'generic',url:'https://example.invalid/test12-no-updates/'}];
  p.scripts.dist='npm run bundle && node --check main.cjs && node --check src/app.js && python scripts/make-icon.py && electron-builder --win nsis --publish never';
  return JSON.stringify(p,null,2)+'\n';
@@ -54,12 +54,24 @@ change(web+'/manifest.webmanifest',s=>{
  const m=JSON.parse(s);m.name='TrummCards Cloud 1.2 TEST';m.short_name='TC 1.2 TEST';
  m.description='Separate Testausgabe – nur Supabase TEST';return JSON.stringify(m,null,2)+'\n';
 });
+// The user-approved artwork lives in the Windows source as one binary asset.
+// Copy the SAME bitmap to the PWA build; never fetch it from an external image host.
+const localArtwork=path.resolve(desk+'/src/kein-bild12.webp');
+const browserArtwork=path.resolve(web+'/kein-bild12.webp');
+const artwork=fs.readFileSync(localArtwork);
+if(artwork.length<4000||artwork.length>100000||artwork.toString('ascii',0,4)!=='RIFF'||artwork.toString('ascii',8,12)!=='WEBP')
+ throw Error('Kein-Bild artwork is missing or invalid');
+fs.writeFileSync(browserArtwork,artwork);
 change(web+'/sw.js',s=>{
- s=s.replaceAll('trummcards-mobile-production-shell-','trummcards-mobile-test12-shell-').replaceAll('0.9.0',VERSION).replaceAll('trummcards-mobile-test12-shell-v1','trummcards-mobile-test12-shell-v1-1207');
+ s=s.replaceAll('trummcards-mobile-production-shell-','trummcards-mobile-test12-shell-').replaceAll('0.9.0',VERSION).replaceAll('trummcards-mobile-test12-shell-v1','trummcards-mobile-test12-shell-v1-1208');
  const old="'./app.js?v="+VERSION+"','./styles.css?v="+VERSION+"'";
  const addition=['catalog11.js','catalog11-ui.js','sets11-ui.js','market11-ui.js','fees11.js','fees11-ui.js','finance11.js','finance11-ui.js','cash11.js','cash11-ui.js','shipping11.js','shipping11-ui.js','carddex12.js','vinted12.js'].map(x=>",'./"+x+"?v="+VERSION+"'").join('');
- return replaceOne(s,old,old+addition);
+ const artworkEntry=",'./kein-bild12.webp'";
+ return replaceOne(s,old,old+addition+artworkEntry);
 });
+if(!read(web+'/sw.js').includes("'./kein-bild12.webp'"))throw Error('PWA offline cache missing selected artwork');
+if(!read(web+'/carddex12.js').includes("img.src='./kein-bild12.webp'"))throw Error('PWA card-image fallback not enabled');
+if(!read(desk+'/src/carddex12.js').includes("img.src='./kein-bild12.webp'"))throw Error('Windows card-image fallback not enabled');
 for(const f of changed){
  const s=read(f);
  if(s.includes(PROD)||s.includes(PROD_KEY))throw Error('PROD identifier leaked into TEST build: '+f);
