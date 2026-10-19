@@ -168,7 +168,7 @@ function bind({onUseCard}={}){
   // Search cards are still detached here; renderImage checks img.isConnected.
   // Start the image request only once the button has been added to the results grid.
   queueMicrotask(()=>{
-   if(b.isConnected)renderImage(img,notice,card,lang.value,'low',()=>revision===null||revision===searchGeneration);
+   if(b.isConnected)renderImage(img,notice,card,card.catalogLanguage||lang.value,'low',()=>revision===null||revision===searchGeneration);
   });
   const name=document.createElement('strong');name.className='dex-card-name';name.textContent=card.name;
   const setLabel=document.createElement('span');setLabel.className='dex-card-set';
@@ -176,7 +176,7 @@ function bind({onUseCard}={}){
   const number=document.createElement('span');number.className='dex-card-number';
   number.textContent='Kartennummer: '+(card.localId?(card.localId+(card.setOfficial>0?'/'+card.setOfficial:'')):'Nicht verfügbar');
   b.append(name,setLabel,number);
-  b.addEventListener('click',()=>{void selectCard(card.id);});
+  b.addEventListener('click',()=>{void selectCard(card.id,card.catalogLanguage||lang.value);});
   if(!card.setName&&revision!==null)void lookUpSetName(card,lang.value,setLabel,revision);
   return b;
  }
@@ -192,23 +192,23 @@ function bind({onUseCard}={}){
    setPaging();searchStatus.textContent=cards.length?cards.length+' Treffer auf Seite '+page+'. Karte für Details anklicken.':'Keine Karten gefunden.';
   }catch(e){if(current===searchGeneration&&e.name!=='AbortError'){searchStatus.textContent='Suche fehlgeschlagen: '+String(e.message||e);setPaging();}}
  }
- async function selectCard(id){
+ async function selectCard(id,detailLanguage=lang.value){
   const current=++detailGeneration;detailAbort?.abort();detailAbort=new AbortController();
   detail.hidden=false;detailTitle.textContent='Lade Kartendetails …';detailMeta.replaceChildren();
   detailImage.hidden=true;detailImage.removeAttribute('src');
   try{
-   const card=await catalog.getPokemonCard({id,language:lang.value,signal:detailAbort.signal});
+   const card=await catalog.getPokemonCard({id,language:detailLanguage,signal:detailAbort.signal});
    if(current!==detailGeneration)return;
-   selectedCard={id:card.id,language:lang.value};
+   selectedCard={id:card.id,language:detailLanguage};
    detailTitle.textContent=card.name+(card.localId?' · #'+card.localId+(card.setOfficial>0?'/'+card.setOfficial:''):'');
-   const fields=[['Set',card.setName],['Kartennummer',card.localId+(card.setOfficial>0?'/'+card.setOfficial:'')],['Seltenheit',card.rarity],['Sprache',lang.selectedOptions[0]?.textContent],['Katalog-ID',card.id]];
+   const fields=[['Set',card.setName],['Kartennummer',card.localId+(card.setOfficial>0?'/'+card.setOfficial:'')],['Seltenheit',card.rarity],['Sprache',detailLanguage==='en'&&lang.value!=='en'?'Englisch (Katalog-Fallback)':lang.selectedOptions[0]?.textContent],['Katalog-ID',card.id]];
    for(const [name,value] of fields){
     const row=document.createElement('div');row.className='dex-info-row';
     const key=document.createElement('span');key.textContent=name;
     const val=document.createElement('strong');val.textContent=String(value||'Nicht angegeben');row.append(key,val);detailMeta.append(row);
    }
    const imageNotice=document.createElement('p');imageNotice.className='dex-status dex-image-status';detailMeta.append(imageNotice);
-   renderImage(detailImage,imageNotice,card,lang.value,'high',()=>current===detailGeneration);
+   renderImage(detailImage,imageNotice,card,detailLanguage,'high',()=>current===detailGeneration);
    detailMeta.append(renderPrice(card.pricing,card.variants));
    detail.scrollIntoView?.({behavior:'smooth',block:'nearest'});
   }catch(e){if(current===detailGeneration&&e.name!=='AbortError')detailTitle.textContent='Kartendetails nicht verfügbar: '+String(e.message||e);}

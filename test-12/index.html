@@ -12,23 +12,23 @@
 <link rel="icon" type="image/webp" href="./logo.webp">
 <link rel="apple-touch-icon" href="./icon-180.png">
 <link rel="manifest" href="./manifest.webmanifest">
-<link rel="stylesheet" href="./styles.css?v=1.2.0-test.6">
-<script src="./catalog11.js?v=1.2.0-test.6" defer></script>
-<script src="./catalog11-ui.js?v=1.2.0-test.6" defer></script>
-<script src="./sets11-ui.js?v=1.2.0-test.6" defer></script>
-<script src="./market11-ui.js?v=1.2.0-test.6" defer></script>
-<script src="./fees11.js?v=1.2.0-test.6" defer></script>
-<script src="./fees11-ui.js?v=1.2.0-test.6" defer></script>
-<script src="./finance11.js?v=1.2.0-test.6" defer></script>
-<script src="./finance11-ui.js?v=1.2.0-test.6" defer></script>
-<script src="./cash11.js?v=1.2.0-test.6" defer></script>
-<script src="./cash11-ui.js?v=1.2.0-test.6" defer></script>
-<script src="./shipping11.js?v=1.2.0-test.6" defer></script>
-<script src="./shipping11-ui.js?v=1.2.0-test.6" defer></script>
-<script src="./carddex12.js?v=1.2.0-test.6" defer></script>
-<script src="./cardscan12.js?v=1.2.0-test.6" defer></script>
-<script src="./vinted12.js?v=1.2.0-test.6" defer></script>
-<script src="./app.js?v=1.2.0-test.6" defer></script>
+<link rel="stylesheet" href="./styles.css?v=1.2.0-test.7">
+<script src="./catalog11.js?v=1.2.0-test.7" defer></script>
+<script src="./catalog11-ui.js?v=1.2.0-test.7" defer></script>
+<script src="./sets11-ui.js?v=1.2.0-test.7" defer></script>
+<script src="./market11-ui.js?v=1.2.0-test.7" defer></script>
+<script src="./fees11.js?v=1.2.0-test.7" defer></script>
+<script src="./fees11-ui.js?v=1.2.0-test.7" defer></script>
+<script src="./finance11.js?v=1.2.0-test.7" defer></script>
+<script src="./finance11-ui.js?v=1.2.0-test.7" defer></script>
+<script src="./cash11.js?v=1.2.0-test.7" defer></script>
+<script src="./cash11-ui.js?v=1.2.0-test.7" defer></script>
+<script src="./shipping11.js?v=1.2.0-test.7" defer></script>
+<script src="./shipping11-ui.js?v=1.2.0-test.7" defer></script>
+<script src="./carddex12.js?v=1.2.0-test.7" defer></script>
+
+<script src="./vinted12.js?v=1.2.0-test.7" defer></script>
+<script src="./app.js?v=1.2.0-test.7" defer></script>
 </head>
 <body>
 <div id="shell">
@@ -54,7 +54,7 @@
       </div>
     </section>
     <div id="appScreen" hidden>
-      <div class="test-note production-preview"><span>PRODUKTIONSVORSCHAU 1.2.0-test.6</span> Die PWA verbindet sich ausschließlich mit der neuen leeren Datenbank <b>TrummCards Production</b>. Artikelanlage, Ein- und Verkäufe sowie Bilduploads bleiben bis zur Freigabe gesperrt.</div>
+      <div class="test-note production-preview"><span>PRODUKTIONSVORSCHAU 1.2.0-test.7</span> Die PWA verbindet sich ausschließlich mit der neuen leeren Datenbank <b>TrummCards Production</b>. Artikelanlage, Ein- und Verkäufe sowie Bilduploads bleiben bis zur Freigabe gesperrt.</div>
       <div class="topactions"><div><span class="eyebrow" id="welcomeText">DEINE SAMMLUNG</span><h1 id="screenTitle">Übersicht</h1></div><button class="icon-btn" id="refreshBtn" aria-label="Jetzt synchronisieren" title="Synchronisieren">↻</button></div>
       <div id="pendingBanner" class="pending" hidden></div>
 
@@ -145,7 +145,7 @@
       </section>
 
       <section id="page-purchase" class="page" hidden>
-        <div class="panel booking-panel"><div class="micro-label">EINGANG · TEST 1.2 · VORSCHAU 1.2.0-test.6</div><h2>Einkauf erfassen</h2>
+        <div class="panel booking-panel"><div class="micro-label">EINGANG · TEST 1.2 · VORSCHAU 1.2.0-test.7</div><h2>Einkauf erfassen</h2>
           <p class="subtle">Erfasse deinen Einkauf. Einzel- und Gesamtpreis werden automatisch berechnet.</p>
           <form id="purchaseForm" class="booking-form">
             <fieldset class="booking-group">
@@ -176,7 +176,7 @@
       </section>
 
       <section id="page-sale" class="page" hidden>
-        <div class="panel booking-panel"><div class="micro-label">VERKAUF · TEST 1.2 · VORSCHAU 1.2.0-test.6</div><h2>Verkauf erfassen</h2>
+        <div class="panel booking-panel"><div class="micro-label">VERKAUF · TEST 1.2 · VORSCHAU 1.2.0-test.7</div><h2>Verkauf erfassen</h2>
           <p class="subtle">Der Lagerbestand und FIFO-Einstand werden nach der Buchung automatisch aktualisiert.</p>
           <form id="saleForm" class="booking-form">
             <fieldset class="booking-group">
@@ -302,25 +302,6 @@
       <section id="page-carddex" class="page" hidden><div class="panel dex-panel">
 <div class="dex-head"><div><span class="dex-eyebrow">POKÉMON KARTENKATALOG · TCGDEX</span><h2>KartenDex</h2><p>Karten und komplette Sets nachschlagen – unabhängig vom Lager, ohne einen Artikel anzulegen.</p></div></div>
 
-<div class="dex-scan-toolbar">
- <button type="button" id="dexTakePhoto" class="dex-scan-primary"><span aria-hidden="true">📷</span> Karte scannen</button>
- <button type="button" id="dexPickPhoto">Foto auswählen</button>
-</div>
-<input type="file" id="dexCameraFile" accept="image/*" capture="environment" hidden aria-label="Pokémon-Karte fotografieren">
-<input type="file" id="dexGalleryFile" accept="image/*" hidden aria-label="Kartenfoto auswählen">
-<div id="dexScanPanel" class="dex-scan-panel" hidden>
- <div class="dex-scan-preview"><img id="dexScanPreview" alt="Aufgenommenes Pokémon-Kartenfoto" hidden></div>
- <p id="dexScanStatus" role="status" aria-live="polite">Karte fotografieren und Name sowie Kartennummer überprüfen.</p>
- <div class="dex-scan-fields">
-  <label>Erkannter Pokémon-Name<input id="dexScanName" type="text" maxlength="100" autocomplete="off" placeholder="z. B. Glurak VMAX"></label>
-  <label>Erkannte Kartennummer<input id="dexScanNumber" type="text" maxlength="30" autocomplete="off" placeholder="z. B. 74/73"></label>
- </div>
- <div class="dex-scan-actions">
-  <button type="button" id="dexScanSearch" class="dex-action">Mit diesen Angaben suchen</button>
-  <button type="button" id="dexScanClose">Schließen</button>
- </div>
- <p class="dex-status">Die Fotoerkennung läuft auf deinem Gerät. Beim ersten Scan werden die OCR-Software und Sprachdateien aus dem Internet geladen. Es wird kein Kartenfoto an TrummCards oder einen KI-Bilddienst hochgeladen. Erkennungen bitte kontrollieren.</p>
-</div>
 <form id="dexSearchForm" class="dex-form">
  <label>Pokémon / Kartenname<input id="dexQuery" type="search" maxlength="100" placeholder="z. B. Glurak-GX"></label>
  <label>Set-Name<input id="dexSearchSet" type="search" maxlength="100" placeholder="z. B. Verborgenes Schicksal"></label>

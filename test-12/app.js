@@ -1,4 +1,4 @@
-/* TrummCards Mobile Cloud TEST 1.2 RC v1.2.0-test.6 – static GitHub Pages client; only a public key.
+/* TrummCards Mobile Cloud TEST 1.2 RC v1.2.0-test.7 – static GitHub Pages client; only a public key.
  * Data is readable/writeable only with a Supabase JWT and the database owner RLS guard.
  * Test data ONLY. A connection is required to write; no offline operation replay.
  */
@@ -354,7 +354,7 @@ function bind(){
   navigate('article');$('catalogSearchLanguage').value=language;
   void catalogPicker11.selectCard(id);
  }});
- window.TrummCardScan12?.bind();
+
  vintedUI12=window.TrummVinted12?.bind({
   getProducts:()=>state.products,
   getOwnImage:async p=>{
