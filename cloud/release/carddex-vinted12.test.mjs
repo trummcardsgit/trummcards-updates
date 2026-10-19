@@ -72,7 +72,7 @@ test('KartenDex picture fallback uses same ID in English, keeps localized card d
   assert.ok(js.includes("Englisches Ersatzbild"));
   assert.ok(js.includes('renderImage(img,notice,card,lang.value)'));
   assert.ok(js.includes("renderImage(detailImage,imageNotice,card,lang.value,'high'"));
-  assert.ok(js.includes("detailMeta.append(renderPrice(card.pricing))"));
+  assert.ok(js.includes("detailMeta.append(renderPrice(card.pricing,card.variants))"));
   assert.ok(!js.includes('supabase.co'));
   assert.ok(!js.includes('navigator.clipboard'));
  }
@@ -150,5 +150,47 @@ test('KartenDex card details include real set total for printed number, when sup
   const result=await env.window.TrummCatalog11.getPokemonCard({id:'sv03.5-9',language:'de',fetchImpl:mock});
   assert.equal(result.setName,'151');
   assert.equal(result.setOfficial,165);
+ }
+});
+
+test('KartenDex filters ghost Normal/Holo price pairs when only one print exists',()=>{
+ for(const root of clients){
+  const env={window:{},document:{}};
+  runInNewContext(read(root+'carddex12.js'),env);
+  const price=env.window.TrummCardDex12.filteredMarketQuote;
+  const raw={cardmarket:{unit:'EUR',trend:174.81,'trend-holo':271.61,updated:'2026-10-19T08:00:00Z'}};
+  const rainbow={normal:false,holo:true,reverse:false,firstEdition:false};
+  const single=price(raw,rainbow);
+  assert.equal(single.rows.length,1);
+  assert.equal(single.rows[0].value,174.81);
+  assert.match(single.variantLabel,/Nur eine Kartenausführung/);
+  assert.match(single.priceNote,/ausgeblendet/);
+  const unknown=price(raw,null);
+  assert.equal(unknown.rows.length,1);
+  const both=price(raw,{normal:true,holo:true,reverse:false,firstEdition:false});
+  assert.equal(both.rows.length,2);
+  assert.equal(both.rows[0].label,'Normal (ohne Holo)');
+  assert.equal(both.rows[1].label,'Holo');
+  const reverse=price(raw,{normal:true,holo:false,reverse:true,firstEdition:false});
+  assert.equal(reverse.rows.length,1);
+  assert.equal(price({cardmarket:{unit:'USD',trend:150}},rainbow),null);
+ }
+});
+test('TCGdex detail returns explicit variant flags, never derives variants from pricing fields',async()=>{
+ for(const root of clients){
+  const env={window:{},URLSearchParams};
+  runInNewContext(read(root+'catalog11.js'),env);
+  const card={id:'swsh3.5-74',name:'Glurak VMAX',localId:'74',
+   variants:{normal:false,holo:true,reverse:false,firstEdition:false},
+   pricing:{cardmarket:{unit:'EUR',trend:174.81,'trend-holo':271.61}}};
+  const fetchImpl=async()=>({ok:true,json:async()=>card});
+  const detail=await env.window.TrummCatalog11.getPokemonCard({id:'swsh3.5-74',language:'de',fetchImpl});
+  assert.equal(detail.variants.normal,false);
+  assert.equal(detail.variants.holo,true);
+  assert.equal(detail.variants.reverse,false);
+  const missing=await env.window.TrummCatalog11.getPokemonCard({
+   id:'swsh3.5-74',language:'de',fetchImpl:async()=>({ok:true,json:async()=>({...card,variants:undefined})})
+  });
+  assert.equal(missing.variants,null);
  }
 });
