@@ -12,12 +12,12 @@
   const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const localDate = () => {const d = new Date();d.setMinutes(d.getMinutes()-d.getTimezoneOffset());return d.toISOString().slice(0,10);};
   let sb=null, user=null, refreshing=false, saving=false;
-  let state={products:[],inventory:[],lots:[],sales:[],images:[],productImages:[]};
+  let state={products:[],inventory:[],lots:[],sales:[],images:[],productImages:[],shipments:[]};
   let activeTab='inventory';
   let lastPurchasePrice='unit';
   let lastSyncAt=0;
   let productPhotoFile=null,productPreviewUrl=null,cameraStream=null,desktopThumbObserver=null,productPreviewGeneration=0;
-  let catalogPicker11=null,financeUI11=null;
+  let catalogPicker11=null,financeUI11=null,shippingUI11=null;
   const desktopThumbCache=new Map();
 
   const getForm = (form,name) => form.elements.namedItem(name);
@@ -87,11 +87,12 @@
         sb.from('tc_purchase_lots').select('id,product_id,bought_on,purchased_qty,available_qty,purchase_total,extra_cost,allocated_cost,source,note,created_at').order('bought_on',{ascending:true}).limit(1000),
         sb.from('tc_sales').select('id,product_id,sold_on,qty,price,shipping_income,shipping_cost,fees,other_cost,cogs_total,platform,note,status,created_at').order('created_at',{ascending:false}).limit(1000),
         sb.from('tc_lot_images').select('id,lot_id,storage_path,mime_type,display_order').limit(1000),
-        sb.from('tc_product_images').select('id,product_id,storage_path,mime_type,created_at').limit(1000)
+        sb.from('tc_product_images').select('id,product_id,storage_path,mime_type,created_at').limit(1000),
+        sb.from('tc_sale_shipments').select('sale_id,shipping_status,carrier,tracking_number,order_reference,shipped_on,tracking_url,updated_at').limit(1000)
       ];
       const result=await Promise.all(requests);
       for(const r of result) if(r.error)throw r.error;
-      state={products:result[0].data||[],inventory:result[1].data||[],lots:result[2].data||[],sales:result[3].data||[],images:result[4].data||[],productImages:result[5].data||[]};
+      state={products:result[0].data||[],inventory:result[1].data||[],lots:result[2].data||[],sales:result[3].data||[],images:result[4].data||[],productImages:result[5].data||[],shipments:result[6].data||[]};
       lastSyncAt=Date.now();
       render();setSync('Synchronisiert '+new Date().toLocaleTimeString('de-AT',{hour:'2-digit',minute:'2-digit',second:'2-digit'}),'online');
       if(!silent)flash('Lagerbestand, Einkaeufe und Verkaeufe aus Supabase aktualisiert.','success');
@@ -201,11 +202,13 @@
     selectCurrent(getForm($('imageForm'),'lot'),state.lots,l=>productName(l.product_id)+' | '+l.bought_on+' | '+l.id.slice(0,8),'Einkaufslos auswaehlen');
     $('salesRows').innerHTML=state.sales.map(s=>{
       const earned=L.profit({price:Number(s.price),shippingIncome:Number(s.shipping_income),shippingCost:Number(s.shipping_cost),fees:Number(s.fees),other:Number(s.other_cost),cost:Number(s.cogs_total)});
-      return `<tr><td>${escapeHtml(s.sold_on)}</td><td>${escapeHtml(productName(s.product_id))}</td><td>${Number(s.qty)}</td><td>${L.euro(s.price)}</td><td>${L.euro(s.cogs_total)}</td><td class="${earned<0?'negative':'positive'}">${L.euro(earned)}</td><td>${s.status==='booked'?'Gebucht':'Storniert'}</td><td>${s.status==='booked'?`<button type="button" data-void-sale="${s.id}">Stornieren</button>`:'-'}</td></tr>`;
+      const sh=state.shipments.find(row=>row.sale_id===s.id);
+      return `<tr><td>${escapeHtml(s.sold_on)}</td><td>${escapeHtml(productName(s.product_id))}</td><td>${Number(s.qty)}</td><td>${L.euro(s.price)}</td><td>${L.euro(s.cogs_total)}</td><td class="${earned<0?'negative':'positive'}">${L.euro(earned)}</td><td>${s.status==='booked'?'Gebucht':'Storniert'}</td><td><button type="button" data-shipping-sale="${s.id}">Versand${sh?' ('+escapeHtml(sh.shipping_status)+')':''}</button>${s.status==='booked'?` <button type="button" data-void-sale="${s.id}">Stornieren</button>`:''}</td></tr>`;
     }).join('')||'<tr><td colspan="8" class="empty">Noch keine Verkaeufe in Production.</td></tr>';
     $('lotsRows').innerHTML=state.lots.map(l=>`<tr><td>${escapeHtml(l.bought_on)}</td><td>${escapeHtml(productName(l.product_id))}</td><td>${Number(l.purchased_qty)}</td><td>${Number(l.available_qty)}</td><td>${L.euro(Number(l.purchase_total)+Number(l.extra_cost))}</td><td>${escapeHtml(l.source||'-')}</td></tr>`).join('')||'<tr><td colspan="6" class="empty">Noch keine Einkaufschargen.</td></tr>';
     renderPending(); updateSaleHint(); updatePurchaseHint();
     financeUI11?.render();
+    shippingUI11?.render();
     if(activeTab==='photos')renderImages().catch(e=>console.error('Picture display:',e));
   }
   function switchTab(name) {
@@ -332,6 +335,21 @@
       if(jumpToPurchase){switchTab('purchase');getForm($('purchaseForm'),'product').value=id;updatePurchaseHint();}
       flash(jumpToPurchase?'Karte gespeichert. Jetzt den Einkauf erfassen.':(editing?'Artikel und Bild aktualisiert.':'Neuer Artikel mit optionalem Bild gespeichert.'),'success');
     });
+  }
+  async function saveShipment11(saleId,data){
+    if(!WRITES_ENABLED)throw Error(REQUIRE_GO_LIVE_MESSAGE);
+    if(!sb||!user)throw Error('Bitte anmelden.');
+    if(!state.sales.some(s=>s.id===saleId&&s.status==='booked'))throw Error('Versand nur zu gebuchten Verkäufen.');
+    const payload={shipping_status:data.status,carrier:data.carrier,tracking_number:data.tracking_number,
+      order_reference:data.order_reference,shipped_on:data.shipped_on,tracking_url:data.tracking_url};
+    const exists=state.shipments.some(s=>s.sale_id===saleId);
+    const query=exists
+      ? sb.from('tc_sale_shipments').update({...payload,updated_at:new Date().toISOString()}).eq('sale_id',saleId)
+      : sb.from('tc_sale_shipments').insert({...payload,sale_id:saleId,owner_id:user.id});
+    const {error}=await query;
+    if(error)throw error;
+    state.shipments=[...state.shipments.filter(s=>s.sale_id!==saleId),{...payload,sale_id:saleId}];
+    await refreshAll(true);
   }
   function updatePurchaseHint() {
     const f=$('purchaseForm');
@@ -514,13 +532,14 @@
     $('changeSettings').addEventListener('click',()=>flash('TrummCards Production kann nicht auf TEST oder fremde Projekte umgestellt werden.','info'));
     $('logoutBtn').addEventListener('click',()=>withSaving(async()=>{
       if(sb) {const {error}=await sb.auth.signOut();if(error)throw error;}
-      user=null;state={products:[],inventory:[],lots:[],sales:[],images:[],productImages:[]};clearDesktopThumbnails();stopProductCamera();showStage('login');flash('Erfolgreich abgemeldet.','success');
+      user=null;state={products:[],inventory:[],lots:[],sales:[],images:[],productImages:[],shipments:[]};clearDesktopThumbnails();stopProductCamera();showStage('login');flash('Erfolgreich abgemeldet.','success');
     }));
     $('refreshBtn').addEventListener('click',()=>refreshAll());
     $('tabs').addEventListener('click',e=>{const b=e.target.closest('button[data-tab]');if(b)switchTab(b.dataset.tab);});
     void initializeCloudUpdater();
     catalogPicker11=window.TrummCatalogUI11?.bind();
     financeUI11=window.TrummFinanceUI11?.bind(()=>({sales:state.sales,lots:state.lots,products:state.products}));
+    shippingUI11=window.TrummShippingUI11?.bind({getSales:()=>state.sales,getShipments:()=>state.shipments,productName,save:saveShipment11});
     $('productForm').addEventListener('submit',saveProduct);
     getForm($('productForm'),'productPicture').addEventListener('change',e=>{stopProductCamera();previewProductPicture(e.target.files?.[0]||null);});
     $('cameraStart').addEventListener('click',()=>{void startProductCamera();});
@@ -547,7 +566,7 @@
     $('saleForm').addEventListener('submit',saveSale);
     $('saleForm').addEventListener('input',updateSaleHint);
     $('saleForm').addEventListener('change',updateSaleHint);
-    $('salesRows').addEventListener('click',e=>{const b=e.target.closest('[data-void-sale]');if(b)voidSale(b.dataset.voidSale);});
+    $('salesRows').addEventListener('click',e=>{const shipment=e.target.closest('[data-shipping-sale]');if(shipment){switchTab('bookings');shippingUI11?.load(shipment.dataset.shippingSale,true);$('shipmentPanel').scrollIntoView({behavior:'smooth',block:'nearest'});return;}const b=e.target.closest('[data-void-sale]');if(b)voidSale(b.dataset.voidSale);});
     $('imageForm').addEventListener('submit',saveImage);
     window.addEventListener('focus',()=>{if(user&&Date.now()-lastSyncAt>5000)refreshAll(true);});
     window.addEventListener('beforeunload',stopProductCamera);
