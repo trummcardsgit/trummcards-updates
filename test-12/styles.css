@@ -380,3 +380,9 @@ main{width:min(100%,1000px);padding:21px 18px 24px;margin:0 auto;flex:1}.login-s
 .dex-market-panel>strong{display:block;color:#f4ce89;margin-bottom:10px;font-size:15px}
 .dex-market-panel .dex-info-row strong{color:#f2d18a}
 .dex-market-panel .dex-status{margin:10px 0 0;font-size:12px}
+
+/* KartenDex 1.2: drei klar getrennte Beschriftungszeilen */
+.dex-card .dex-card-name{font-size:13px;color:#f4f0e9;font-weight:750;line-height:1.35;overflow-wrap:anywhere;}
+.dex-card .dex-card-set{font-size:12px;color:#e2c589;line-height:1.4;overflow-wrap:anywhere;}
+.dex-card .dex-card-number{font-size:11px;color:#a7bcd6;line-height:1.4;overflow-wrap:anywhere;}
+.dex-form label input{min-width:0}
