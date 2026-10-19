@@ -10,6 +10,8 @@
 <script defer src="vendor.js"></script>
 <script defer src="catalog11.js"></script>
 <script defer src="catalog11-ui.js"></script>
+<script defer src="finance11.js"></script>
+<script defer src="finance11-ui.js"></script>
 <script defer src="app.js"></script>
 </head>
 <body>
@@ -57,6 +59,7 @@
       <button type="button" data-tab="purchase">Einkauf erfassen</button>
       <button type="button" data-tab="sale">Verkauf erfassen</button>
       <button type="button" data-tab="bookings">Buchungen</button>
+      <button type="button" data-tab="finance">Finanzcenter</button>
       <button type="button" data-tab="photos">Artikelbilder</button>
       <button type="button" data-tab="updates">Programm-Updates</button>
     </nav>
@@ -153,6 +156,17 @@
       <div class="panel"><h2>Einkaufschargen</h2><div class="table-wrap"><table><thead><tr><th>Datum</th><th>Artikel</th><th>Gekauft</th><th>Verfuegbar</th><th>Gesamtkosten</th><th>Quelle</th></tr></thead><tbody id="lotsRows"></tbody></table></div></div>
     </section>
 
+    <section class="tab" id="tab-finance" hidden>
+      <div class="panel">
+        <h2>TrummCards Finanzcenter</h2>
+        <p class="small muted">Umsatz, Gebühren, Wareneinsatz und FIFO-Gewinn. Für die österreichische Einnahmen-Ausgaben-Rechnung sind tatsächliche Zahlungsdaten zusätzlich zu berücksichtigen.</p>
+        <div class="actions"><label>Zeitraum <select id="financePeriod"><option value="all">Gesamter Zeitraum</option><option value="year">Dieses Jahr</option><option value="month">Dieser Monat</option></select></label><button id="financeExport" type="button">CSV für Excel exportieren</button></div>
+        <div id="financeSummary" class="finance-metrics"></div>
+        <p id="financeStatus" class="small muted" role="status" aria-live="polite"></p>
+        <h3>Umsatz je Monat</h3><div id="financeMonths" class="finance-bars"></div>
+        <h3>Gewinn nach Verkaufsplattform</h3><div id="financePlatforms" class="finance-bars"></div>
+      </div>
+    </section>
     <section class="tab" id="tab-photos" hidden>
       <div class="panel"><h2>Artikelbilder im privaten Cloud-Speicher</h2>
         <p class="muted">Das Bild gehoert zu einem konkreten Einkaufslos. Maximal 10 MB pro Bild; JPG, PNG oder WebP.</p>
