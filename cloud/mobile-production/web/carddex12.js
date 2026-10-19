@@ -165,7 +165,11 @@ function bind({onUseCard}={}){
   const img=document.createElement('img');img.alt='Pokémon-Kartenbild';img.loading='lazy';img.className='dex-card-picture';
   const notice=document.createElement('small');notice.className='dex-image-status';
   b.append(img,notice);
-  renderImage(img,notice,card,lang.value);
+  // Search cards are still detached here; renderImage checks img.isConnected.
+  // Start the image request only once the button has been added to the results grid.
+  queueMicrotask(()=>{
+   if(b.isConnected)renderImage(img,notice,card,lang.value,'low',()=>revision===null||revision===searchGeneration);
+  });
   const name=document.createElement('strong');name.className='dex-card-name';name.textContent=card.name;
   const setLabel=document.createElement('span');setLabel.className='dex-card-set';
   setLabel.textContent=card.setName||'Set wird geladen …';
