@@ -7,7 +7,7 @@
   "scripts": {
     "start": "npm run bundle && electron .",
     "bundle": "node scripts/bundle.mjs",
-    "check": "node --check main.cjs && node --check preload.cjs && node --check src/app.js && node --check src/catalog11.js && node --check src/catalog11-ui.js && node --check src/sets11-ui.js && node --check src/market11-ui.js && node --check src/fees11.js && node --check src/fees11-ui.js && node --check src/finance11.js && node --check src/finance11-ui.js && node --check src/cash11.js && node --check src/cash11-ui.js && node --check src/shipping11.js && node --check src/shipping11-ui.js && node --check src/logic.js && node --test tests/*.test.cjs",
+    "check": "node --check main.cjs && node --check preload.cjs && node --check src/app.js && node --check src/carddex12.js && node --check src/vinted12.js && node --check src/catalog11.js && node --check src/catalog11-ui.js && node --check src/sets11-ui.js && node --check src/market11-ui.js && node --check src/fees11.js && node --check src/fees11-ui.js && node --check src/finance11.js && node --check src/finance11-ui.js && node --check src/cash11.js && node --check src/cash11-ui.js && node --check src/shipping11.js && node --check src/shipping11-ui.js && node --check src/logic.js && node --test tests/*.test.cjs",
     "dist": "npm run bundle && npm run check && python scripts/make-icon.py && electron-builder --win nsis --publish never"
   },
   "dependencies": {
@@ -33,6 +33,8 @@
       "src/styles.css",
       "src/app.js",
       "src/logic.js",
+      "src/carddex12.js",
+      "src/vinted12.js",
       "src/catalog11.js",
       "src/catalog11-ui.js",
       "src/sets11-ui.js",
