@@ -39,8 +39,9 @@ async function searchPokemonCards({query,language='de',limit=20,fetchImpl=fetch,
 // TCGdex's documented card pricing provides Cardmarket EUR trend estimates.
 // Variant matching is not reliable for Reverse, First Edition, SIR or graded cards.
 // Avoid a misleading automated valuation for those combinations.
-function euroMarketQuote(pricing,{variant='',gradingCompany=''}={}){
+function euroMarketQuote(pricing,{variant='',gradingCompany='',condition=''}={}){
  if(String(gradingCompany||'').trim())return null;
+ if(String(condition||'').trim()&&!['near mint','nm'].includes(String(condition).toLowerCase().trim()))return null;
  const normalized=String(variant||'').toLowerCase().trim();
  if(normalized&&!['standard','holo'].includes(normalized))return null;
  const cm=pricing?.cardmarket;
