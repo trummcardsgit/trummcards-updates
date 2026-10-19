@@ -29,6 +29,8 @@ jobs:
           node --check cloud/mobile-production/web/fees11-ui.js
           node --check cloud/mobile-production/web/finance11.js
           node --check cloud/mobile-production/web/finance11-ui.js
+          node --check cloud/mobile-production/web/cash11.js
+          node --check cloud/mobile-production/web/cash11-ui.js
           node --check cloud/mobile-production/web/shipping11.js
           node --check cloud/mobile-production/web/shipping11-ui.js
           node --check cloud/mobile-production/web/reset-password.js
@@ -56,6 +58,7 @@ jobs:
           node --test cloud/release/shipping11.test.mjs
           node --test cloud/release/market-fees11.test.mjs
           node --test cloud/release/sets11.test.mjs
+          node --test cloud/release/cash11.test.mjs
       - name: Windows Cloud Source und Business-Logik pruefen
         working-directory: cloud/desktop-production
         run: |
