@@ -34,7 +34,9 @@ begin
     'tc_sale_shipments', (select coalesce(jsonb_agg(to_jsonb(x) order by x.sale_id), '[]'::jsonb)
               from public.tc_sale_shipments x where x.owner_id = v_owner),
     'tc_platform_fee_profiles', (select coalesce(jsonb_agg(to_jsonb(x) order by x.id), '[]'::jsonb)
-              from public.tc_platform_fee_profiles x where x.owner_id = v_owner)
+              from public.tc_platform_fee_profiles x where x.owner_id = v_owner),
+    'tc_cash_entries', (select coalesce(jsonb_agg(to_jsonb(x) order by x.id), '[]'::jsonb)
+              from public.tc_cash_entries x where x.owner_id = v_owner)
     )
   );
 end;
