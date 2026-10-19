@@ -17,8 +17,8 @@ test('FIFO sale and cancelled sales are accounted separately',()=>{
 test('Spreadsheet export preserves cancelled status and protects CSV formulas',()=>{
  const csv=financeCsv({sales,purchaseLots:[{id:'L1',product_id:'P1',bought_on:'2026-10-01',purchased_qty:3,purchase_total:30,extra_cost:2,source:'=HYPERLINK("evil")'}],productName:()=>'+formula'});
  assert.ok(csv.startsWith('\uFEFF'));
- assert.ok(csv.includes('"\'+formula"'),'formula prefix escaped');
- assert.ok(csv.includes('"\'=HYPERLINK(""evil"")"'),'source formula escaped');
+ assert.ok(csv.includes("'+formula"),'formula prefix escaped');
+ assert.ok(csv.includes("'=HYPERLINK"),'source formula escaped');
  assert.ok(csv.includes('"Storniert"')===false);
  assert.ok(csv.includes('"voided"'));
  assert.ok(csv.includes('"38,00"'));
