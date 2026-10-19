@@ -11,7 +11,7 @@ const NO_WRITES='Produktionsvorschau: Echtdaten und Buchungen bleiben bis zur Re
 let ROOT='',KEY='',session=null,authCheckPromise=null,refreshPromise=null,loading=false,busy=false,activePage='home',lastPurchaseEntry='unit',pendingImage=null,imageObjects=[];
 let state={products:[],inventory:[],lots:[],sales:[],images:[],productImages:[],shipments:[],feeProfiles:[]};
 let articleImageFile=null,articleImagePreviewUrl=null,thumbnailObserver=null;
-let catalogPicker11=null,financeUI11=null,shippingUI11=null,marketUI11=null,feesUI11=null;
+let catalogPicker11=null,setPicker11=null,financeUI11=null,shippingUI11=null,marketUI11=null,feesUI11=null;
 const thumbnailCache=new Map(),thumbnailLoading=new Map();
 const API_HEADERS={'Content-Type':'application/json'};
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&quot;',"'":'&#39;'}[c]));
@@ -216,7 +216,7 @@ function renderHistory(){const sales=state.sales.slice(0,70),lots=state.lots.sli
 
 function resetArticle(){
  $('articleForm').reset();f($('articleForm'),'id').value='';f($('articleForm'),'catalog_card_id').value='';
- catalogPicker11?.clear();marketUI11?.reset();
+ catalogPicker11?.clear();setPicker11?.clear();marketUI11?.reset();
  previewArticlePhoto(null);
  $('articleTitle').textContent='Artikel anlegen';
  $('articleSubmit').textContent='Artikel und Bild speichern';
@@ -328,6 +328,7 @@ function bind(){
  $('imageViewer').addEventListener('click',e=>{if(e.target===$('imageViewer'))$('imageViewer').close();});
  marketUI11=window.TrummMarketUI11?.bind();window.TrummMarketInstance11=marketUI11;
  catalogPicker11=window.TrummCatalogUI11?.bind();
+ setPicker11=window.TrummSetUI11?.bind({selectCard:id=>catalogPicker11.selectCard(id)});
  financeUI11=window.TrummFinanceUI11?.bind(()=>({sales:state.sales,lots:state.lots,products:state.products}));
  shippingUI11=window.TrummShippingUI11?.bind({getSales:()=>state.sales,getShipments:()=>state.shipments,productName,save:saveShipment11});
  feesUI11=window.TrummFeesUI11?.bind({getProfiles:()=>state.feeProfiles,save:saveFeeProfile11,parseEuro:v=>parseMoney(v,true),onFeeApplied:updateSalePreview});
