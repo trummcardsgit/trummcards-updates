@@ -42,7 +42,7 @@ jobs:
             echo 'FATAL: production reference found'; exit 1
           fi
           grep -F 'trummcards-mobile-test11-shell-' cloud/mobile-production/web/sw.js
-          node -e "const m=require('./cloud/mobile-production/web/manifest.webmanifest');if(m.name!=='TrummCards Cloud 1.1 TEST')process.exit(1)"
+          node -e "const fs=require('fs');const m=JSON.parse(fs.readFileSync('cloud/mobile-production/web/manifest.webmanifest','utf8'));if(m.name!=='TrummCards Cloud 1.1 TEST')process.exit(1)"
       - name: Preserve TEST PWA package as downloadable artifact
         uses: actions/upload-artifact@v4
         with:
