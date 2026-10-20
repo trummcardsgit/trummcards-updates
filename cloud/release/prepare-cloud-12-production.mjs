@@ -70,10 +70,10 @@ change(mobile+'sw.js',s=>{
  if(!/const SHELL=\[[^;]*\];/.test(s))throw Error('PWA cache list not found');
  return s.replace(/const SHELL=\[[^;]*\];/,'const SHELL='+JSON.stringify(files)+';');
 });
-const wd=read(desktop+'src/carddex12.js'),wm=read(mobile+'carddex12.js');
-for(const [tag,text] of [['Windows',wd],['PWA',wm]]){
- if(!text.includes('const NO_IMAGE_DATA_URI=')||!text.includes('img.src=NO_IMAGE_DATA_URI;')||
- !text.includes('searchPrintedFraction'))throw Error(tag+' is missing verified cards, number search or approved inline artwork');
+for(const [tag,rootDir] of [['Windows',desktop+'src/'],['PWA',mobile]]){
+ const dex=read(rootDir+'carddex12.js'),catalog=read(rootDir+'catalog11.js');
+ if(!dex.includes('const NO_IMAGE_DATA_URI=')||!dex.includes('img.src=NO_IMAGE_DATA_URI;')||
+ !catalog.includes('searchPrintedFraction'))throw Error(tag+' is missing verified cards, number search or approved inline artwork');
 }
 const apps=[desktop+'src/app.js',mobile+'app.js'];
 for(const p of apps){const s=read(p);if(!s.includes(prod)||s.includes(test)||!/WRITES_ENABLED\s*=\s*true;/.test(s))throw Error('Unsafe database target or read-only mode: '+p);}
