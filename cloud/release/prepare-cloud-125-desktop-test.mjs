@@ -6,7 +6,7 @@ if(process.env.GITHUB_ACTIONS==='true'&&process.env.GITHUB_REF!=='refs/heads/fea
 const PROD='hgdexyvtgfffcasfpjyu',TEST='cpycfxolqpidfjbhhsmr';
 const PROD_KEY='sb_publishable_JDdbnEq3muaOhp3LsNhBkQ_eJZ0uYEf';
 const TEST_KEY='sb_publishable_oS2Ri8VlhEqv1XDBwkUahQ_zVEEtyHG';
-const VERSION='1.2.5-desktop-test.2',desk='cloud/desktop-production',web='cloud/mobile-production/web';
+const VERSION='1.2.5-desktop-test.3',desk='cloud/desktop-production',web='cloud/mobile-production/web';
 const read=f=>fs.readFileSync(path.resolve(f),'utf8');
 const write=(f,s)=>fs.writeFileSync(path.resolve(f),s,'utf8');
 const changed=[];
@@ -61,12 +61,12 @@ change(web+'/manifest.webmanifest',s=>{
  m.description='Separate Testausgabe – nur Supabase TEST';return JSON.stringify(m,null,2)+'\n';
 });
 change(web+'/sw.js',s=>{
- s=s.replaceAll('trummcards-mobile-production-shell-','trummcards-mobile-desktop125-shell-').replaceAll('0.9.0',VERSION).replaceAll('trummcards-mobile-desktop125-shell-v1','trummcards-mobile-desktop125-shell-v2-1210');
+ s=s.replaceAll('trummcards-mobile-production-shell-','trummcards-mobile-desktop125-shell-').replaceAll('0.9.0',VERSION).replaceAll('trummcards-mobile-desktop125-shell-v1','trummcards-mobile-desktop125-shell-v3-1211');
  const old="'./app.js?v="+VERSION+"','./styles.css?v="+VERSION+"'";
  const addition=['catalog11.js','catalog11-ui.js','sets11-ui.js','market11-ui.js','fees11.js','fees11-ui.js','finance11.js','finance11-ui.js','cash11.js','cash11-ui.js','shipping11.js','shipping11-ui.js','carddex12.js','vinted12.js'].map(x=>",'./"+x+"?v="+VERSION+"'").join('');
  return replaceOne(s,old,old+addition);
 });
-if(!read(web+'/index.html').includes('class="desktop-bookings-link"')||!read(web+'/index.html').includes('data-go="sales"'))throw Error('Desktop Buchungen navigation missing');
+if(!read(web+'/index.html').includes('class="desktop-bookings-link"')||!read(web+'/index.html').includes('data-go="sales"')||read(web+'/styles.css').includes('.bottom-nav button.desktop-bookings-link{display:none'))throw Error('Buchungen must exist and must not be hidden for narrower Chrome windows');
 if(!read(web+'/styles.css').includes('Desktop-PWA experiment 1.2.5')||!read(web+'/styles.css').includes('grid-template-columns:238px'))throw Error('Desktop navigation layout is missing');
 if(!read(web+'/catalog11.js').includes('inferCatalogImageRoot')||!read(desk+'/src/catalog11.js').includes('inferCatalogImageRoot'))throw Error('Missing catalog fallback');
 if(!read(web+'/carddex12.js').includes("img.src=NO_IMAGE_DATA_URI"))throw Error('PWA card-image fallback not enabled');
