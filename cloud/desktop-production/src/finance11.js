@@ -33,7 +33,10 @@ function summarizeFinance({sales=[],purchaseLots=[]}={}){
   m.count++;m.revenue=round(m.revenue+row.revenue);m.profit=round(m.profit+row.profit);
   result.byMonth[month]=m;
  }
- for(const lot of purchaseLots)result.purchaseSpending=round(result.purchaseSpending+amount(lot.purchase_total)+amount(lot.extra_cost));
+ for(const lot of purchaseLots){
+  if(lot.source==='Bestandskorrektur')continue; // Not a paid purchase.
+  result.purchaseSpending=round(result.purchaseSpending+amount(lot.purchase_total)+amount(lot.extra_cost));
+ }
  return result;
 }
 function financeCsv({sales=[],purchaseLots=[],productName=()=>''}={}){
@@ -47,8 +50,8 @@ function financeCsv({sales=[],purchaseLots=[],productName=()=>''}={}){
    moneyCell(sale.cogs_total),calc?moneyCell(calc.profit):'',sale.status||'',sale.id||''].map(csvCell).join(';'));
  }
  for(const lot of purchaseLots){
-  rows.push(['Einkauf',lot.bought_on,productName(lot.product_id),lot.source,lot.purchased_qty,'',
-   moneyCell(amount(lot.purchase_total)+amount(lot.extra_cost)),'','','',lot.id||''].map(csvCell).join(';'));
+  rows.push([lot.source==='Bestandskorrektur'?'Bestandskorrektur':'Einkauf',lot.bought_on,productName(lot.product_id),lot.source,lot.purchased_qty,'',
+   lot.source==='Bestandskorrektur'?'':moneyCell(amount(lot.purchase_total)+amount(lot.extra_cost)),'','','',lot.id||''].map(csvCell).join(';'));
  }
  // Excel-compatible UTF-8 with BOM. For cash-basis bookkeeping, payment dates
  // and other business expenses must still be supplied separately.
