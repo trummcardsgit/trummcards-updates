@@ -6,6 +6,8 @@ on:
       - .github/workflows/cloud-125-desktop-pwa-test.yml
       - cloud/release/prepare-cloud-125-desktop-test.mjs
       - cloud/mobile-production/web/styles.css
+      - cloud/mobile-production/web/index.html
+      - cloud/release/desktop125-bookings-menu.test.mjs
   workflow_dispatch:
 permissions:
   contents: write
@@ -29,6 +31,7 @@ jobs:
           node-version: '22'
       - name: Regression tests before desktop PWA publication
         run: |
+          node --test cloud/release/desktop125-bookings-menu.test.mjs
           node --test cloud/release/catalog-image-link124.test.mjs
           node --test cloud/release/inventory-image-121.test.mjs
           node --test cloud/release/stock-management123.test.mjs
@@ -47,9 +50,12 @@ jobs:
           grep -Fq 'trummcards-mobile-desktop125-session-v1' cloud/mobile-production/web/app.js
           grep -Fq 'trummcards-mobile-desktop125-shell-' cloud/mobile-production/web/sw.js
           grep -Fq 'Desktop-PWA experiment 1.2.5' cloud/mobile-production/web/styles.css
+          grep -Fq 'class="desktop-bookings-link"' cloud/mobile-production/web/index.html
+          grep -Fq 'data-go="sales"' cloud/mobile-production/web/index.html
+          grep -Fq 'trummcards-mobile-desktop125-shell-v2-1210' cloud/mobile-production/web/sw.js
           grep -Fq 'grid-template-columns:238px' cloud/mobile-production/web/styles.css
-          grep -Fq 'catalog11.js?v=1.2.5-desktop-test.1' cloud/mobile-production/web/index.html
-          grep -Fq 'app.js?v=1.2.5-desktop-test.1' cloud/mobile-production/web/index.html
+          grep -Fq 'catalog11.js?v=1.2.5-desktop-test.2' cloud/mobile-production/web/index.html
+          grep -Fq 'app.js?v=1.2.5-desktop-test.2' cloud/mobile-production/web/index.html
           grep -Fq 'inferCatalogImageRoot' cloud/mobile-production/web/app.js
           if grep -Rq -e 'hgdexyvtgfffcasfpjyu' -e 'sb_publishable_JDdbnEq3muaOhp3LsNhBkQ_eJZ0uYEf' cloud/mobile-production/web; then
             echo 'FATAL: PRODUCTION credentials/reference in desktop TEST PWA'; exit 1
