@@ -1,0 +1,78 @@
+name: TrummCards 1.2.5 - Unified PROD PWA Dry Run (NO DEPLOY)
+on:
+  push:
+    branches: [release/cloud-1.2.5-unified-pwa]
+    paths:
+      - '.github/workflows/cloud-125-unified-pwa-dryrun.yml'
+      - 'cloud/release/prepare-cloud-125-unified-production.mjs'
+      - 'cloud/mobile-production/web/**'
+      - 'cloud/release/desktop125-bookings-menu.test.mjs'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    env:
+      TRUMMCARDS_BACKUP_ACTIVE: 'true'
+      TRUMMCARDS_RESTORE_VERIFIED: 'true'
+      TRUMMCARDS_PRODUCTION_APPROVED: 'true'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Confirm existing booking, image, finance, and stock regression tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --test cloud/release/desktop125-bookings-menu.test.mjs
+          node --test cloud/release/catalog-image-link124.test.mjs
+          node --test cloud/release/inventory-image-121.test.mjs
+          node --test cloud/release/stock-management123.test.mjs
+          node --test cloud/release/catalog-pagination-image11.test.mjs
+          node --test cloud/release/finance11.test.mjs
+          node --test cloud/release/shipping11.test.mjs
+          node --test cloud/release/cash11.test.mjs
+          node --test cloud/backup/backup.test.mjs
+      - name: Stage PWA in temporary checkout; do not publish or touch production database
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check cloud/release/prepare-cloud-125-unified-production.mjs
+          node cloud/release/prepare-cloud-125-unified-production.mjs
+          for f in cloud/mobile-production/web/*.js; do node --check "$f"; done
+      - name: Strict production, PWA identity, and mobile/desktop UI assertions
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -Fq "const PROJECT='hgdexyvtgfffcasfpjyu';" cloud/mobile-production/web/app.js
+          grep -Fq 'const WRITES_ENABLED=true;' cloud/mobile-production/web/app.js
+          grep -Fq 'trummcards-mobile-production-session-v1' cloud/mobile-production/web/app.js
+          grep -Fq 'trummcards-mobile-production-shell-v125' cloud/mobile-production/web/sw.js
+          grep -Fq 'styles.css?v=1.2.5' cloud/mobile-production/web/index.html
+          grep -Fq '.bottom-nav button.desktop-bookings-link{display:flex}' cloud/mobile-production/web/styles.css
+          grep -Fq '@media (min-width:1080px)' cloud/mobile-production/web/styles.css
+          grep -Fq 'data-go="sales" class="desktop-bookings-link"' cloud/mobile-production/web/index.html
+          grep -Fq 'Buchungen & Auswertungen' cloud/mobile-production/web/index.html
+          if grep -Rl 'cpycfxolqpidfjbhhsmr' cloud/mobile-production/web; then echo 'FATAL: TEST project in production PWA'; exit 1; fi
+          if grep -Rq 'sb_secret_' cloud/mobile-production/web; then echo 'FATAL: secret key in public client'; exit 1; fi
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const dir='cloud/mobile-production/web/';
+          const m=JSON.parse(fs.readFileSync(dir+'manifest.webmanifest','utf8'));
+          if(m.id!=='./'||m.scope!=='./'||m.start_url!=='./'||m.display!=='standalone')throw Error('PWA installed identity changed');
+          const html=fs.readFileSync(dir+'index.html','utf8');
+          const sw=fs.readFileSync(dir+'sw.js','utf8');
+          const assets=[...html.matchAll(/(?:href|src)="\.\/([^"?#]+\.(?:js|css))(?:\?v=1\.2\.5)?"/g)];
+          if(assets.length<15)throw Error('PWA script or CSS refs missing');
+          for(const [,f] of assets){if(!fs.existsSync(dir+f)||!sw.includes(f+'?v=1.2.5'))throw Error('Uncached PWA asset: '+f);}
+          if(!html.includes('page-sales')||!html.includes('id="shipmentPanel"')||!html.includes('id="page-carddex"'))throw Error('Functions missing');
+          NODE
+      - name: Store disposable deployment payload for comparison
+        uses: actions/upload-artifact@v4
+        with:
+          name: TrummCards-Unified-PWA-125-DRYRUN-NO-DEPLOY
+          path: cloud/mobile-production/web/
+          retention-days: 7
+          if-no-files-found: error
