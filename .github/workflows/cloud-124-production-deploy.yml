@@ -44,7 +44,7 @@ jobs:
           set -euo pipefail
           git fetch --no-tags origin fix/cloud-1.2.4-catalog-image-link
           expected="$(git rev-parse HEAD)"
-          gh api "repos/$GITHUB_REPOSITORY/actions/runs?branch=feature%2Fcloud-1.2.4-stock-management&per_page=100" \
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs?branch=fix%2Fcloud-1.2.4-catalog-image-link&per_page=100" \
             --jq '.workflow_runs | map(select(.name=="TrummCards 1.2.4 - Catalog Image Link Fix TEST" and .conclusion=="success")) | .[].head_sha' > "$RUNNER_TEMP/green-stock124.txt"
           test -s "$RUNNER_TEMP/green-stock124.txt"
           matched=""
@@ -77,7 +77,6 @@ jobs:
           node --test cloud/release/inventory-image-121.test.mjs
           node --test cloud/release/catalog-image-link124.test.mjs
           node --test cloud/release/stock-management123.test.mjs
-          node --test cloud/release/catalog-image-link124.test.mjs
           node cloud/release/probe-prod-anon.mjs
       - name: Prepare production PWA in temporary CI checkout
         shell: bash
@@ -247,7 +246,7 @@ jobs:
           if grep -Rq 'cpycfxolqpidfjbhhsmr' "$RUNNER_TEMP/cloud124/pwa"; then echo 'TEST database leaked'; exit 1; fi
           grep -q 'trummcards-mobile-production-shell-v124' "$RUNNER_TEMP/cloud124/pwa/sw.js"
           git fetch origin +refs/heads/gh-pages:refs/remotes/origin/gh-pages
-          git show origin/gh-pages:cloud-updates/latest.yml | grep -q '^version: 1.2.3
+          git show origin/gh-pages:cloud-updates/latest.yml | grep -q '^version: 1.2.3$'
           for old in 1.0.0 1.1.0 1.2.0 1.2.1 1.2.2 1.2.3; do
             git cat-file -e "origin/gh-pages:cloud-updates/TrummCards-Cloud-Setup-${old}.exe"
           done
@@ -277,42 +276,7 @@ jobs:
           else
             git -C "$worktree" config user.name 'github-actions[bot]'
             git -C "$worktree" config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-            git -C "$worktree" commit -m 'Release Cloud 1.2.4 catalog image fix PWA and Windows auto-update'
-            git -C "$worktree" push origin HEAD:gh-pages
-          fi
-      - name: Trigger GitHub Pages rebuild
-        run: gh api --method POST "repos/$GITHUB_REPOSITORY/pages/builds"
-
-          for old in 1.0.0 1.1.0 1.2.0 1.2.1 1.2.2 1.2.3; do
-            git cat-file -e "origin/gh-pages:cloud-updates/TrummCards-Cloud-Setup-${old}.exe"
-          done
-      - name: Publish only new PWA and Windows update channel paths
-        shell: bash
-        run: |
-          set -euo pipefail
-          worktree="$RUNNER_TEMP/trummcards-124-pages"
-          git worktree add --detach "$worktree" refs/remotes/origin/gh-pages
-          mkdir -p "$worktree/production" "$worktree/cloud-updates"
-          cp -R "$RUNNER_TEMP/cloud124/pwa/." "$worktree/production/"
-          cp "$RUNNER_TEMP/cloud124/updates/TrummCards-Cloud-Setup-1.2.4.exe" "$worktree/cloud-updates/"
-          cp "$RUNNER_TEMP/cloud124/updates/TrummCards-Cloud-Setup-1.2.4.exe.blockmap" "$worktree/cloud-updates/"
-          cp "$RUNNER_TEMP/cloud124/updates/latest.yml" "$worktree/cloud-updates/"
-          git -C "$worktree" add -- production cloud-updates
-          if git -C "$worktree" diff --cached --name-only | grep -Ev '^(production|cloud-updates)/'; then
-            echo 'FATAL: out-of-scope paths'; exit 1
-          fi
-          if git -C "$worktree" diff --cached --name-status | grep '^D'; then
-            echo 'FATAL: release would delete files'; exit 1
-          fi
-          for old in 1.0.0 1.1.0 1.2.0 1.2.1 1.2.2 1.2.3 1.2.4; do
-            test -f "$worktree/cloud-updates/TrummCards-Cloud-Setup-${old}.exe"
-          done
-          if git -C "$worktree" diff --cached --quiet; then
-            echo 'Release files already match: no Pages changes required.'
-          else
-            git -C "$worktree" config user.name 'github-actions[bot]'
-            git -C "$worktree" config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-            git -C "$worktree" commit -m 'Release Cloud 1.2.4 catalog image fix PWA and Windows auto-update'
+            git -C "$worktree" commit -m 'Release TrummCards Cloud 1.2.4: catalog image fix'
             git -C "$worktree" push origin HEAD:gh-pages
           fi
       - name: Trigger GitHub Pages rebuild
