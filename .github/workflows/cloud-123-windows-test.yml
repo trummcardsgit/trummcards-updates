@@ -47,8 +47,8 @@ jobs:
           python -m pip install --disable-pip-version-check pillow
           if ($LASTEXITCODE -ne 0) { throw 'Pillow unavailable' }
           Push-Location cloud/desktop-production
-          npm ci --no-audit --no-fund
-          if ($LASTEXITCODE -ne 0) { throw 'npm ci failed' }
+          npm install --no-audit --no-fund
+          if ($LASTEXITCODE -ne 0) { throw 'npm install failed' }
           Pop-Location
       - name: Compile and package isolated Windows TEST installer
         shell: pwsh
