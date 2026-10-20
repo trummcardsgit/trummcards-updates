@@ -1,0 +1,92 @@
+name: TrummCards 1.2.5 - Desktop PWA TEST
+on:
+  push:
+    branches: [feature/cloud-1.2.5-responsive-desktop-pwa]
+    paths:
+      - .github/workflows/cloud-125-desktop-pwa-test.yml
+      - cloud/release/prepare-cloud-125-desktop-test.mjs
+      - cloud/mobile-production/web/styles.css
+  workflow_dispatch:
+permissions:
+  contents: write
+  pages: write
+concurrency:
+  group: trummcards-desktop-test125-pwa-publish
+  cancel-in-progress: false
+jobs:
+  desktop-test:
+    if: github.repository == 'trummcardsgit/trummcards-updates' && github.ref == 'refs/heads/feature/cloud-1.2.5-responsive-desktop-pwa'
+    runs-on: ubuntu-latest
+    env:
+      TRUMMCARDS_DESKTOP125_ENABLE: I_ACKNOWLEDGE_TEST_ONLY
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Regression tests before desktop PWA publication
+        run: |
+          node --test cloud/release/catalog-image-link124.test.mjs
+          node --test cloud/release/inventory-image-121.test.mjs
+          node --test cloud/release/stock-management123.test.mjs
+          node --test cloud/release/catalog-pagination-image11.test.mjs
+          node --check cloud/release/prepare-cloud-125-desktop-test.mjs
+      - name: Build responsive desktop PWA against TEST only
+        run: |
+          node cloud/release/prepare-cloud-125-desktop-test.mjs
+          for f in cloud/mobile-production/web/*.js; do node --check "$f"; done
+      - name: Guard isolation and desktop styles
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -Fq "const PROJECT='cpycfxolqpidfjbhhsmr';" cloud/mobile-production/web/app.js
+          grep -Fq 'const WRITES_ENABLED=true;' cloud/mobile-production/web/app.js
+          grep -Fq 'trummcards-mobile-desktop125-session-v1' cloud/mobile-production/web/app.js
+          grep -Fq 'trummcards-mobile-desktop125-shell-' cloud/mobile-production/web/sw.js
+          grep -Fq 'Desktop-PWA experiment 1.2.5' cloud/mobile-production/web/styles.css
+          grep -Fq 'grid-template-columns:238px' cloud/mobile-production/web/styles.css
+          grep -Fq 'catalog11.js?v=1.2.5-desktop-test.1' cloud/mobile-production/web/index.html
+          grep -Fq 'app.js?v=1.2.5-desktop-test.1' cloud/mobile-production/web/index.html
+          grep -Fq 'inferCatalogImageRoot' cloud/mobile-production/web/app.js
+          if grep -Rq -e 'hgdexyvtgfffcasfpjyu' -e 'sb_publishable_JDdbnEq3muaOhp3LsNhBkQ_eJZ0uYEf' cloud/mobile-production/web; then
+            echo 'FATAL: PRODUCTION credentials/reference in desktop TEST PWA'; exit 1
+          fi
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const dir='cloud/mobile-production/web/';
+          const manifest=JSON.parse(fs.readFileSync(dir+'manifest.webmanifest','utf8'));
+          if(manifest.name!=='TrummCards Cloud Desktop 1.2.5 TEST')throw Error('Invalid desktop TEST app name');
+          const html=fs.readFileSync(dir+'index.html','utf8');
+          const scripts=[...html.matchAll(/src="\.\/([^"?#]+\.js)(?:\?[^"]*)?"/g)].map(m=>m[1]);
+          for(const file of scripts)if(!fs.existsSync(dir+file))throw Error('Missing '+file);
+          NODE
+      - name: Preserve TEST-only build for review
+        uses: actions/upload-artifact@v4
+        with:
+          name: TrummCards-125-Desktop-TEST-PWA
+          path: cloud/mobile-production/web/
+          retention-days: 14
+          if-no-files-found: error
+      - name: Publish only desktop-test directory
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin +refs/heads/gh-pages:refs/remotes/origin/gh-pages
+          site="$RUNNER_TEMP/trummcards-125-pages"
+          git worktree add --detach "$site" refs/remotes/origin/gh-pages
+          mkdir -p "$site/desktop-test"
+          cp -R cloud/mobile-production/web/. "$site/desktop-test/"
+          git -C "$site" add -- desktop-test
+          unexpected="$(git -C "$site" diff --cached --name-only | grep -v '^desktop-test/' || true)"
+          test -z "$unexpected" || { echo "Out-of-scope file change: $unexpected"; exit 1; }
+          if ! git -C "$site" diff --cached --quiet; then
+            git -C "$site" config user.name 'github-actions[bot]'
+            git -C "$site" config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git -C "$site" commit -m 'TEST ONLY: responsive Windows/Chrome PWA at desktop-test/'
+            git -C "$site" push origin HEAD:gh-pages
+          fi
+      - name: Request Pages rebuild
+        run: gh api --method POST "repos/$GITHUB_REPOSITORY/pages/builds"
