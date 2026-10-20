@@ -1,0 +1,45 @@
+name: TrummCards Cloud 1.2.1 TEST - Lagerbilder
+on:
+  push:
+    branches:
+      - feature/cloud-1.2.1-inventory-card-images
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: trummcards-121-image-tests
+  cancel-in-progress: true
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run new image recovery unit tests and existing catalog tests
+        run: |
+          node --test cloud/release/inventory-image121.test.mjs
+          node --test cloud/release/catalog-pagination-image11.test.mjs
+          node --test cloud/release/carddex-vinted12.test.mjs
+      - name: Validate Windows and PWA JavaScript
+        run: |
+          node --check cloud/desktop-production/src/image-link12.js
+          node --check cloud/mobile-production/web/image-link12.js
+          node --check cloud/desktop-production/src/app.js
+          node --check cloud/mobile-production/web/app.js
+          node --check cloud/desktop-production/src/catalog11-ui.js
+          node --check cloud/mobile-production/web/catalog11-ui.js
+      - name: Check public Japanese 151 catalog entry without affecting Supabase
+        continue-on-error: true
+        run: |
+          node --input-type=module <<'NODE'
+          for(const lang of ['ja','en','de']){
+            try{
+              const response=await fetch('https://api.tcgdex.net/v2/'+lang+'/cards/sv2a-168',{signal:AbortSignal.timeout(9000)});
+              if(!response.ok){console.log(lang+' '+response.status);continue;}
+              const d=await response.json();
+              console.log(JSON.stringify({language:lang,id:d.id,localId:d.localId,hasImage:Boolean(d.image),imageRoot:d.image||null}));
+            }catch(err){console.log(lang+' unreachable: '+err.message);}
+          }
+          NODE
