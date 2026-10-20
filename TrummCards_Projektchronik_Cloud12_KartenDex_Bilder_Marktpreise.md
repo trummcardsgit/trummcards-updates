@@ -128,3 +128,12 @@ Version 1.2 TEST mit eigenem KartenDex-Menü, Pokémon-Namenssuche mit Blättern
 - Backup-V3-Entwicklung hinzugefügt: `cloud/release/sql/cloud123_backup_snapshot_v3_staging.sql`, `TABLES_V3` in Validator, v3-fähiger Restore-Check inklusive Identitätssequenzen, Rückwärtskompatibilität zu V1/V2 und V3-Regressionstests. Testlauf erfolgreich: https://github.com/trummcardsgit/trummcards-updates/actions/runs/39425445172
 - Freigabedokument erstellt: `cloud/release/RELEASE_1.2.3_STOCK_MANAGEMENT.md`, mit TEST-Migration, praktischen Tests, PROD-V2-Backup + Restore, PROD-Migration, PROD-V3-Sicherung, PWA/Windows-Release-Gates und Verifikation.
 - **Noch nicht LIVE:** Supabase TEST und PRODUCTION nicht verändert. Auto-Migration über verbundenes Tool weiterhin durch Sicherheitsprüfung blockiert. Ohne fachlich autorisierte und getestete Supabase-Migration kein Produktivupdate.
+
+
+### 20.10.2026 – TEST-SQL erfolgreich und eigenständige 1.2.3-PWA veröffentlicht
+- Der Benutzer hat die geprüfte Bestandsmigration selbst in **Supabase TEST** erfolgreich angewendet.
+- Read-only verifiziert: `tc_products.archived_at`, `public.tc_inventory_corrections`, RPCs `tc_adjust_inventory`/`tc_archive_product`. RLS eingeschaltet, Owner-Policy vorhanden, zwei Reaktivierungs-Trigger vorhanden; für `anon` keine RPC-Ausführungsrechte. TEST-Daten weiterhin 8 Produkte, 5 Einkaufsposten und 2 lagernde Stück zum Prüfzeitpunkt. Noch keine archivierten Produkte oder gebuchten Korrekturen.
+- Eigenständige PWA unter `gh-pages/test-123/` veröffentlicht: https://trummcardsgit.github.io/trummcards-updates/test-123/ . TEST-Projekt `cpycfxolqpidfjbhhsmr`, eigene Session-Schlüssel, eigene Service-Worker-Cachekennung, kein Produktionsschlüssel in den TEST-Dateien.
+- Automatischer Build erfolgreich: https://github.com/trummcardsgit/trummcards-updates/actions/runs/39436348268. GitHub Pages-Build erfolgreich: https://github.com/trummcardsgit/trummcards-updates/actions/runs/39436406099.
+- **Nächster Schritt:** Im TEST einen Artikel mit Bestand anlegen/korrigieren, Bestand erhöhen und senken, Entfernen bestätigen und die Historie sowie den Bestand in Windows-/PWA-TEST vergleichen. Bei Fehlern genaue Meldung und betroffenen TEST-Artikel prüfen.
+- **Kein PRODUCTION-Release:** Echtdatenbank hat die neue Migration noch nicht erhalten; Live-Feed weiterhin 1.2.2. Erst nach validiertem Praxistest, frischer geprüfter Sicherung und genehmigter PROD-Migration das Release 1.2.3 freigeben.
