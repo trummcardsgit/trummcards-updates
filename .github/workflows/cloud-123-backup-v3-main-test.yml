@@ -1,0 +1,68 @@
+name: TrummCards V3 Backup Upgrade - Main Readiness
+on:
+  push:
+    branches: [release/cloud-1.2.3-backup-v3-main]
+    paths:
+      - 'cloud/backup/**'
+      - 'cloud/supabase/migrations/20261020000100_stock_corrections_archive.sql'
+      - 'cloud/release/sql/cloud123_backup_snapshot_v3_staging.sql'
+      - '.github/workflows/cloud-123-backup-v3-main-test.yml'
+permissions:
+  contents: read
+jobs:
+  verify-v3:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: synthetic-only-ci
+          POSTGRES_DB: trummcards_restore
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres -d trummcards_restore"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: '5432'
+      PGUSER: postgres
+      PGPASSWORD: synthetic-only-ci
+      PGDATABASE: trummcards_restore
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate V1, V2 and V3 archive compatibility
+        run: |
+          node --test cloud/backup/backup.test.mjs
+          node --check cloud/backup/validate.mjs
+          node --check cloud/backup/restore-check.mjs
+          node --check cloud/backup/create.mjs
+      - name: Ensure V3 schema and SQL available for actual restore
+        run: |
+          test -f cloud/supabase/migrations/20261020000100_stock_corrections_archive.sql
+          test -f cloud/release/sql/cloud123_backup_snapshot_v3_staging.sql
+          grep -q 'tc_inventory_corrections' cloud/backup/restore-check.mjs
+          grep -q 'TABLES_V3' cloud/backup/validate.mjs
+          grep -q 'trummcards-cloud-backup-v3' cloud/release/sql/cloud123_backup_snapshot_v3_staging.sql
+      - name: Assert migration is valid PostgreSQL in disposable schema
+        run: |
+          if ! command -v psql >/dev/null 2>&1; then sudo apt-get update -qq && sudo apt-get install -y postgresql-client; fi
+          cat >/tmp/test-supabase.sql <<'SQL'
+          create role authenticated nologin;
+          create role anon nologin;
+          create schema auth;
+          create table auth.users(id uuid primary key);
+          create function auth.uid() returns uuid language sql stable as 'select null::uuid';
+          create schema trummcards_private;
+          create function trummcards_private.is_owner() returns boolean language sql stable as 'select true';
+          create table public.tc_products(id uuid primary key,owner_id uuid,updated_at timestamptz,unique(id,owner_id));
+          create table public.tc_purchase_lots(id uuid primary key,owner_id uuid,product_id uuid,bought_on date,purchased_qty integer,available_qty integer,purchase_total numeric,extra_cost numeric,allocated_cost numeric,source text,note text,request_key uuid,created_at timestamptz);
+          create table public.tc_stock_movements(id bigint generated always as identity primary key,owner_id uuid,product_id uuid,lot_id uuid,movement_type text constraint tc_stock_movements_movement_type_check check (movement_type in ('purchase','sale','sale_void','legacy_import')),quantity_delta integer,cost_delta numeric);
+          SQL
+          psql -X -v ON_ERROR_STOP=1 -f /tmp/test-supabase.sql
+          psql -X -v ON_ERROR_STOP=1 -f cloud/supabase/migrations/20261020000100_stock_corrections_archive.sql

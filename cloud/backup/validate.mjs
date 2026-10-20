@@ -2,11 +2,12 @@ import {createHash} from 'node:crypto';
 export const PROD_REF='hgdexyvtgfffcasfpjyu';
 export const TABLES=['tc_products','tc_purchase_lots','tc_sales','tc_sale_allocations','tc_stock_movements','tc_lot_images','tc_product_images'];
 export const TABLES_V2=[...TABLES,'tc_sale_shipments','tc_platform_fee_profiles','tc_cash_entries'];
-export const tablesForSnapshot=snapshot=>snapshot.format==='trummcards-cloud-backup-v2'?TABLES_V2:TABLES;
+export const TABLES_V3=[...TABLES_V2,'tc_inventory_corrections'];
+export const tablesForSnapshot=snapshot=>snapshot.format==='trummcards-cloud-backup-v3'?TABLES_V3:snapshot.format==='trummcards-cloud-backup-v2'?TABLES_V2:TABLES;
 export const sha256=data=>createHash('sha256').update(data).digest('hex');
 const validOwner=x=>typeof x==='string'&&/^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(x);
 export function validateSnapshot(snapshot){
- if(!snapshot||!['trummcards-cloud-backup-v1','trummcards-cloud-backup-v2'].includes(snapshot.format)||!validOwner(snapshot.owner_id))
+ if(!snapshot||!['trummcards-cloud-backup-v1','trummcards-cloud-backup-v2','trummcards-cloud-backup-v3'].includes(snapshot.format)||!validOwner(snapshot.owner_id))
    throw Error('Ungültiges Datenbank-Backupformat oder Benutzerkonto.');
  const map=snapshot.tables;
  if(!map||typeof map!=='object')throw Error('Backup-Tabellen fehlen.');
@@ -25,7 +26,7 @@ export function validateSnapshot(snapshot){
  const ref=(name,value,target)=>{if(!by[target].has(String(value)))throw Error('Verwaister Verweis: '+name);};
  for(const lot of map.tc_purchase_lots)ref('Einkauf',lot.product_id,'tc_products');
  for(const sale of map.tc_sales)ref('Verkauf',sale.product_id,'tc_products');
- if(snapshot.format==='trummcards-cloud-backup-v2'){
+ if(snapshot.format!=='trummcards-cloud-backup-v1'){
   for(const shipment of map.tc_sale_shipments)ref('Versand',shipment.sale_id,'tc_sales');
   for(const cash of map.tc_cash_entries){
    if(cash.sale_id!=null)ref('Zahlung Verkauf',cash.sale_id,'tc_sales');
@@ -42,6 +43,16 @@ export function validateSnapshot(snapshot){
   ref('Lagerbewegung',m.product_id,'tc_products');
   ref('Lagerbewegung',m.lot_id,'tc_purchase_lots');
   if(m.sale_id!=null)ref('Lagerbewegung',m.sale_id,'tc_sales');
+ }
+ if(snapshot.format==='trummcards-cloud-backup-v3'){
+  for(const correction of map.tc_inventory_corrections){
+   ref('Bestandskorrektur',correction.product_id,'tc_products');
+   if(!['adjust','archive'].includes(correction.action)||
+      !Number.isSafeInteger(Number(correction.previous_qty))||Number(correction.previous_qty)<0||
+      !Number.isSafeInteger(Number(correction.new_qty))||Number(correction.new_qty)<0||
+      typeof correction.reason!=='string'||correction.reason.trim().length<3)
+     throw Error('Ungültige Bestandskorrektur im Backup');
+  }
  }
  const paths=new Map();
  for(const [name,link,target] of [['tc_lot_images','lot_id','tc_purchase_lots'],['tc_product_images','product_id','tc_products']]){
