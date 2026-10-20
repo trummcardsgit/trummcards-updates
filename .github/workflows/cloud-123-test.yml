@@ -25,6 +25,9 @@ jobs:
       - name: Verify new stock workflows and existing catalog/image behavior
         run: |
           node --test cloud/release/stock-management123.test.mjs
+          node --test cloud/backup/backup.test.mjs
+          node --check cloud/backup/validate.mjs
+          node --check cloud/backup/restore-check.mjs
           node --test cloud/release/inventory-image-121.test.mjs
           node --test cloud/release/catalog-pagination-image11.test.mjs
           node --test cloud/release/carddex-vinted12.test.mjs
