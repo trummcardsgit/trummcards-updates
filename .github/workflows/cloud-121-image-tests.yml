@@ -40,6 +40,7 @@ jobs:
               if(!response.ok){console.log(lang+' '+response.status);continue;}
               const d=await response.json();
               console.log(JSON.stringify({language:lang,id:d.id,localId:d.localId,hasImage:Boolean(d.image),imageRoot:d.image||null}));
+              if(lang==='ja'&&d.image){const response=await fetch(d.image+'/low.webp',{method:'HEAD',signal:AbortSignal.timeout(9000)});console.log('PUBLIC_ARTWORK_STATUS',response.status,'TYPE',response.headers.get('content-type'));}
             }catch(err){console.log(lang+' unreachable: '+err.message);}
           }
           NODE
