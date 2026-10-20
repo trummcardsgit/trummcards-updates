@@ -189,11 +189,13 @@
   }
   async function openDesktopProductImage(id){
     const path=productImagePath(id);if(!path)return;
-    try{
-      const url=await productImageUrl(path,'high');
-      $('desktopViewerImage').src=url;$('desktopViewerCaption').textContent=productName(id);
-      if(!$('desktopImageViewer').open)$('desktopImageViewer').showModal();
-    }catch(e){flash(L.apiError(e),'error');}
+    let first=null;
+    try{first=await productImageUrl(path,'high');}catch(e){console.info('Artikelbild:',e.message);}
+    $('desktopViewerCaption').textContent=productName(id);
+    if(!$('desktopImageViewer').open)$('desktopImageViewer').showModal();
+    const image=$('desktopViewerImage');
+    const ok=await loadPictureWithFallback(image,[first,...inventoryCatalogCandidates(id,'high')]);
+    if(!ok)flash('Für diesen Artikel konnte kein Kartenbild geladen werden.','error');
   }
   function filteredInventoryProducts() {
     const text=$('inventorySearch').value.trim().toLocaleLowerCase('de');
