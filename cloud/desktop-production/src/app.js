@@ -111,7 +111,7 @@
     const lotIds=new Set(state.lots.filter(l=>l.product_id===productId).map(l=>l.id));
     const ownPhoto=state.images.find(i=>lotIds.has(i.lot_id))?.storage_path;
     if(ownPhoto)return ownPhoto;
-    const catalog=selectedProduct(productId)?.catalog_image_url||'';
+    const catalog=selectedProduct(productId)?.catalog_image_url||window.TrummCatalog11?.inferCatalogImageRoot(selectedProduct(productId),state.products)||'';
     return /^https:\/\/assets\.tcgdex\.net\/[A-Za-z0-9/._-]+$/.test(catalog)?catalog:null;
   }
   function clearDesktopThumbnails(){
@@ -128,7 +128,7 @@
     return data.signedUrl;
   }
   function inventoryCatalogCandidates(productId,quality='low'){
-    const product=selectedProduct(productId),root=product?.catalog_image_url||'';
+    const product=selectedProduct(productId),root=product?.catalog_image_url||window.TrummCatalog11?.inferCatalogImageRoot(product,state.products)||'';
     if(!/^https:\/\/assets\.tcgdex\.net\/[A-Za-z0-9/._-]+$/.test(root))return [];
     const candidates=[root+'/'+quality+'.webp'];
     // Same catalog card / artwork in available language mirrors; preserve set and card ID.
