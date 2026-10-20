@@ -1,0 +1,1 @@
+Retry approved Cloud 1.2.1 inventory image update; mandatory source checks and fresh encrypted Production V2 backup + restore. Original approval remains unchanged.
