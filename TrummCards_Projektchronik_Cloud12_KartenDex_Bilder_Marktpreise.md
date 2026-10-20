@@ -154,3 +154,15 @@ Version 1.2 TEST mit eigenem KartenDex-Menü, Pokémon-Namenssuche mit Blättern
 - Abgesicherter 1.2.3-Produktions-Workflow `.github/workflows/cloud-123-production-deploy.yml` vorbereitet. Der Release benötigt ausdrücklich `GO_LIVE_123.txt`, grüne Bestands-/Bildtests, V3-kompatibles Backup in `main`, **ein frisches verschlüsseltes PROD-V3-Backup mit echtem PostgreSQL-Restore**, korrektes Windows-1.2.3-Updatemanifest und unveränderte TEST-Verzeichnisse.
 - Nächster Schritt: Autorisierter Admin muss **nur noch den geprüften V3-Snapshot-RPC** aus `cloud/release/sql/cloud123_backup_snapshot_v3_staging.sql` im SQL-Editor des PRODUCTION-Projekts ausführen. Anschließend Format und Berechtigungen per read-only Abfrage prüfen, den frischen V3-Backup-/Restore-Gate nachweisen und erst dann den Release-Marker setzen.
 - **Aktueller Live-Stand**: `cloud-updates/latest.yml` meldet weiterhin **1.2.2**. Noch kein PWA/Windows-Produktionsupdate durchgeführt.
+
+
+### 20.10.2026 – Cloud 1.2.3 PRODUKTION RELEASE ERFOLGREICH
+- Supabase PRODUCTION Backup-Format V3 vom Benutzer installiert. Per SQL-Abfrage verifiziert: `tc_backup_snapshot()` liefert V3, enthält `tc_inventory_corrections`, Zugriff für `authenticated` ja, für `anon` nein.
+- Bestand beim Datenbank-Release unverändert: 14 Artikel, 15 Einkaufsposten, 11 Artikelbilder, 15 lagernde Stück; `tc_inventory_corrections` vor erster Korrektur leer.
+- Frischer PROD-V3-Backup-Restore mit 11 Tabellen, 11 privaten Bildern und 15 lagernden Stück erfolgreich: [GitHub Run 39445501084](https://github.com/trummcardsgit/trummcards-updates/actions/runs/39445501084).
+- Der vollständige Produktions-Release-Workflow [39445829493](https://github.com/trummcardsgit/trummcards-updates/actions/runs/39445829493) lief mit grünen Source-/Featuretests, frisch verschlüsseltem V3-Backup plus lokalem PostgreSQL-17-Restore, Windows-Installer-Build und GitHub-Pages-Veröffentlichung erfolgreich durch.
+- Live-PWA: https://trummcardsgit.github.io/trummcards-updates/production/ mit Version 1.2.3 (`app.js?v=1.2.3`, `trummcards-mobile-production-shell-v123`). Die Programmbefehle `tc_adjust_inventory` und `tc_archive_product` sind im veröffentlichten Code vorhanden und schreiben in das richtige PRODUCTION-Projekt.
+- Windows-Autoupdater: `cloud-updates/latest.yml` meldet Version **1.2.3**, Installationsdatei `TrummCards-Cloud-Setup-1.2.3.exe` (ca. 85,7 MB) im bestehenden Feed; auch Installer für 1.2.2 und frühere Versionen bleiben vorhanden.
+- Erfolgreich getestete neue Funktionen: „Bestand ändern“ und „Artikel entfernen/archivieren“ für Windows und PWA. Bestehende Verkäufe, Artikel und Bilder bleiben nachvollziehbar; Bestandskorrekturen werden auditiert und in Backup V3 gesichert.
+- Produktionsfunktionen wurden nicht mit einem unkontrollierten echten Bestandswechsel getestet. Empfohlen: App/PWA öffnen und erst mit einem eigenen ungefährlichen Testartikel die Bedienung kontrollieren; danach bei Bedarf Testartikel sauber entfernen.
+- **Projektchronik erweitert; Release 1.2.3 ist LIVE.**
