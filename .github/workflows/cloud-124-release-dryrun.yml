@@ -4,6 +4,7 @@ on:
     branches: [fix/cloud-1.2.4-catalog-image-link]
     paths:
       - .github/workflows/cloud-124-release-dryrun.yml
+      - cloud/release/prepare-cloud-124-production.mjs
   workflow_dispatch:
 permissions:
   contents: read
