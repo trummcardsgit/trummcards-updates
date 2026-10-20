@@ -82,7 +82,7 @@
     refreshing=true;setSync('Synchronisiere ...');
     try {
       const requests=[
-        sb.from('tc_products').select('id,sku,name,set_name,language,card_condition,card_number,rarity,card_variant,storage_location,grading_company,grading_grade,grading_certificate,catalog_card_id,catalog_image_url,market_price_eur,market_price_source,market_price_checked_at,note,created_at').order('name',{ascending:true}).limit(1000),
+        sb.from('tc_products').select('id,sku,name,set_name,language,card_condition,card_number,rarity,card_variant,storage_location,grading_company,grading_grade,grading_certificate,catalog_card_id,catalog_image_url,archived_at,market_price_eur,market_price_source,market_price_checked_at,note,created_at').order('name',{ascending:true}).limit(1000),
         sb.from('tc_inventory').select('product_id,available_qty,remaining_cost').limit(1000),
         sb.from('tc_purchase_lots').select('id,product_id,bought_on,purchased_qty,available_qty,purchase_total,extra_cost,allocated_cost,source,note,created_at').order('bought_on',{ascending:true}).limit(1000),
         sb.from('tc_sales').select('id,product_id,sold_on,qty,price,shipping_income,shipping_cost,fees,other_cost,cogs_total,platform,note,status,created_at').order('created_at',{ascending:false}).limit(1000),
@@ -211,7 +211,7 @@
       filter.value=languages.includes(previous)?previous:'';
       filter.dataset.optionsSignature=JSON.stringify(languages);
     }
-    const filtered=state.products.filter(p=>{
+    const filtered=state.products.filter(p=>{if(p.archived_at)return false;
       const quantity=totalAvailable(p.id);
       if(lang&&p.language!==lang)return false;
       if(stock==='available'&&quantity<=0)return false;
@@ -225,14 +225,14 @@
       if(sort==='set')return (a.set_name||'').localeCompare(b.set_name||'','de')||a.name.localeCompare(b.name,'de');
       return a.name.localeCompare(b.name,'de');
     });
-    $('inventoryFilterCount').textContent=filtered.length+' von '+state.products.length+' Artikeln';
+    $('inventoryFilterCount').textContent=filtered.length+' von '+state.products.filter(p=>!p.archived_at).length+' Artikeln';
     return filtered;
   }
   function render() {
     const inv=state.inventory;
-    $('metricProducts').textContent=state.products.length.toLocaleString('de-AT');
-    $('metricQty').textContent=inv.reduce((n,r)=>n+Number(r.available_qty),0).toLocaleString('de-AT');
-    $('metricValue').textContent=L.euro(inv.reduce((n,r)=>n+Number(r.remaining_cost),0));
+    $('metricProducts').textContent=state.products.filter(p=>!p.archived_at).length.toLocaleString('de-AT');
+    $('metricQty').textContent=inv.filter(r=>!selectedProduct(r.product_id)?.archived_at).reduce((n,r)=>n+Number(r.available_qty),0).toLocaleString('de-AT');
+    $('metricValue').textContent=L.euro(inv.filter(r=>!selectedProduct(r.product_id)?.archived_at).reduce((n,r)=>n+Number(r.remaining_cost),0));
     $('metricProfit').textContent=L.euro(state.sales.filter(s=>s.status==='booked').reduce((n,s)=>n+L.profit({price:Number(s.price),shippingIncome:Number(s.shipping_income),shippingCost:Number(s.shipping_cost),fees:Number(s.fees),other:Number(s.other_cost),cost:Number(s.cogs_total)}),0));
     $('inventoryRows').innerHTML=filteredInventoryProducts().map(p=>{
       const x=inv.find(i=>i.product_id===p.id)||{available_qty:0,remaining_cost:0};
@@ -240,11 +240,11 @@
       const available=Number(x.available_qty||0),avg=available>0?Number(x.remaining_cost)/available:null;
       const marketCell=market==null?'-':L.euro(market)+(avg==null?'':'<br><small>'+(market-avg>=0?'+':'')+L.euro(market-avg)+' vor Gebühren/St.</small>');
       const picture=productImagePath(p.id)?'<button type="button" class="inventory-thumb" data-open-product-image="'+p.id+'" aria-label="Artikelbild von '+escapeHtml(p.name)+' vergrößern" title="Bild groß anzeigen"><img data-inventory-thumb="'+p.id+'" alt="Bild von '+escapeHtml(p.name)+'" width="60" height="72" decoding="async" hidden><span class="inventory-photo-placeholder" aria-hidden="true">▧</span></button>':'<div class="inventory-thumb no-photo" title="Noch kein Artikelbild" aria-label="Kein Bild vorhanden">▧</div>';
-      return '<tr><td>'+picture+'</td><td>'+escapeHtml(p.name)+'</td><td>'+escapeHtml(p.sku||'-')+'</td><td>'+escapeHtml(p.set_name||'-')+'<br><small>'+escapeHtml(p.card_number||'')+'</small></td><td>'+escapeHtml(p.card_condition||'-')+'</td><td>'+escapeHtml(p.storage_location||'-')+'</td><td>'+Number(x.available_qty)+'</td><td>'+L.euro(x.remaining_cost)+'</td><td>'+marketCell+'</td><td><button type="button" data-edit-product="'+p.id+'">Bearbeiten</button> <button type="button" data-vinted="'+p.id+'">Vinted</button></td></tr>';
+      return '<tr><td>'+picture+'</td><td>'+escapeHtml(p.name)+'</td><td>'+escapeHtml(p.sku||'-')+'</td><td>'+escapeHtml(p.set_name||'-')+'<br><small>'+escapeHtml(p.card_number||'')+'</small></td><td>'+escapeHtml(p.card_condition||'-')+'</td><td>'+escapeHtml(p.storage_location||'-')+'</td><td>'+Number(x.available_qty)+'</td><td>'+L.euro(x.remaining_cost)+'</td><td>'+marketCell+'</td><td><button type="button" data-edit-product="'+p.id+'">Bearbeiten</button> <button type="button" data-vinted="'+p.id+'">Vinted</button> <button type="button" data-stock-adjust="'+p.id+'">Bestand ändern</button> <button type="button" class="danger" data-stock-archive="'+p.id+'">Entfernen</button></td></tr>';
     }).join('') || '<tr><td colspan="10" class="empty">Keine Artikel passend zur Suche.</td></tr>';
     prepareDesktopThumbnails();
-    selectCurrent(getForm($('purchaseForm'),'product'),state.products,p=>p.name+' | '+(p.sku||'ohne SKU'),'Artikel auswaehlen');
-    selectCurrent(getForm($('saleForm'),'product'),state.products.filter(p=>totalAvailable(p.id)>0),p=>p.name+' ('+totalAvailable(p.id)+' verfuegbar)','Artikel auswaehlen');
+    selectCurrent(getForm($('purchaseForm'),'product'),state.products.filter(p=>!p.archived_at),p=>p.name+' | '+(p.sku||'ohne SKU'),'Artikel auswaehlen');
+    selectCurrent(getForm($('saleForm'),'product'),state.products.filter(p=>!p.archived_at&&totalAvailable(p.id)>0),p=>p.name+' ('+totalAvailable(p.id)+' verfuegbar)','Artikel auswaehlen');
     selectCurrent(getForm($('imageForm'),'lot'),state.lots,l=>productName(l.product_id)+' | '+l.bought_on+' | '+l.id.slice(0,8),'Einkaufslos auswaehlen');
     $('salesRows').innerHTML=state.sales.map(s=>{
       const earned=L.profit({price:Number(s.price),shippingIncome:Number(s.shipping_income),shippingCost:Number(s.shipping_cost),fees:Number(s.fees),other:Number(s.other_cost),cost:Number(s.cogs_total)});
@@ -257,6 +257,7 @@
     shippingUI11?.render();feesUI11?.render();cashUI11?.render();
     if(activeTab==='photos')renderImages().catch(e=>console.error('Picture display:',e));
   }
+async function manageInventoryStock(id,archive=false){if(!WRITES_ENABLED){flash(REQUIRE_GO_LIVE_MESSAGE,'error');return;}const p=selectedProduct(id);if(!p||p.archived_at)return;const before=totalAvailable(id);let target=0;if(!archive){const entered=prompt('Neuer Lagerbestand für „'+p.name+'“ (aktuell '+before+'): ',String(before));if(entered===null)return;if(!/^(0|[1-9]\d*)$/.test(entered.trim())||Number(entered)>1000000){flash('Ungültige Stückzahl.','error');return;}target=Number(entered);if(target===before)return;}const reason=prompt('Grund für '+(archive?'Entfernung':'Bestandsänderung')+' von „'+p.name+'“:','Inventurkorrektur');if(reason===null)return;if(reason.trim().length<3||reason.trim().length>260){flash('Grund muss zwischen 3 und 260 Zeichen haben.','error');return;}if(!confirm(archive?'Artikel entfernen und '+before+' Stück ausbuchen? Buchungshistorie bleibt erhalten.':'Bestand von '+before+' auf '+target+' ändern?'))return;await withSaving(async()=>{const args=archive?{p_product_id:id,p_expected_qty:before,p_reason:reason.trim()}:{p_product_id:id,p_expected_qty:before,p_target_qty:target,p_reason:reason.trim(),p_unit_cost:null};const {error}=await sb.rpc(archive?'tc_archive_product':'tc_adjust_inventory',args);if(error)throw error;await refreshAll(true);flash(archive?'Artikel archiviert und aus Lager entfernt.':'Bestand korrigiert und protokolliert.','success');});}
   function switchTab(name) {
     activeTab=name;
     document.querySelectorAll('.tab').forEach(s=>s.hidden=s.id!=='tab-'+name);
@@ -621,7 +622,7 @@
       void catalogPicker11.selectCard(id);
     }});
     vintedUI12=window.TrummVinted12?.bind({
-      getProducts:()=>state.products,
+      getProducts:()=>state.products.filter(p=>!p.archived_at),
       getOwnImage:async p=>{
         const hero=state.productImages.find(x=>x.product_id===p.id);
         const lots=new Set(state.lots.filter(x=>x.product_id===p.id).map(x=>x.id));
@@ -652,7 +653,7 @@
     for(const id of ['inventorySearch','inventoryLanguageFilter','inventoryStockFilter','inventorySort']){
       $(id).addEventListener(id==='inventorySearch'?'input':'change',render);
     }
-    $('inventoryRows').addEventListener('click',e=>{const view=e.target.closest('[data-open-product-image]');if(view){void openDesktopProductImage(view.dataset.openProductImage);return;}const v=e.target.closest('[data-vinted]');if(v){void vintedUI12?.open(v.dataset.vinted);return;}const b=e.target.closest('[data-edit-product]');if(b)startProductEdit(b.dataset.editProduct);});
+    $('inventoryRows').addEventListener('click',e=>{const adj=e.target.closest('[data-stock-adjust]');if(adj){void manageInventoryStock(adj.dataset.stockAdjust);return;}const arc=e.target.closest('[data-stock-archive]');if(arc){void manageInventoryStock(arc.dataset.stockArchive,true);return;}const view=e.target.closest('[data-open-product-image]');if(view){void openDesktopProductImage(view.dataset.openProductImage);return;}const v=e.target.closest('[data-vinted]');if(v){void vintedUI12?.open(v.dataset.vinted);return;}const b=e.target.closest('[data-edit-product]');if(b)startProductEdit(b.dataset.editProduct);});
     $('purchaseForm').addEventListener('submit',savePurchase);
     for(const name of ['unit','total','qty'])getForm($('purchaseForm'),name).addEventListener('input',()=>purchasePriceChanged(name));
     getForm($('purchaseForm'),'extra').addEventListener('input',updatePurchaseHint);
