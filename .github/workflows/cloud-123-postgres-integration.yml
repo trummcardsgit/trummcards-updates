@@ -1,0 +1,53 @@
+name: TrummCards 1.2.3 - PostgreSQL Migration Integration
+on:
+  push:
+    branches: [feature/cloud-1.2.3-stock-management]
+    paths:
+      - cloud/supabase/migrations/20261020000100_stock_corrections_archive.sql
+      - cloud/release/sql/stock123_ephemeral_setup.sql
+      - cloud/release/sql/stock123_ephemeral_integration.sql
+      - .github/workflows/cloud-123-postgres-integration.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  integration:
+    name: PostgreSQL 17 temporary database; never Supabase TEST or PROD
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: synthetic-only-ci
+          POSTGRES_DB: trummcards_synthetic
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d trummcards_synthetic"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: '5432'
+      PGDATABASE: trummcards_synthetic
+      PGUSER: postgres
+      PGPASSWORD: synthetic-only-ci
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check PostgreSQL client
+        run: |
+          if ! command -v psql >/dev/null 2>&1; then
+            sudo apt-get update -qq
+            sudo apt-get install -y postgresql-client
+          fi
+          psql --version
+      - name: Install synthetic owner+FIFO schema
+        run: psql -X -v ON_ERROR_STOP=1 -f cloud/release/sql/stock123_ephemeral_setup.sql
+      - name: Apply real migration file to disposable PostgreSQL 17 only
+        run: psql -X -v ON_ERROR_STOP=1 -f cloud/supabase/migrations/20261020000100_stock_corrections_archive.sql
+      - name: Perform PostgreSQL inventory integration cases
+        run: |
+          psql -X -v ON_ERROR_STOP=1 -f cloud/release/sql/stock123_ephemeral_integration.sql
+          echo "PASS: disposable stock migration and reconciliation tested; NO Supabase database used."
