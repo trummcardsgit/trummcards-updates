@@ -19,10 +19,11 @@ for(const file of ['cloud/desktop-production/src/app.js','cloud/mobile-productio
   assert.ok(got.length<=6);
  });
  test(path+': thumbnail waits for load and retries on image error',async()=>{
-  const m=script.match(/function loadPictureWithFallback\(img,urls\)\{[\s\S]*?\n(?:  )?\}/);
-  assert.ok(m,'missing image loader');
+  const from=script.indexOf('function loadPictureWithFallback(img,urls)');
+  const end=script.indexOf(path==='desktop'?'async function loadDesktopThumbnail':'async function fillThumbnail',from);
+  assert.ok(from>0&&end>from,'missing image loader');
   const ctx={};
-  runInNewContext(m[0]+'\nthis.load=loadPictureWithFallback;',ctx);
+  runInNewContext(script.slice(from,end)+'\nthis.load=loadPictureWithFallback;',ctx);
   const seen=[];
   const placeholder={hidden:false};
   const img={isConnected:true,hidden:true,nextElementSibling:placeholder,
