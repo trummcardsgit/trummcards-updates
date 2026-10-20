@@ -112,5 +112,7 @@ test('Migration preserves historic records, RLS and RPC access control',()=>{
  assert.match(sql,/create or replace function public\.tc_archive_product/i);
  assert.match(sql,/create trigger tc_reactivate_on_stock_return/i);
  assert.match(sql,/create trigger tc_reactivate_on_new_lot/i);
+ assert.match(sql.slice(sql.indexOf('create or replace function trummcards_private.adjust_inventory'),sql.indexOf('create or replace function trummcards_private.archive_product')),/length\(btrim\(p_reason\)\) not between 3 and 300/);
+ assert.match(sql.slice(sql.indexOf('create or replace function trummcards_private.archive_product'),sql.indexOf('create or replace function trummcards_private.reactivate_on_restored_stock')),/length\(btrim\(p_reason\)\) not between 3 and 260/);
  assert.doesNotMatch(sql,/delete from public\.tc_products/i);
 });
