@@ -388,6 +388,9 @@ main{width:min(100%,1000px);padding:21px 18px 24px;margin:0 auto;flex:1}.login-s
 .dex-form label input{min-width:0}
 
 
+/* Dedicated Buchungen button in sidebar; mobile navigation keeps its six entries. */
+.bottom-nav button.desktop-bookings-link{display:none!important}
+
 /* Desktop-PWA experiment 1.2.5: one responsive app, no separate desktop data
    path. Mobile layout and native bottom navigation are unchanged below 1080px. */
 @media (min-width:1080px){
@@ -437,6 +440,7 @@ main{width:min(100%,1000px);padding:21px 18px 24px;margin:0 auto;flex:1}.login-s
  }
  #shell>.bottom-nav button span{font-size:23px;line-height:1;width:28px;text-align:center}
  #shell>.bottom-nav button:hover{background:#233750;color:#ecf2fc;border-color:#364c69}
+ #shell>.bottom-nav button.desktop-bookings-link{display:flex!important}
  #shell>.bottom-nav button.active{
    color:#f5d48f;background:#3b332b;
    border-color:#8c6b3d;box-shadow:inset 3px 0 0 #e9bd6e;
