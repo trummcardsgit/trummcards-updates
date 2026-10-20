@@ -33,7 +33,7 @@ function recoverableId(product){
  const number=String(product?.card_number||'').trim();
  if(langCode(product?.language)==='ja'&&
    /^(?:ポケモンカード151|pokemon card 151|pokémon card 151)$/iu.test(name)&&
-   /^(?:0*[1-9]\d{0,2})$/.test(number))return 'sv2a-'+Number(number);
+   /^(?:0*[1-9]\d{0,2})$/.test(number))return 'SV2a-'+Number(number);
  return '';
 }
 async function resolve({catalog,id,language='de',imageCandidate='',probe=checkImage}={}){
@@ -57,7 +57,7 @@ async function resolve({catalog,id,language='de',imageCandidate='',probe=checkIm
   for(const code of ordered){
    try{
     const detail=await catalog.getPokemonCard({id,language:code});
-    if(detail?.id!==id)continue;
+    if(String(detail?.id||'').toLowerCase()!==id.toLowerCase())continue;
     best=await tryRoot(detail.imageCandidate,code);
     if(best)return best;
    }catch{} // catalog may have no card in this language
