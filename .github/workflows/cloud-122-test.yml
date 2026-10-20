@@ -51,7 +51,7 @@ jobs:
             echo 'FATAL: production database ref leaked into TEST app'
             exit 1
           fi
-          node -e "const m=require('./cloud/mobile-production/web/manifest.webmanifest');if(m.name!=='TrummCards Cloud 1.2.2 TEST')process.exit(1)"
+          node -e "const fs=require('fs');const m=JSON.parse(fs.readFileSync('cloud/mobile-production/web/manifest.webmanifest','utf8'));if(m.name!=='TrummCards Cloud 1.2.2 TEST')process.exit(1)"
       - name: Keep preview assets for manual testing after SQL migration
         uses: actions/upload-artifact@v4
         with:
