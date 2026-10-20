@@ -1,4 +1,4 @@
-/* TrummCards Mobile Cloud TEST 1.2.5 RC v1.2.5-desktop-test.1 – static GitHub Pages client; only a public key.
+/* TrummCards Mobile Cloud TEST 1.2.5 RC v1.2.5-desktop-test.2 – static GitHub Pages client; only a public key.
  * Data is readable/writeable only with a Supabase JWT and the database owner RLS guard.
  * Test data ONLY. A connection is required to write; no offline operation replay.
  */
