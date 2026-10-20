@@ -25,15 +25,18 @@ test('Already implemented booking navigation and actions stay connected',()=>{
  assert.match(app,/data-shipping-sale/);
  assert.match(app,/const go=e\.target\.closest\('\[data-go\]'\)/);
 });
-test('Sidebar shows Buchungen at desktop width without creating a seventh cramped phone tab',()=>{
- assert.match(css,/\.bottom-nav button\.desktop-bookings-link\s*\{display:none!important\}/);
+test('Buchungen is visible at every window width, even narrower desktop PWA windows',()=>{
+ assert.match(css,/\.bottom-nav button\.desktop-bookings-link\s*\{display:flex\}/);
+ assert.doesNotMatch(css,/\.bottom-nav button\.desktop-bookings-link\s*\{display:none(?:!important)?\}/);
+ assert.match(css,/@media\s*\(max-width:1079px\)/);
+ assert.match(css,/@media\s*\(max-width:420px\)/);
  assert.match(css,/@media\s*\(min-width:1080px\)/);
- assert.match(css,/#shell>\.bottom-nav button\.desktop-bookings-link\s*\{display:flex!important\}/);
+ assert.match(css,/#shell>\.bottom-nav button\.desktop-bookings-link\s*\{display:flex\}/);
  assert.match(html,/data-go="sales">Verkäufe, Einkäufe & Versand ansehen<\/button>/);
 });
 test('TEST remains separated and refreshes service worker cache',()=>{
- assert.match(preparer,/1\.2\.5-desktop-test\.2/);
- assert.match(preparer,/trummcards-mobile-desktop125-shell-v2-1210/);
+ assert.match(preparer,/1\.2\.5-desktop-test\.3/);
+ assert.match(preparer,/trummcards-mobile-desktop125-shell-v3-1211/);
  assert.match(preparer,/TRUMMCARDS_DESKTOP125_ENABLE/);
  assert.match(preparer,/Missing catalog fallback/);
 });
