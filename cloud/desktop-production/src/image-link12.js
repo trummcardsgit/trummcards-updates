@@ -2,7 +2,7 @@
 (()=>{'use strict';
 const ROOT=/^https:\/\/assets\.tcgdex\.net\/[A-Za-z0-9/._-]+$/;
 const CARD_ID=/^[A-Za-z0-9._-]{2,100}$/;
-const LANGS=['de','en','ja','it'];
+const LANGS=['en','de','ja','it'];
 const langCode=(v)=>{
  const n=String(v||'').toLowerCase();
  return n==='japanisch'||n==='japanese'?'ja':
