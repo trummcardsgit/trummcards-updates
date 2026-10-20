@@ -119,3 +119,12 @@ Version 1.2 TEST mit eigenem KartenDex-Menü, Pokémon-Namenssuche mit Blättern
 - Isolierter CI-Probelauf ohne Deployment und ohne Datenbankzugriff **erfolgreich**: https://github.com/trummcardsgit/trummcards-updates/actions/runs/39423950376
 - Der Versuch, die SQL-Migration über den verbundenen Datenbankzugang anzuwenden, wurde zuvor von einer Sicherheitsprüfung blockiert. Keine Umgehung des Blocks. Migration daher von einem autorisierten Administrator prüfen und zunächst auf TEST freigeben lassen.
 - Erst nach erfolgreichem TEST-RPC-/End-to-End-Test, frischem vollständigem PROD-Backup mit geprüftem Restore und genehmigter PROD-Migration darf 1.2.3 für PWA und Windows veröffentlicht werden.
+
+
+### 20.10.2026 – SQL-Integration erfolgreich und Backup V3 vorbereitet
+- Zunächst blieb das Deployment korrekt blockiert, da `archived_at`, `tc_inventory_corrections` und beide Lager-RPCs auf Supabase TEST und PROD noch fehlten.
+- Kritischer Syntaxfehler im SQL-Triggerterminator korrigiert (`$;` → `$$;`).
+- Neuer echter PostgreSQL-17-Integrationstest in isoliertem GitHub-Actions-Dienst: synthetische Artikel/Einkaufslose/Verkäufe, FIFO-Bestandsreduktion und -erhöhung, Prüfung veralteter Mengen, Archivierung, Erhalt der Verkaufshistorie und Reaktivierung nach Rückbuchung. Erfolgreich: https://github.com/trummcardsgit/trummcards-updates/actions/runs/39424948424
+- Backup-V3-Entwicklung hinzugefügt: `cloud/release/sql/cloud123_backup_snapshot_v3_staging.sql`, `TABLES_V3` in Validator, v3-fähiger Restore-Check inklusive Identitätssequenzen, Rückwärtskompatibilität zu V1/V2 und V3-Regressionstests. Testlauf erfolgreich: https://github.com/trummcardsgit/trummcards-updates/actions/runs/39425445172
+- Freigabedokument erstellt: `cloud/release/RELEASE_1.2.3_STOCK_MANAGEMENT.md`, mit TEST-Migration, praktischen Tests, PROD-V2-Backup + Restore, PROD-Migration, PROD-V3-Sicherung, PWA/Windows-Release-Gates und Verifikation.
+- **Noch nicht LIVE:** Supabase TEST und PRODUCTION nicht verändert. Auto-Migration über verbundenes Tool weiterhin durch Sicherheitsprüfung blockiert. Ohne fachlich autorisierte und getestete Supabase-Migration kein Produktivupdate.
