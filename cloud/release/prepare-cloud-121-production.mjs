@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Cloud 1.2.1.1 PRODUCTION build preparation. Only changes CI checkout; never talks to database.
+// Cloud 1.2.1 PRODUCTION build preparation. Only changes CI checkout; never talks to database.
 import fs from 'node:fs';
 const root='cloud/';
 const desktop=root+'desktop-production/';
@@ -37,7 +37,7 @@ change(desktop+'main.cjs',s=>{
 change(desktop+'src/app.js',s=>replaceOne(s,'const WRITES_ENABLED = false;','const WRITES_ENABLED = true;'));
 change(mobile+'app.js',s=>replaceOne(s,'const WRITES_ENABLED=false;','const WRITES_ENABLED=true;').replaceAll('0.9.0',version));
 change(desktop+'src/index.html',s=>{
- s=replaceOne(s,'<div class="warning production-preview-banner"><strong>Produktionsvorschau – noch nicht freigegeben!</strong> Diese Windows-App ist mit TrummCards Production verbunden. Artikel, Einkäufe, Verkäufe, Storno und Bildupload sind bis zur fertigen Datensicherung und Releasefreigabe technisch gesperrt. TEST und Version 1.6.1 bleiben unangetastet.</div>','<div class="warning production-preview-banner"><strong>TrummCards Cloud 1.2.1.1</strong> – Mit deinem bestehenden Produktivkonto verbunden. Alle bisherigen Artikel, Fotos, Einkäufe und Verkäufe bleiben erhalten.</div>');
+ s=replaceOne(s,'<div class="warning production-preview-banner"><strong>Produktionsvorschau – noch nicht freigegeben!</strong> Diese Windows-App ist mit TrummCards Production verbunden. Artikel, Einkäufe, Verkäufe, Storno und Bildupload sind bis zur fertigen Datensicherung und Releasefreigabe technisch gesperrt. TEST und Version 1.6.1 bleiben unangetastet.</div>','<div class="warning production-preview-banner"><strong>TrummCards Cloud 1.2.1</strong> – Mit deinem bestehenden Produktivkonto verbunden. Alle bisherigen Artikel, Fotos, Einkäufe und Verkäufe bleiben erhalten.</div>');
  return s.replaceAll('PRODUKTIONSVORSCHAU','CLOUD 1.2');
 });
 change(mobile+'index.html',s=>{
@@ -81,4 +81,4 @@ if(!read(desktop+'main.cjs').includes("trummcards-cloud-production")||
  !read(desktop+'main.cjs').includes('const UPDATE_FEED_ENABLED=true;'))throw Error('Windows updater or userData not preserved');
 if(!read(mobile+'sw.js').includes('trummcards-mobile-production-shell-v121')||
  !read(mobile+'sw.js').includes('carddex12.js?v='+version))throw Error('PWA update invalid');
-console.log('Cloud 1.2.1.1 production assets prepared safely in CI checkout. NO DATABASE CHANGES. NO DEPLOY.');
+console.log('Cloud 1.2.1 production assets prepared safely in CI checkout. NO DATABASE CHANGES. NO DEPLOY.');
