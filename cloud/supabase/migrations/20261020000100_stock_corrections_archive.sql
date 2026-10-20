@@ -59,7 +59,7 @@ begin
   end if;
   if p_product_id is null or p_expected_qty is null or p_expected_qty < 0
     or p_target_qty is null or p_target_qty < 0 or p_target_qty > 1000000
-    or p_reason is null or length(btrim(p_reason)) not between 3 and 300
+    or p_reason is null or length(btrim(p_reason)) not between 3 and 260
     or (p_unit_cost is not null and
       (p_unit_cost < 0 or p_unit_cost > 99999999 or p_unit_cost <> round(p_unit_cost,2))) then
     raise exception 'Ungültige Bestandskorrektur' using errcode='22023';
@@ -149,7 +149,7 @@ begin
   if v_user is null or not trummcards_private.is_owner() then
     raise exception 'Nicht autorisiert' using errcode='42501';
   end if;
-  if p_reason is null or length(btrim(p_reason)) not between 3 and 300 then
+  if p_reason is null or length(btrim(p_reason)) not between 3 and 260 then
     raise exception 'Grund angeben (3–300 Zeichen)' using errcode='22023';
   end if;
   perform 1 from public.tc_products
