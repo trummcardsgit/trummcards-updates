@@ -137,3 +137,10 @@ Version 1.2 TEST mit eigenem KartenDex-Menü, Pokémon-Namenssuche mit Blättern
 - Automatischer Build erfolgreich: https://github.com/trummcardsgit/trummcards-updates/actions/runs/39436348268. GitHub Pages-Build erfolgreich: https://github.com/trummcardsgit/trummcards-updates/actions/runs/39436406099.
 - **Nächster Schritt:** Im TEST einen Artikel mit Bestand anlegen/korrigieren, Bestand erhöhen und senken, Entfernen bestätigen und die Historie sowie den Bestand in Windows-/PWA-TEST vergleichen. Bei Fehlern genaue Meldung und betroffenen TEST-Artikel prüfen.
 - **Kein PRODUCTION-Release:** Echtdatenbank hat die neue Migration noch nicht erhalten; Live-Feed weiterhin 1.2.2. Erst nach validiertem Praxistest, frischer geprüfter Sicherung und genehmigter PROD-Migration das Release 1.2.3 freigeben.
+
+### 20.10.2026 – TEST durch Benutzer bestätigt, PROD-Backup erfolgreich
+- Nutzer bestätigt beide praktischen Funktionen auf Cloud 1.2.3 TEST: **Lagerbestand ändern funktioniert** und **Artikel entfernen funktioniert**.
+- Frisches, verschlüsseltes Production-Preflight-Backup erfolgreich erstellt: GitHub Actions Run [39437786068](https://github.com/trummcardsgit/trummcards-updates/actions/runs/39437786068). Archiv als GitHub Actions-Artefakt verfügbar, 30 Tage Aufbewahrung laut Workflow.
+- Echtes Wiederherstellen in isolierter PostgreSQL-17-Datenbank erfolgreich: 10 Tabellen, 11 private Bilder, 15 lagernde Stück. Stand Sicherung: 14 Artikel, 15 Einkaufsposten, 1 Verkauf, 11 Artikelbilder.
+- Die PROD-Migration ist noch NICHT ausgeführt; `tc_adjust_inventory` weiterhin nicht in Production vorhanden. Produktions-Update-Feed unverändert **1.2.2**.
+- Nächste Stufe: autorisierte Durchführung der geprüften SQL-Migration im richtigen Supabase-Production-Projekt; danach Schema-/Bestandsnachprüfung, V3-Backup-RPC/Funktionstests, neues V3-Backup mit Restore und erst danach Windows/PWA Release 1.2.3.
