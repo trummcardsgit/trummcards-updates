@@ -1,0 +1,73 @@
+name: TrummCards 1.2.3 - Fresh PROD Preflight Backup (READ ONLY)
+on:
+  push:
+    branches: [feature/cloud-1.2.3-stock-management]
+    paths:
+      - .github/workflows/cloud-123-fresh-production-backup.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: trummcards-123-fresh-prod-backup
+  cancel-in-progress: false
+jobs:
+  backup-and-restore:
+    if: github.repository == 'trummcardsgit/trummcards-updates' && github.ref == 'refs/heads/feature/cloud-1.2.3-stock-management'
+    name: Fresh encrypted snapshot + full PostgreSQL restore; NO RELEASE
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: local-test-only
+          POSTGRES_DB: trummcards_restore
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      TC_BACKUP_EMAIL: ${{ secrets.TC_PROD_BACKUP_EMAIL }}
+      TC_BACKUP_PASSWORD: ${{ secrets.TC_PROD_BACKUP_PASSWORD }}
+      TC_BACKUP_PASSPHRASE: ${{ secrets.TC_PROD_BACKUP_PASSPHRASE }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check security and encryption prerequisites without revealing secrets
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$TC_BACKUP_EMAIL" || { echo 'Missing PROD backup email secret'; exit 1; }
+          test -n "$TC_BACKUP_PASSWORD" || { echo 'Missing PROD backup password secret'; exit 1; }
+          test "${#TC_BACKUP_PASSPHRASE}" -ge 24 || { echo 'Missing/short separate backup encryption passphrase'; exit 1; }
+          node --test cloud/backup/backup.test.mjs
+          node --check cloud/backup/restore-check.mjs
+      - name: Install isolated PostgreSQL restore dependencies
+        run: npm ci --prefix cloud/backup --no-audit --no-fund --ignore-scripts
+      - name: Generate fresh encrypted PROD snapshot including all private image bytes
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/trummcards-prod-123-preflight"
+          node cloud/backup/create.mjs "$RUNNER_TEMP/trummcards-prod-123-preflight/TrummCards-PROD-PRE123-${{ github.run_id }}.tcbackup"
+          node cloud/backup/verify.mjs "$RUNNER_TEMP/trummcards-prod-123-preflight/TrummCards-PROD-PRE123-${{ github.run_id }}.tcbackup"
+      - name: Actually restore and reconcile stock, records and private images in isolated PostgreSQL
+        env:
+          PG_RESTORE_URL: postgresql://postgres:local-test-only@127.0.0.1:5432/trummcards_restore
+        shell: bash
+        run: |
+          set -euo pipefail
+          node cloud/backup/restore-check.mjs "$RUNNER_TEMP/trummcards-prod-123-preflight/TrummCards-PROD-PRE123-${{ github.run_id }}.tcbackup"
+      - name: Keep ONLY encrypted archive (30 days), not passwords or plaintext
+        uses: actions/upload-artifact@v4
+        with:
+          name: TrummCards-PROD-Encrypted-PRE123-${{ github.run_id }}
+          path: ${{ runner.temp }}/trummcards-prod-123-preflight/*.tcbackup
+          retention-days: 30
+          if-no-files-found: error
