@@ -31,3 +31,13 @@ The final 1.2 TEST and release rehearsal runs were still queued by GitHub Action
 
 ## End-user checks after successful deployment
 Open existing installed Windows Cloud and use automatic updates to 1.2.0; refresh PWA and verify login, pictures, card lookup, manual Vinted listing and existing stock/sales. Never overwrite original inventory to test new features.
+
+## Verified production deployment — 2026-10-20
+- Production deployment workflow succeeded: https://github.com/trummcardsgit/trummcards-updates/actions/runs/39397008813
+- Both 1.2 regression/preflight and fresh PROD V2 encrypted archive with actual PostgreSQL restore passed.
+- Windows 1.2.0 updater installer (85,739,264 bytes), blockmap, latest.yml are published under gh-pages/cloud-updates/. latest.yml reports version 1.2.0.
+- PWA assets with production DB ref and writable business flow are published under gh-pages/production/. Include cards, search, no-image embedded placeholder, and manual Vinted listing draft.
+- A read-only query after release confirms **11 products, 11 purchase lots, 1 sale, 10 product image records**, identical to pre-upgrade counts. No TEST database import or Supabase migration.
+- git tree confirms old Windows 1.0.0 and 1.1.0 installers remain, as well as separate gh-pages/test-12/.
+- GitHub Pages build was still running at last verification; public-site availability requires Pages successful completion.
+- User's Windows installed 1.1.0 may update automatically when it next checks; or updates tab may be used to check. Reopening installed Production PWA reloads cache when Pages is deployed.
