@@ -144,3 +144,13 @@ Version 1.2 TEST mit eigenem KartenDex-Menü, Pokémon-Namenssuche mit Blättern
 - Echtes Wiederherstellen in isolierter PostgreSQL-17-Datenbank erfolgreich: 10 Tabellen, 11 private Bilder, 15 lagernde Stück. Stand Sicherung: 14 Artikel, 15 Einkaufsposten, 1 Verkauf, 11 Artikelbilder.
 - Die PROD-Migration ist noch NICHT ausgeführt; `tc_adjust_inventory` weiterhin nicht in Production vorhanden. Produktions-Update-Feed unverändert **1.2.2**.
 - Nächste Stufe: autorisierte Durchführung der geprüften SQL-Migration im richtigen Supabase-Production-Projekt; danach Schema-/Bestandsnachprüfung, V3-Backup-RPC/Funktionstests, neues V3-Backup mit Restore und erst danach Windows/PWA Release 1.2.3.
+
+
+### 20.10.2026 – PRODUKTION: Lagermigration erfolgreich, Backup V3 zum Abschluss vorbereitet
+- Der Benutzer bestätigte das vollständige SQL-Update auf **TrummCards Production**. Per read-only Supabase-SQL verifiziert: `tc_inventory_corrections`, `archived_at`, `tc_adjust_inventory`, `tc_archive_product`, Owner-RLS und zwei Reaktivierungstrigger vorhanden.
+- PROD-Bestand nach Migration **unverändert**: 14 Artikel, 15 Einkaufsposten, 1 Verkauf, 11 Artikelbilder, 15 lagernde Stück; Korrekturprotokoll zu diesem Zeitpunkt noch leer.
+- Produktions-Backup-RPC `tc_backup_snapshot()` war noch V2, enthielt **noch nicht** `tc_inventory_corrections`. Deshalb darf 1.2.3 noch nicht freigeschaltet werden, um die spätere Wiederherstellung der Korrekturhistorie nicht zu gefährden.
+- Backup-/Restore-Unterstützung für V1/V2/V3 in den Hauptzweig `main` integriert: GitHub PR [#8](https://github.com/trummcardsgit/trummcards-updates/pull/8), Merge `cec432deeaea17c8aad6a9f80d10034cfb1ef4cf`, erfolgreicher Test [39444132051](https://github.com/trummcardsgit/trummcards-updates/actions/runs/39444132051).
+- Abgesicherter 1.2.3-Produktions-Workflow `.github/workflows/cloud-123-production-deploy.yml` vorbereitet. Der Release benötigt ausdrücklich `GO_LIVE_123.txt`, grüne Bestands-/Bildtests, V3-kompatibles Backup in `main`, **ein frisches verschlüsseltes PROD-V3-Backup mit echtem PostgreSQL-Restore**, korrektes Windows-1.2.3-Updatemanifest und unveränderte TEST-Verzeichnisse.
+- Nächster Schritt: Autorisierter Admin muss **nur noch den geprüften V3-Snapshot-RPC** aus `cloud/release/sql/cloud123_backup_snapshot_v3_staging.sql` im SQL-Editor des PRODUCTION-Projekts ausführen. Anschließend Format und Berechtigungen per read-only Abfrage prüfen, den frischen V3-Backup-/Restore-Gate nachweisen und erst dann den Release-Marker setzen.
+- **Aktueller Live-Stand**: `cloud-updates/latest.yml` meldet weiterhin **1.2.2**. Noch kein PWA/Windows-Produktionsupdate durchgeführt.
