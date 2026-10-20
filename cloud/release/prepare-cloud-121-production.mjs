@@ -58,7 +58,7 @@ change(desktop+'tests/production.test.cjs',s=>{
 const html=read(mobile+'index.html');
 if(!html.includes('carddex12.js?v='+version)||!html.includes('vinted12.js?v='+version)||!html.includes('image-link12.js?v='+version)||html.includes('cardscan12.js'))throw Error('Cloud 1.2.1 UI is incomplete or obsolete scanner remains');
 const localAssets=['./','./manifest.webmanifest','./icon.svg','./logo.webp','./icon-192.png','./icon-512.png'];
-for(const match of html.matchAll(/(?:src|href)="\.\/([^"?#]+\.(?:js|css))(?:\?v=1\.2\.0)?"/g)){
+for(const match of html.matchAll(/(?:src|href)="\.\/([^"?#]+\.(?:js|css))(?:\?v=[0-9.]+)?"/g)){
  const file=match[1];if(!fs.existsSync(mobile+file))throw Error('Missing production PWA asset '+file);
  localAssets.push('./'+file+'?v='+version);
 }
