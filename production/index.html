@@ -12,23 +12,23 @@
 <link rel="icon" type="image/webp" href="./logo.webp">
 <link rel="apple-touch-icon" href="./icon-180.png">
 <link rel="manifest" href="./manifest.webmanifest">
-<link rel="stylesheet" href="./styles.css?v=1.2.4">
-<script src="./catalog11.js?v=1.2.4" defer></script>
-<script src="./catalog11-ui.js?v=1.2.4" defer></script>
-<script src="./sets11-ui.js?v=1.2.4" defer></script>
-<script src="./market11-ui.js?v=1.2.4" defer></script>
-<script src="./fees11.js?v=1.2.4" defer></script>
-<script src="./fees11-ui.js?v=1.2.4" defer></script>
-<script src="./finance11.js?v=1.2.4" defer></script>
-<script src="./finance11-ui.js?v=1.2.4" defer></script>
-<script src="./cash11.js?v=1.2.4" defer></script>
-<script src="./cash11-ui.js?v=1.2.4" defer></script>
-<script src="./shipping11.js?v=1.2.4" defer></script>
-<script src="./shipping11-ui.js?v=1.2.4" defer></script>
-<script src="./carddex12.js?v=1.2.4" defer></script>
+<link rel="stylesheet" href="./styles.css?v=1.2.5">
+<script src="./catalog11.js?v=1.2.5" defer></script>
+<script src="./catalog11-ui.js?v=1.2.5" defer></script>
+<script src="./sets11-ui.js?v=1.2.5" defer></script>
+<script src="./market11-ui.js?v=1.2.5" defer></script>
+<script src="./fees11.js?v=1.2.5" defer></script>
+<script src="./fees11-ui.js?v=1.2.5" defer></script>
+<script src="./finance11.js?v=1.2.5" defer></script>
+<script src="./finance11-ui.js?v=1.2.5" defer></script>
+<script src="./cash11.js?v=1.2.5" defer></script>
+<script src="./cash11-ui.js?v=1.2.5" defer></script>
+<script src="./shipping11.js?v=1.2.5" defer></script>
+<script src="./shipping11-ui.js?v=1.2.5" defer></script>
+<script src="./carddex12.js?v=1.2.5" defer></script>
 
-<script src="./vinted12.js?v=1.2.4" defer></script>
-<script src="./app.js?v=1.2.4" defer></script>
+<script src="./vinted12.js?v=1.2.5" defer></script>
+<script src="./app.js?v=1.2.5" defer></script>
 </head>
 <body>
 <div id="shell">
@@ -43,7 +43,7 @@
       <div class="panel auth-panel">
         <div class="micro-label">TRUMMCARDS CLOUD</div>
         <h1>Willkommen zurück</h1>
-        <p class="subtle">Melde dich mit deinem TrummCards-Produktivkonto an. Lagerdaten werden später zwischen Windows und PWA synchronisiert. Aktuell sind Buchungen zum Schutz deiner Daten gesperrt.</p>
+        <p class="subtle">Melde dich mit deinem bestehenden TrummCards-Konto an. Windows, iPhone und Android verwenden dieselbe Cloud-Lagerverwaltung mit synchronisiertem Bestand.</p>
         <form id="loginForm" autocomplete="on">
           <label for="email">E-Mail-Adresse</label><input type="email" id="email" name="email" autocomplete="username" inputmode="email" required placeholder="name@beispiel.at">
           <label for="password">Passwort</label><input type="password" id="password" name="password" autocomplete="current-password" required placeholder="Dein Supabase-Passwort">
@@ -54,7 +54,7 @@
       </div>
     </section>
     <div id="appScreen" hidden>
-      <div class="test-note production-preview"><span>TRUMMCARDS CLOUD 1.2.4</span> Bestehende Artikel, Einkäufe, Verkäufe und Fotos werden unverändert aus <b>TrummCards Production</b> geladen.</div>
+      <div class="test-note production-preview"><span>TRUMMCARDS CLOUD 1.2.5</span> Gemeinsame Web-App für Windows, iPhone und Android. Alle Artikel, Bilder, Einkäufe, Verkäufe und Buchungen bleiben in <b>TrummCards Production</b> gespeichert.</div>
       <div class="topactions"><div><span class="eyebrow" id="welcomeText">DEINE SAMMLUNG</span><h1 id="screenTitle">Übersicht</h1></div><button class="icon-btn" id="refreshBtn" aria-label="Jetzt synchronisieren" title="Synchronisieren">↻</button></div>
       <div id="pendingBanner" class="pending" hidden></div>
 
@@ -145,7 +145,7 @@
       </section>
 
       <section id="page-purchase" class="page" hidden>
-        <div class="panel booking-panel"><div class="micro-label">EINGANG · PRODUCTION · CLOUD 1.2.4</div><h2>Einkauf erfassen</h2>
+        <div class="panel booking-panel"><div class="micro-label">EINGANG · PRODUCTION · CLOUD 1.2.5</div><h2>Einkauf erfassen</h2>
           <p class="subtle">Erfasse deinen Einkauf. Einzel- und Gesamtpreis werden automatisch berechnet.</p>
           <form id="purchaseForm" class="booking-form">
             <fieldset class="booking-group">
@@ -176,7 +176,7 @@
       </section>
 
       <section id="page-sale" class="page" hidden>
-        <div class="panel booking-panel"><div class="micro-label">VERKAUF · PRODUCTION · CLOUD 1.2.4</div><h2>Verkauf erfassen</h2>
+        <div class="panel booking-panel"><div class="micro-label">VERKAUF · PRODUCTION · CLOUD 1.2.5</div><h2>Verkauf erfassen</h2>
           <p class="subtle">Der Lagerbestand und FIFO-Einstand werden nach der Buchung automatisch aktualisiert.</p>
           <form id="saleForm" class="booking-form">
             <fieldset class="booking-group">
@@ -340,7 +340,7 @@
           <button class="secondary full" type="button" id="moreRefresh">Jetzt synchronisieren</button>
           <button class="danger full" type="button" id="signOutBtn">Abmelden</button>
         </div>
-        <div class="panel"><h2>Auswertungen</h2><button class="secondary full" type="button" data-go="finance">Finanzcenter & CSV-Export öffnen</button></div>
+        <div class="panel"><h2>Buchungen & Auswertungen</h2><button class="secondary full" type="button" data-go="sales">Verkäufe, Einkäufe & Versand ansehen</button><button class="secondary full" type="button" data-go="finance">Finanzcenter & CSV-Export öffnen</button></div>
         <div class="panel"><h2>Zum Home-Bildschirm</h2><p class="subtle"><b>iPhone:</b> In Safari auf „Teilen“ tippen und „Zum Home-Bildschirm“ wählen.<br><b>Android:</b> In Chrome im Menü auf „App installieren“ oder „Zum Startbildschirm hinzufügen“ tippen.</p></div>
       </section>
     </div>
@@ -366,11 +366,12 @@
     <button data-go="home" class="active" type="button"><span>▦</span>Lager</button>
     <button data-go="purchase" type="button"><span>⊕</span>Einkauf</button>
     <button data-go="sale" type="button"><span>↗</span>Verkauf</button>
+    <button data-go="sales" class="desktop-bookings-link" type="button" aria-label="Buchungen anzeigen"><span>▤</span>Buchungen</button>
     <button data-go="carddex" type="button"><span>◈</span>KartenDex</button>
     <button data-go="photos" type="button"><span>▧</span>Bilder</button>
     <button data-go="more" type="button"><span>☰</span>Mehr</button>
   </nav>
-  <footer>TRUMMCARDS · EST. 2026 <span>CLOUD PRODUCTION · RELEASE 1.2.4</span></footer>
+  <footer>TRUMMCARDS · EST. 2026 <span>CLOUD PRODUCTION · RELEASE 1.2.5</span></footer>
 </div>
 </body>
 </html>

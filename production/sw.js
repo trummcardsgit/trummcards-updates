@@ -1,6 +1,6 @@
 'use strict';
-const CACHE='trummcards-mobile-production-shell-v124';
-const SHELL=["./","./manifest.webmanifest","./icon.svg","./logo.webp","./icon-192.png","./icon-512.png","./styles.css?v=1.2.4","./catalog11.js?v=1.2.4","./catalog11-ui.js?v=1.2.4","./sets11-ui.js?v=1.2.4","./market11-ui.js?v=1.2.4","./fees11.js?v=1.2.4","./fees11-ui.js?v=1.2.4","./finance11.js?v=1.2.4","./finance11-ui.js?v=1.2.4","./cash11.js?v=1.2.4","./cash11-ui.js?v=1.2.4","./shipping11.js?v=1.2.4","./shipping11-ui.js?v=1.2.4","./carddex12.js?v=1.2.4","./vinted12.js?v=1.2.4","./app.js?v=1.2.4"];
+const CACHE='trummcards-mobile-production-shell-v125';
+const SHELL=["./","./index.html","./manifest.webmanifest","./icon.svg","./logo.webp","./icon-180.png","./icon-192.png","./icon-512.png","./reset-password.html","./styles.css?v=1.2.5","./catalog11.js?v=1.2.5","./catalog11-ui.js?v=1.2.5","./sets11-ui.js?v=1.2.5","./market11-ui.js?v=1.2.5","./fees11.js?v=1.2.5","./fees11-ui.js?v=1.2.5","./finance11.js?v=1.2.5","./finance11-ui.js?v=1.2.5","./cash11.js?v=1.2.5","./cash11-ui.js?v=1.2.5","./shipping11.js?v=1.2.5","./shipping11-ui.js?v=1.2.5","./carddex12.js?v=1.2.5","./vinted12.js?v=1.2.5","./app.js?v=1.2.5","./reset-password.js?v=1.2.5"];
 self.addEventListener('install',event=>{event.waitUntil(caches.open(CACHE).then(c=>c.addAll(SHELL)).then(()=>self.skipWaiting()));});
 self.addEventListener('activate',event=>{event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k.startsWith('trummcards-mobile-production-shell-')&&k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim()));});
 self.addEventListener('fetch',event=>{
