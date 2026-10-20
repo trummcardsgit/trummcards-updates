@@ -38,11 +38,11 @@ jobs:
         run: |
           set -euo pipefail
           grep -Fx "const PROJECT='cpycfxolqpidfjbhhsmr';" cloud/mobile-production/web/app.js
-          grep -Fx 'const WRITES_ENABLED=true;' cloud/mobile-production/web/app.js
-          grep -F 'trummcards-mobile-test123-session-v1' cloud/mobile-production/web/app.js
-          grep -F 'trummcards-mobile-test123-shell-' cloud/mobile-production/web/sw.js
-          grep -F 'tc_adjust_inventory' cloud/mobile-production/web/app.js
-          grep -F 'tc_archive_product' cloud/mobile-production/web/app.js
+          grep -Fq 'const WRITES_ENABLED=true;' cloud/mobile-production/web/app.js
+          grep -Fq 'trummcards-mobile-test123-session-v1' cloud/mobile-production/web/app.js
+          grep -Fq 'trummcards-mobile-test123-shell-' cloud/mobile-production/web/sw.js
+          grep -Fq 'tc_adjust_inventory' cloud/mobile-production/web/app.js
+          grep -Fq 'tc_archive_product' cloud/mobile-production/web/app.js
           if grep -Rq -e 'hgdexyvtgfffcasfpjyu' -e 'sb_publishable_JDdbnEq3muaOhp3LsNhBkQ_eJZ0uYEf' cloud/mobile-production/web; then
             echo 'BLOCKED: PRODUCTION database reference in TEST PWA'; exit 1
           fi
