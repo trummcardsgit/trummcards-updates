@@ -204,3 +204,12 @@ Version 1.2 TEST mit eigenem KartenDex-Menü, Pokémon-Namenssuche mit Blättern
 - Neuer TEST-Build `1.2.5-desktop-test.2` mit eigener SW-Cachekennung `trummcards-mobile-desktop125-shell-v2-1210` erfolgreich isoliert unter https://trummcardsgit.github.io/trummcards-updates/desktop-test/ ausgerollt.
 - Automatische Regressionstests `desktop125-bookings-menu.test.mjs` und vorhandene Bild-/Lagerfunktionstests erfolgreich, GitHub Actions [39453872724](https://github.com/trummcardsgit/trummcards-updates/actions/runs/39453872724). Live-Pages-Branch geprüft: Menübutton sichtbar im HTML; CSS blendet Button nur unter Desktop-Breite ein; `app.js` greift ausschließlich auf Supabase TEST zu.
 - Produktivversion Windows/PWA unverändert **1.2.4**. Benutzerabnahme der tatsächlichen Desktop-Navigation noch ausstehend.
+
+
+### 20.10.2026 – Desktop-PWA TEST 1.2.5.3: Menü „Buchungen“ bei schmalem Windows-Fenster korrigiert
+- Nutzer meldete nach erster Menüergänzung, dass „Buchungen“ weiterhin fehlt. Ursachenprüfung: In CSS wurde der Menüpunkt mit `display:none!important` bei jeder Fensterbreite unter **1080 px** verborgen und erst innerhalb `@media(min-width:1080px)` sichtbar gemacht. Eine installierte Windows-PWA kann ein kleineres Fenster haben.
+- Lösung: Der vorhandene Button `data-go="sales"` wird **für sämtliche Fensterbreiten** angezeigt. Auf großem Bildschirm in der Sidebar, auf schmalen Fenstern in der unteren Navigation. Zusätzliche Anpassungen für gleichmäßig verteilte sieben Navigationstasten auf schmalen Fenstern; bestehende Seite `page-sales` zeigt Verkäufe, Einkaufschargen, Storno und Versand.
+- Test-/Cache-Build erhöht auf **`1.2.5-desktop-test.3`** und separaten Service-Worker `trummcards-mobile-desktop125-shell-v3-1211`, damit geänderte HTML-/CSS-Dateien neu geladen werden.
+- Neue Regression `cloud/release/desktop125-bookings-menu.test.mjs` schützt die dauerhafte Sichtbarkeit unabhängig von der Fensterbreite. Isolierter GitHub-Publish erfolgreich: [Run 39454541677](https://github.com/trummcardsgit/trummcards-updates/actions/runs/39454541677).
+- Verifizierte Dateien auf `gh-pages/desktop-test/`: HTML mit „Buchungen“, CSS ohne versteckende Buchungsregel, aktualisierte JS-Version und SW-Cache. TEST-Supabase ist weiterhin `cpycfxolqpidfjbhhsmr`, PRODUKTION weiterhin **1.2.4**.
+- Nächste visuelle Abnahme durch Benutzer im Browser: `https://trummcardsgit.github.io/trummcards-updates/desktop-test/?version=1253`; installierte PWA gegebenenfalls mit `Strg+F5` aktualisieren bzw. neu öffnen.
