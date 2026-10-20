@@ -376,7 +376,7 @@ function bind(){
  }});
 
  vintedUI12=window.TrummVinted12?.bind({
-  getProducts:()=>state.products,
+  getProducts:()=>state.products.filter(p=>!p.archived_at),
   getOwnImage:async p=>{
    const hero=state.productImages.find(x=>x.product_id===p.id);
    const lots=new Set(state.lots.filter(x=>x.product_id===p.id).map(x=>x.id));
