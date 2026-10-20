@@ -140,15 +140,43 @@ async function privateImageUrl(path,quality='low'){
  thumbnailLoading.set(path,task);
  try{return await task;}finally{thumbnailLoading.delete(path);}
 }
+function inventoryCatalogCandidates(productId,quality='low'){
+ const root=productById(productId)?.catalog_image_url||'';
+ if(!/^https:\/\/assets\.tcgdex\.net\/[A-Za-z0-9/._-]+$/.test(root))return [];
+ const candidates=[root+'/'+quality+'.webp'];
+ for(const lang of ['en','de','ja','fr','it']){
+  const alternate=root.replace(/^(https:\/\/assets\.tcgdex\.net\/)\w+(\/.*)$/,(_,host,suffix)=>host+lang+suffix);
+  if(alternate!==root)candidates.push(alternate+'/'+quality+'.webp');
+ }
+ if(quality==='high')candidates.push(root+'/low.webp');
+ return [...new Set(candidates)];
+}
+function loadPictureWithFallback(img,urls){
+ const candidates=[...new Set(urls.filter(Boolean))];
+ let cursor=0;
+ return new Promise(resolve=>{
+  function next(){
+   if(!img.isConnected){resolve(false);return;}
+   const candidate=candidates[cursor++];
+   if(!candidate){
+    img.onload=null;img.onerror=null;img.hidden=true;
+    if(img.nextElementSibling)img.nextElementSibling.hidden=false;
+    resolve(false);return;
+   }
+   img.onload=()=>{img.hidden=false;if(img.nextElementSibling)img.nextElementSibling.hidden=true;resolve(true);};
+   img.onerror=next;img.src=candidate;
+  }
+  next();
+ });
+}
 async function fillThumbnail(img){
  const path=imagePathForProduct(img.dataset.thumb);
  if(!path||!img.isConnected)return;
- try{
-  const url=await privateImageUrl(path);
-  if(!img.isConnected||imagePathForProduct(img.dataset.thumb)!==path)return;
-  img.src=url;img.hidden=false;
-  if(img.nextElementSibling)img.nextElementSibling.hidden=true;
- }catch(e){console.info('Vorschaubild:',errorText(e));}
+ const id=img.dataset.thumb;
+ let first=null;
+ try{first=await privateImageUrl(path);}catch(e){console.info('Vorschaubild:',errorText(e));}
+ if(!img.isConnected||imagePathForProduct(id)!==path)return;
+ await loadPictureWithFallback(img,[first,...inventoryCatalogCandidates(id)]);
 }
 function prepareInventoryThumbnails(){
  if(thumbnailObserver){thumbnailObserver.disconnect();thumbnailObserver=null;}
