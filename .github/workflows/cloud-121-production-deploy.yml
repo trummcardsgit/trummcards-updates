@@ -270,6 +270,8 @@ jobs:
             echo 'FATAL: release would delete files'; exit 1
           fi
           test -f "$worktree/cloud-updates/TrummCards-Cloud-Setup-1.0.0.exe"
+          test -f "$worktree/cloud-updates/TrummCards-Cloud-Setup-1.1.0.exe"
+          test -f "$worktree/cloud-updates/TrummCards-Cloud-Setup-1.2.0.exe"
           test -f "$worktree/cloud-updates/TrummCards-Cloud-Setup-1.2.1.exe"
           if git -C "$worktree" diff --cached --quiet; then
             echo 'No changes required'; exit 0
