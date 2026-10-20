@@ -127,15 +127,50 @@
     desktopThumbCache.set(path,{url:data.signedUrl,expires:Date.now()+240000});
     return data.signedUrl;
   }
+  function inventoryCatalogCandidates(productId,quality='low'){
+    const product=selectedProduct(productId),root=product?.catalog_image_url||'';
+    if(!/^https:\/\/assets\.tcgdex\.net\/[A-Za-z0-9/._-]+$/.test(root))return [];
+    const candidates=[root+'/'+quality+'.webp'];
+    // Same catalog card / artwork in available language mirrors; preserve set and card ID.
+    for(const lang of ['en','de','ja','fr','it']){
+      const alternate=root.replace(/^(https:\/\/assets\.tcgdex\.net\/)\w+(\/.*)$/,(_,host,suffix)=>host+lang+suffix);
+      if(alternate!==root)candidates.push(alternate+'/'+quality+'.webp');
+    }
+    if(quality==='high')candidates.push(root+'/low.webp');
+    return [...new Set(candidates)];
+  }
+  function loadPictureWithFallback(img,urls){
+    const candidates=[...new Set(urls.filter(Boolean))];
+    let cursor=0;
+    return new Promise(resolve=>{
+      function next(){
+        if(!img.isConnected){resolve(false);return;}
+        const candidate=candidates[cursor++];
+        if(!candidate){
+          img.onload=null;img.onerror=null;img.hidden=true;
+          if(img.nextElementSibling)img.nextElementSibling.hidden=false;
+          resolve(false);return;
+        }
+        img.onload=()=>{
+          img.hidden=false;
+          if(img.nextElementSibling)img.nextElementSibling.hidden=true;
+          resolve(true);
+        };
+        img.onerror=next;
+        img.src=candidate;
+      }
+      next();
+    });
+  }
   async function loadDesktopThumbnail(img){
     const path=productImagePath(img.dataset.inventoryThumb);
     if(!path||!img.isConnected)return;
-    try{
-      const url=await productImageUrl(path);
-      if(!img.isConnected||path!==productImagePath(img.dataset.inventoryThumb))return;
-      img.src=url;img.hidden=false;
-      if(img.nextElementSibling)img.nextElementSibling.hidden=true;
-    }catch(e){console.info('Artikelbild:',e.message);}
+    const id=img.dataset.inventoryThumb;
+    let first=null;
+    try{first=await productImageUrl(path);}catch(e){console.info('Artikelbild:',e.message);}
+    if(!img.isConnected||path!==productImagePath(id))return;
+    const fallbacks=inventoryCatalogCandidates(id);
+    await loadPictureWithFallback(img,[first,...fallbacks]);
   }
   function prepareDesktopThumbnails(){
     if(desktopThumbObserver){desktopThumbObserver.disconnect();desktopThumbObserver=null;}
