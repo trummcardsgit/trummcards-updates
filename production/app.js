@@ -1,4 +1,4 @@
-/* TrummCards Mobile Cloud PRODUCTION RC v1.2.0 – static GitHub Pages client; only a public key.
+/* TrummCards Mobile Cloud PRODUCTION RC v1.2.1 – static GitHub Pages client; only a public key.
  * Data is readable/writeable only with a Supabase JWT and the database owner RLS guard.
  * Test data ONLY. A connection is required to write; no offline operation replay.
  */
@@ -41,7 +41,7 @@ async function tableGet(table,query){return authorizedRequest('/rest/v1/'+table+
 async function apiUser(){return authorizedRequest('/auth/v1/user',{headers:{Accept:'application/json'}});}
 async function checkAccount(){const u=await apiUser();if(!u?.id)throw Error('Anmeldung nicht erkannt.');const allow=await rpc('tc_is_authorized');if(allow!==true)throw Error('Dieses Benutzerkonto ist nicht für TrummCards freigeschaltet.');if(session)session.user=u;localStorage.setItem(STORE,JSON.stringify(session));return u;}
 async function login(event){event.preventDefault();const form=event.currentTarget;const btn=$('signInBtn');btn.disabled=true;clearNotice();try{const email=val(form,'email'),password=val(form,'password');const data=await raw(apiBase()+'/auth/v1/token?grant_type=password',{method:'POST',headers:{...API_HEADERS,apikey:KEY},body:JSON.stringify({email,password})});persistSession(data);const u=await checkAccount();f(form,'password').value='';$('accountEmail').textContent=u.email||'TrummCards-Konto';showApp();await refreshAll();navigate('home');notice('Angemeldet – Lagerdaten aus Supabase synchronisiert.','success');}catch(e){notice(errorText(e),'error');if(session){await signOut(false);}}finally{btn.disabled=false;}}
-async function signOut(goLogin=true){if(session){try{await authorizedRequest('/auth/v1/logout',{method:'POST'});}catch{}}clearSession();state={products:[],inventory:[],lots:[],sales:[],images:[],productImages:[],shipments:[],feeProfiles:[],cashEntries:[]};clearThumbnailCache();imageObjects.forEach(u=>URL.revokeObjectURL(u));imageObjects=[];showLogin();if(goLogin)notice('Du wurdest abgemeldet.','success');}
+async function signOut(goLogin=true){if(session){try{await authorizedRequest('/auth/v1/logout',{method:'POST'});}catch{}}clearSession();state={products:[],inventory:[],lots:[],sales:[],images:[],productImages:[],shipments:[],feeProfiles:[],cashEntries:[]};clearThumbnailCache();recoveredCatalogImages.clear();recoveringCatalogImages.clear();imageObjects.forEach(u=>URL.revokeObjectURL(u));imageObjects=[];showLogin();if(goLogin)notice('Du wurdest abgemeldet.','success');}
 function showPage(name){const allowed=['home','article','purchase','sale','sales','photos','finance','carddex','more'];if(!allowed.includes(name))name='home';activePage=name;for(const id of allowed)$('page-'+id).hidden=id!==name;for(const btn of document.querySelectorAll('[data-go]'))btn.classList.toggle('active',btn.dataset.go===name);const titles={home:'Übersicht',article:'Artikel',purchase:'Einkauf',sale:'Verkauf',sales:'Buchungen',photos:'Artikelbilder',finance:'Finanzen',carddex:'KartenDex',more:'Einstellungen'};$('screenTitle').textContent=titles[name];window.scrollTo({top:0,behavior:'instant'});if(name==='photos')renderPhotos().catch(e=>notice(errorText(e),'error'));if(name==='finance')financeUI11?.render();}
 function navigate(name){if(name==='article'&&activePage!=='article')resetArticle();showPage(name);}
 function productById(id){return state.products.find(p=>p.id===id);}
@@ -66,6 +66,21 @@ function renderData(){const {products,inventory,sales,lots}=state;
  renderProducts();renderHistory();const name=p=>p.name+' · '+(p.sku||'ohne SKU');updateOptions(f($('purchaseForm'),'product'),products,name,'Artikel wählen');updateOptions(f($('saleForm'),'product'),products.filter(p=>available(p.id)>0),p=>p.name+' ('+available(p.id)+' Stk.)','Artikel mit Bestand wählen');updateOptions(f($('photoForm'),'lot'),lots,l=>productName(l.product_id)+' · '+l.bought_on+' · '+l.id.slice(0,6),'Einkauf wählen');updatePurchasePreview();updateSalePreview();renderPending();financeUI11?.render();shippingUI11?.render();feesUI11?.render();cashUI11?.render();
  }
 
+const recoveredCatalogImages=new Map(),recoveringCatalogImages=new Map();
+function recoverableProductImage(p){return !!window.TrummImageLink12?.recoverableId(p);}
+async function findInventoryCatalogImage(productId){
+ if(recoveredCatalogImages.has(productId))return recoveredCatalogImages.get(productId);
+ const product=productById(productId),id=window.TrummImageLink12?.recoverableId(product);
+ if(!id)return '';
+ if(recoveringCatalogImages.has(productId))return recoveringCatalogImages.get(productId);
+ const task=(async()=>{
+  const result=await window.TrummImageLink12.resolve({catalog:window.TrummCatalog11,id,language:product.language});
+  if(result&&productById(productId)===product)recoveredCatalogImages.set(productId,result.root);
+  return result?.root||'';
+ })();
+ recoveringCatalogImages.set(productId,task);
+ try{return await task;}finally{recoveringCatalogImages.delete(productId);}
+}
 function imagePathForProduct(productId){
  const hero=state.productImages.find(i=>i.product_id===productId);
  if(hero)return hero.storage_path;
@@ -73,7 +88,7 @@ function imagePathForProduct(productId){
  const ownPhoto=state.images.find(i=>lotIds.has(i.lot_id))?.storage_path;
  if(ownPhoto)return ownPhoto;
  const catalog=productById(productId)?.catalog_image_url||'';
- return /^https:\/\/assets\.tcgdex\.net\/[A-Za-z0-9/._-]+$/.test(catalog)?catalog:null;
+ return /^https:\/\/assets\.tcgdex\.net\/[A-Za-z0-9/._-]+$/.test(catalog)?catalog:(recoveredCatalogImages.get(productId)||null);
 }
 function filteredInventory11(){
  const term=$('search').value.trim().toLocaleLowerCase('de');
@@ -113,7 +128,7 @@ function renderProducts(){
   const avgCost=Number(inv?.available_qty||0)>0?Number(inv.remaining_cost)/Number(inv.available_qty):null;
   const market=p.market_price_eur==null?null:Number(p.market_price_eur);
   const estimate=market==null?'':'<small>Marktwert*: '+euro(market)+(avgCost==null?'':' · Differenz '+euro(market-avgCost)+' vor Gebühren/St.')+'</small>';
-  const thumb=imagePathForProduct(p.id)?
+  const thumb=(imagePathForProduct(p.id)||recoverableProductImage(p))?
    '<button type="button" class="list-image-button" data-photo-open="'+p.id+'" title="Artikelbild vergrößern"><img data-thumb="'+p.id+'" alt="Bild von '+esc(p.name)+'" loading="eager" decoding="async" width="64" height="74" hidden><span class="image-placeholder" aria-hidden="true">▧</span></button>':
    '<div class="list-image-button" aria-label="Noch kein Artikelbild"><span class="image-placeholder">▧</span></div>';
   return '<div class="list-card">'+thumb+'<div class="item-main"><strong>'+esc(p.name)+'</strong><small>'+esc(p.set_name||'Ohne Set')+(p.card_number?' · Nr. '+esc(p.card_number):'')+' · '+esc(p.sku||'ohne SKU')+'</small>'+(p.storage_location?'<small>📦 '+esc(p.storage_location)+'</small>':'')+estimate+'<button type="button" class="tiny-btn" data-edit="'+p.id+'">Bearbeiten</button> <button type="button" class="tiny-btn" data-vinted="'+p.id+'">Vinted</button></div><div class="item-end"><b>'+Number(inv?.available_qty||0)+' Stk.</b><small>'+euro(inv?.remaining_cost||0)+'</small></div></div>';
@@ -141,13 +156,17 @@ async function privateImageUrl(path,quality='low'){
  try{return await task;}finally{thumbnailLoading.delete(path);}
 }
 async function fillThumbnail(img){
- const path=imagePathForProduct(img.dataset.thumb);
- if(!path||!img.isConnected)return;
+ const id=img.dataset.thumb;
+ let path=imagePathForProduct(id);
+ if(!img.isConnected)return;
  try{
+  if(!path)path=await findInventoryCatalogImage(id);
+  if(!path||!img.isConnected)return;
   const url=await privateImageUrl(path);
-  if(!img.isConnected||imagePathForProduct(img.dataset.thumb)!==path)return;
-  img.src=url;img.hidden=false;
-  if(img.nextElementSibling)img.nextElementSibling.hidden=true;
+  if(!img.isConnected||imagePathForProduct(id)!==path)return;
+  img.onload=()=>{if(img.isConnected){img.hidden=false;if(img.nextElementSibling)img.nextElementSibling.hidden=true;}};
+  img.onerror=()=>{img.hidden=true;if(img.nextElementSibling)img.nextElementSibling.hidden=false;};
+  img.src=url;
  }catch(e){console.info('Vorschaubild:',errorText(e));}
 }
 function prepareInventoryThumbnails(){

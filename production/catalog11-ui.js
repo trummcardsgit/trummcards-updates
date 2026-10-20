@@ -37,7 +37,7 @@
      statusText('Kartendaten manuell geändert – Katalogzuordnung und Katalogbild entfernt. Eigene Fotos bleiben unverändert.');
    }
    form.addEventListener('input',e=>{
-     if(['name','set_name','card_number','language'].includes(e.target?.name))invalidateOnManualChange();
+     if(['set_name','card_number','language'].includes(e.target?.name))invalidateOnManualChange();
    });
    function renderCards(cards){
      results.replaceChildren();
@@ -89,20 +89,24 @@
        const lang=$('catalogSearchLanguage').value;
        const detail=await catalog.getPokemonCard({id,language:lang,signal:selectionController.signal});
        if(rev!==selectionRevision)return;
+       // Prefer a verified actual image. An English/German fallback is allowed
+       // without overwriting the card's original language or identity.
+       const linked=await window.TrummImageLink12?.resolve({catalog,id:detail.id,language:lang,imageCandidate:detail.imageCandidate});
+       if(rev!==selectionRevision)return;
        const set=(field,value)=>{const input=form.elements.namedItem(field);if(input)input.value=String(value||'');};
        set('name',detail.name);set('set_name',detail.setName);set('card_number',detail.localId);
        set('rarity',detail.rarity);set('catalog_card_id',detail.id);
        const languages={de:'Deutsch',en:'Englisch',ja:'Japanisch',it:'Italienisch'};
        set('language',languages[lang]);
-       // Only a host-whitelisted URL is persisted; no third-party image is copied.
-       const low=catalogUrl(detail.imageCandidate);
-       set('catalog_image_url',low?detail.imageCandidate:'');
+       // Store only a successfully loaded catalog image root.
+       const low=catalogUrl(linked?.root);
+       set('catalog_image_url',linked?.root||'');
        window.TrummMarketInstance11?.applyCatalog(detail);
        const img=$('catalogSelectedImage');
        selected.hidden=false;
        if(low){img.src=low;img.hidden=false;}else{img.hidden=true;img.removeAttribute('src');}
        $('catalogSelectedInfo').textContent=detail.name+' | '+detail.setName+' | Nr. '+detail.localId+' | '+(detail.rarity||'Ohne Seltenheit');
-       statusText(low?'Karte und Katalogbild verknüpft. Beim Speichern erscheint das Bild automatisch im Lager; eigene Fotos haben Vorrang.':
+       statusText(low?'Karte und '+(linked?.language!==lang?'Ersatzbild':'Katalogbild')+' verknüpft. Beim Speichern erscheint das Bild automatisch im Lager; eigene Fotos haben Vorrang.':
          'Kartendaten übernommen. Für diese Karte ist kein Katalogbild verfügbar.');
        form.elements.namedItem('name')?.focus();
      }catch(err){
