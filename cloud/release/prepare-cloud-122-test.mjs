@@ -32,7 +32,7 @@ change(desk+'/package.json',s=>{
  const p=JSON.parse(s);
  if(p.build.appId!=='at.trummcards.cloudproduction'||p.version!=='0.9.0')throw Error('Unexpected Windows baseline');
  p.name='trummcards-cloud-test122';p.version=VERSION;p.description='TrummCards Cloud 1.2.2 TEST on existing TEST Supabase';
- p.build.appId='at.trummcards.cloudtest1222';p.build.productName='TrummCards Cloud 1.2.2 TEST';
+ p.build.appId='at.trummcards.cloudtest122';p.build.productName='TrummCards Cloud 1.2.2 TEST';
  p.build.nsis.shortcutName='TrummCards Cloud 1.2.2 TEST';
  p.build.artifactName='TrummCards-Cloud-122-TEST-Setup-1.2.2-test.1.exe';
  p.build.publish=[{provider:'generic',url:'https://example.invalid/test122-no-updates/'}];
@@ -76,6 +76,6 @@ for(const name of ['carddex12.js','vinted12.js']){
  if(!read(desk+'/src/index.html').includes(name))throw Error('TEST Windows module missing: '+name);
 }
 const p=JSON.parse(read(desk+'/package.json'));
-if(p.build.appId!=='at.trummcards.cloudtest1222'||p.build.publish[0].url.includes('cloud-updates')||
+if(p.build.appId!=='at.trummcards.cloudtest122'||p.build.publish[0].url.includes('cloud-updates')||
  !read(desk+'/main.cjs').includes('const UPDATE_FEED_ENABLED=false;'))throw Error('TEST Windows app identity/updater not safe');
 console.log('TEST 1.2.2 isolated: '+changed.length+' files use TEST project; no PROD identifiers in affected clients.');
