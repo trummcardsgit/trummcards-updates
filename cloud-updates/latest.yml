@@ -1,8 +1,8 @@
-version: 1.2.1
+version: 1.2.2
 files:
-  - url: TrummCards-Cloud-Setup-1.2.1.exe
-    sha512: O/WsSObjvgjGJMSDkS2qqslL/WYgo1syiAJ14lN7TnFe+sdbu1R81bbQjFAjx1h4qNDuKZ1yV6SXM/tZos5KLg==
-    size: 85740298
-path: TrummCards-Cloud-Setup-1.2.1.exe
-sha512: O/WsSObjvgjGJMSDkS2qqslL/WYgo1syiAJ14lN7TnFe+sdbu1R81bbQjFAjx1h4qNDuKZ1yV6SXM/tZos5KLg==
-releaseDate: '2026-10-20T09:55:01.729Z'
+  - url: TrummCards-Cloud-Setup-1.2.2.exe
+    sha512: kn5xEadRKmxJe56H5YgSeb/jZLU/0d4kBg2r7uH0Q57sxnmR83Htc0yh3BkkGtry12T/H1QUjIqcUEvp6u0PYw==
+    size: 85739426
+path: TrummCards-Cloud-Setup-1.2.2.exe
+sha512: kn5xEadRKmxJe56H5YgSeb/jZLU/0d4kBg2r7uH0Q57sxnmR83Htc0yh3BkkGtry12T/H1QUjIqcUEvp6u0PYw==
+releaseDate: '2026-10-20T10:50:21.168Z'

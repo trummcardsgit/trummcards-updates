@@ -2,7 +2,7 @@
   "id": "./",
   "name": "TrummCards Cloud",
   "short_name": "TC Cloud",
-  "description": "TrummCards Cloud 1.2.1 – synchronisierte Pokémon-Karten-Lagerverwaltung",
+  "description": "TrummCards Cloud 1.2 – synchronisierte Pokémon-Karten-Lagerverwaltung",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
