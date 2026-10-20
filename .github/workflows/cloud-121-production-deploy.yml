@@ -54,7 +54,7 @@ jobs:
             # Verify executable sources even if subsequent documentation changed.
             if git diff --quiet "$successful" "$expected" -- \
               cloud/desktop-production cloud/mobile-production cloud/features \
-              cloud/release/inventory-image121.test.mjs cloud/release/carddex-vinted12.test.mjs \ \
+              cloud/release/inventory-image121.test.mjs cloud/release/carddex-vinted12.test.mjs \
               .github/workflows/cloud-121-image-tests.yml; then
               matched="$successful"
               break
