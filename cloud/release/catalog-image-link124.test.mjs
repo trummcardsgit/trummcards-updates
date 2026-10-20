@@ -34,7 +34,7 @@ for(const dir of dirs){
   const conflict={...linked,id:'other',catalog_card_id:'OTHER-168',catalog_image_url:'https://assets.tcgdex.net/ja/SV/OTHER/168'};
   assert.equal(infer(nidoking,[linked,conflict]),'');
  });
- test(dir+': preserve user's card linkage after changing only display name',()=>{
+ test(dir+': preserve card linkage after changing only display name',()=>{
   const ui=fs.readFileSync(dir+'catalog11-ui.js','utf8');
   assert.match(ui,/\['set_name','card_number','language'\]\.includes\(e\.target\?\.name\)/);
   assert.doesNotMatch(ui,/\['name','set_name','card_number','language'\]\.includes/);
