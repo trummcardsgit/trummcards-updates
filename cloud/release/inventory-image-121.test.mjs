@@ -33,7 +33,7 @@ for(const file of ['cloud/desktop-production/src/app.js','cloud/mobile-productio
   assert.deepEqual(seen,['broken','working']);
  });
  test(path+': inventory and enlarged-view both use fallback',()=>{
-  assert.match(script,/loadPictureWithFallback\(img,\[first,\.\.\.inventoryCatalogCandidates\(id\)\]\)/);
+  assert.match(script,/loadPictureWithFallback\(img,\[first,\.\.\.(?:fallbacks|inventoryCatalogCandidates\(id\))\]\)/);
   assert.match(script,/loadPictureWithFallback\([^\n]*\[first,\.\.\.inventoryCatalogCandidates\(id,'high'\)\]\)/);
  });
 }
