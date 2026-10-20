@@ -97,3 +97,15 @@ Version 1.2 TEST mit eigenem KartenDex-Menü, Pokémon-Namenssuche mit Blättern
 - Der PWA-Service-Worker enthält das neue KartenDex-JavaScript mit Version `1.2.0-test.9` und benötigt keine zweite Platzhalterbilddatei mehr beim Installieren. Separate lokale WebP-Datei bleibt als Windows-Paketbestandteil verfügbar.
 - Version `1.2.0-test.9` ist unter `gh-pages/test-12/` als Quell-Deployment angelegt. Die endgültige Veröffentlichung durch GitHub Pages und der Windows-Test-Build müssen anhand der GitHub-Actions-Ergebnisse geprüft werden; einen wartenden Pages-Build nicht als abgeschlossen markieren.
 - TEST-Datenbank, alle Echtdaten sowie Cloud-Production 1.1 unverändert.
+
+
+## 20.10.2026 – Cloud 1.2.3: Bestand ändern und Artikel entfernen (Entwicklung)
+- Zwei Funktionen für die Lagerübersicht in **Windows und PWA**: `Bestand ändern` und `Entfernen`, jeweils mit Nachfrage und Bestätigung.
+- Mengenänderungen werden serverseitig als atomare FIFO-Bestandskorrekturen geplant: Der Benutzer bestätigt den vorherigen Bestand, negative Bestände werden verhindert, Änderungen erhalten einen Grund und eine Audit-Historie.
+- Artikel entfernen bedeutet **archivieren statt Datenbankeinträge unwiderruflich löschen**. Verbleibender Bestand wird ausgebucht; Käufe, Verkäufe, Bilder und Finanznachweise bleiben zugeordnet.
+- Bei späterer Bestandsrückkehr (etwa durch Verkaufsstorno) wird der archivierte Artikel automatisch reaktiviert.
+- Korrektur-Zugangsposten werden in Finanzauswertungen und CSV ausdrücklich nicht als tatsächliche Einkaufsausgaben mitgezählt.
+- Neue Änderungen sind auf den zuletzt bereitgestellten Bildkorrekturen aufgebaut: Branch `feature/cloud-1.2.3-stock-management` (Basis `fix/cloud-1.2.2-inventory-images`).
+- Die automatischen Tests für Lagerkorrekturen, Archivierung, Finanzlogik, bisherige Bilder und den isolierten TEST-Client sind erfolgreich: [TEST-Lauf 39415390223](https://github.com/trummcardsgit/trummcards-updates/actions/runs/39415390223).
+- **Offen / noch nicht live:** Die neue Datenbankmigration `cloud/supabase/migrations/20261020000100_stock_corrections_archive.sql` ist im Repository, konnte aber aufgrund einer Sicherheitsblockierung nicht auf Supabase TEST ausgeführt werden. Daher existiert noch keine nutzbare veröffentlichte Version mit diesen beiden Funktionen. Die Supabase-PRODUCTION-Datenbank bleibt unangetastet.
+- Nächste Freigaben: Migration in TEST durch autorisierten Datenbankadministrator prüfen und ausführen; Bestandsänderung, Lösch-Sonderfälle, Verkaufsstorno, PWA/Windows synchron und Mehrfachbuchung praktisch testen; danach mit Backup/Restore und ausdrücklicher Freigabe über Produktion entscheiden.
