@@ -194,3 +194,13 @@ Version 1.2 TEST mit eigenem KartenDex-Menü, Pokémon-Namenssuche mit Blättern
 - Die separate TEST-PWA unter https://trummcardsgit.github.io/trummcards-updates/desktop-test/ greift ausschließlich auf Supabase TEST `cpycfxolqpidfjbhhsmr` zu; eigene Session-/Service-Worker-Schlüssel. PRODUCTION-PWA und Windows-Updater bleiben bei 1.2.4.
 - Isolierter Desktop-PWA-Build und GitHub-Actions-Publish [39452724804](https://github.com/trummcardsgit/trummcards-updates/actions/runs/39452724804) erfolgreich; Folge GitHub-Pages-Rebuild wird separat geprüft.
 - Roadmap und Testprotokoll: `cloud/release/ROADMAP_RESPONSIVE_DESKTOP_PWA_125.md`. **Nächster Schritt**: Desktop-PWA auf Windows in Chrome mit 1280/1920px-Bildschirm testen, alle Lager-, Einkaufs-/Verkaufs-, KartenDex- und Upload-Funktionen gegen bisherige Electron-Anwendung vergleichen; nach Abnahme einheitliche Geschäftslogik statt Doppelpflege implementieren.
+
+
+### 20.10.2026 – Desktop-PWA 1.2.5 TEST: Menüpunkt „Buchungen“ wiederhergestellt
+- Benutzer findet die separate responsive Desktop-PWA gelungen, möchte aber den früheren Windows-Menüeintrag „Buchungen“ wiederhaben.
+- Ursache: Die vollständige PWA-Unterseite `page-sales` war bereits vorhanden und wurde durch `showPage('sales')` unterstützt; im Desktop-Seitenmenü gab es jedoch keinen `data-go="sales"`-Navigationsknopf.
+- Korrektur: Sidebar-Schaltfläche „▤ Buchungen“ zwischen Verkauf und KartenDex. Vorhandene Unterseite zeigt Verkäufe, Storno, Versandverwaltung, Einkaufslosen und Geldfluss-Verknüpfungen. Keine neue Datenbank- oder Buchungslogik nötig.
+- Mobile Ansicht bleibt bei sechs Navigationstasten, zusätzliche Buchungen-Verknüpfung unter „Mehr → Buchungen & Auswertungen“.
+- Neuer TEST-Build `1.2.5-desktop-test.2` mit eigener SW-Cachekennung `trummcards-mobile-desktop125-shell-v2-1210` erfolgreich isoliert unter https://trummcardsgit.github.io/trummcards-updates/desktop-test/ ausgerollt.
+- Automatische Regressionstests `desktop125-bookings-menu.test.mjs` und vorhandene Bild-/Lagerfunktionstests erfolgreich, GitHub Actions [39453872724](https://github.com/trummcardsgit/trummcards-updates/actions/runs/39453872724). Live-Pages-Branch geprüft: Menübutton sichtbar im HTML; CSS blendet Button nur unter Desktop-Breite ein; `app.js` greift ausschließlich auf Supabase TEST zu.
+- Produktivversion Windows/PWA unverändert **1.2.4**. Benutzerabnahme der tatsächlichen Desktop-Navigation noch ausstehend.
