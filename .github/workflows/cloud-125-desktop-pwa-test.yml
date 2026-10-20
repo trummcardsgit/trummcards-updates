@@ -51,11 +51,12 @@ jobs:
           grep -Fq 'trummcards-mobile-desktop125-shell-' cloud/mobile-production/web/sw.js
           grep -Fq 'Desktop-PWA experiment 1.2.5' cloud/mobile-production/web/styles.css
           grep -Fq 'class="desktop-bookings-link"' cloud/mobile-production/web/index.html
+          grep -Fq '.bottom-nav button.desktop-bookings-link{display:flex}' cloud/mobile-production/web/styles.css
           grep -Fq 'data-go="sales"' cloud/mobile-production/web/index.html
-          grep -Fq 'trummcards-mobile-desktop125-shell-v2-1210' cloud/mobile-production/web/sw.js
+          grep -Fq 'trummcards-mobile-desktop125-shell-v3-1211' cloud/mobile-production/web/sw.js
           grep -Fq 'grid-template-columns:238px' cloud/mobile-production/web/styles.css
-          grep -Fq 'catalog11.js?v=1.2.5-desktop-test.2' cloud/mobile-production/web/index.html
-          grep -Fq 'app.js?v=1.2.5-desktop-test.2' cloud/mobile-production/web/index.html
+          grep -Fq 'catalog11.js?v=1.2.5-desktop-test.3' cloud/mobile-production/web/index.html
+          grep -Fq 'app.js?v=1.2.5-desktop-test.3' cloud/mobile-production/web/index.html
           grep -Fq 'inferCatalogImageRoot' cloud/mobile-production/web/app.js
           if grep -Rq -e 'hgdexyvtgfffcasfpjyu' -e 'sb_publishable_JDdbnEq3muaOhp3LsNhBkQ_eJZ0uYEf' cloud/mobile-production/web; then
             echo 'FATAL: PRODUCTION credentials/reference in desktop TEST PWA'; exit 1
