@@ -1,0 +1,29 @@
+name: TrummCards 1.2.1 - Inventory Image Fix TEST
+on:
+  push:
+    branches: [fix/cloud-1.2.1-inventory-images]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: cloud-121-image-test
+  cancel-in-progress: true
+jobs:
+  linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate both clients and inventory fallback
+        run: |
+          node --check cloud/desktop-production/src/app.js
+          node --check cloud/mobile-production/web/app.js
+          node --test cloud/release/inventory-image-121.test.mjs
+          node --test cloud/release/carddex-vinted12.test.mjs
+      - name: No production write
+        run: |
+          grep -q 'inventoryCatalogCandidates' cloud/desktop-production/src/app.js
+          grep -q 'inventoryCatalogCandidates' cloud/mobile-production/web/app.js
+          git status --short
