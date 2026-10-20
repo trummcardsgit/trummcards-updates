@@ -1,0 +1,69 @@
+name: TrummCards Cloud 1.2.3 - Windows TEST Installer
+on:
+  workflow_dispatch:
+  push:
+    branches: [feature/cloud-1.2.3-stock-management]
+    paths:
+      - 'cloud/desktop-production/**'
+      - 'cloud/release/prepare-cloud-123-test.mjs'
+      - '.github/workflows/cloud-123-windows-test.yml'
+permissions:
+  contents: read
+concurrency:
+  group: trummcards-123-windows-test
+  cancel-in-progress: true
+jobs:
+  windows-test:
+    name: Build standalone Windows TEST without touching PRODUCTION
+    if: github.repository == 'trummcardsgit/trummcards-updates' && github.ref == 'refs/heads/feature/cloud-1.2.3-stock-management'
+    runs-on: windows-latest
+    env:
+      TRUMMCARDS_TEST123_ENABLE: I_ACKNOWLEDGE_TEST_ONLY
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Prepare distinct TEST-only identity and database
+        shell: pwsh
+        run: |
+          node --check cloud/release/prepare-cloud-123-test.mjs
+          node cloud/release/prepare-cloud-123-test.mjs
+          if ($LASTEXITCODE -ne 0) { throw 'TEST preparation failed' }
+          $app = Get-Content 'cloud/desktop-production/src/app.js' -Raw
+          $main = Get-Content 'cloud/desktop-production/main.cjs' -Raw
+          $pkg = Get-Content 'cloud/desktop-production/package.json' -Raw | ConvertFrom-Json
+          if ($app.Contains('hgdexyvtgfffcasfpjyu') -or -not $app.Contains('cpycfxolqpidfjbhhsmr')) { throw 'Wrong database target' }
+          if (-not $main.Contains('const UPDATE_FEED_ENABLED=false;')) { throw 'Updater must remain disabled' }
+          if ($pkg.build.appId -ne 'at.trummcards.cloudtest123') { throw 'Wrong Windows TEST app identity' }
+          if ($pkg.build.publish[0].url -ne 'https://example.invalid/test123-no-updates/') { throw 'Unsafe updater feed' }
+          if (-not $app.Contains('tc_archive_product') -or -not $app.Contains('tc_adjust_inventory')) { throw 'Stock functionality missing' }
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install Windows build dependencies
+        shell: pwsh
+        run: |
+          python -m pip install --disable-pip-version-check pillow
+          if ($LASTEXITCODE -ne 0) { throw 'Pillow unavailable' }
+          Push-Location cloud/desktop-production
+          npm install --no-audit --no-fund
+          if ($LASTEXITCODE -ne 0) { throw 'npm install failed' }
+          Pop-Location
+      - name: Compile and package isolated Windows TEST installer
+        shell: pwsh
+        working-directory: cloud/desktop-production
+        run: |
+          npm run dist
+          if ($LASTEXITCODE -ne 0) { throw 'Windows TEST installer build failed' }
+          $installer = 'dist/TrummCards-Cloud-123-TEST-Setup-1.2.3-test.1.exe'
+          if (-not (Test-Path $installer)) { throw 'Expected TEST installer was not generated' }
+          if ((Get-Item $installer).Length -lt 10000000) { throw 'Installer unexpectedly small' }
+          Write-Host 'TEST package successfully built; nothing published to cloud-updates or PRODUCTION'
+      - name: Keep installer for authenticated manual download only
+        uses: actions/upload-artifact@v4
+        with:
+          name: TrummCards-Cloud-123-TEST-Windows
+          path: cloud/desktop-production/dist/TrummCards-Cloud-123-TEST-Setup-1.2.3-test.1.exe
+          retention-days: 14
+          if-no-files-found: error

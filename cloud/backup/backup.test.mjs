@@ -107,3 +107,36 @@ test('Cloud 1.1 encrypted archive includes shipment metadata; old v1 backups rem
   assert.throws(()=>validateSnapshot(withoutShipments),/Backup-Tabelle fehlt/);
  }finally{await rm(dir,{recursive:true,force:true});}
 });
+
+test('Cloud 1.2.3 V3 backup captures correction journal and prevents missing/corrupted entries',async()=>{
+ const v3=sample();
+ v3.format='trummcards-cloud-backup-v3';
+ v3.tables.tc_sale_shipments=[];
+ v3.tables.tc_platform_fee_profiles=[];
+ v3.tables.tc_cash_entries=[];
+ v3.tables.tc_inventory_corrections=[{
+  id:1,owner_id:owner,product_id:pid,action:'adjust',
+  previous_qty:3,new_qty:2,cost_delta:-9.50,
+  reason:'Inventurkorrektur',created_at:'2026-10-20T12:00:00Z'
+ }];
+ const validated=validateSnapshot(v3);
+ assert.equal(validated.counts.tc_inventory_corrections,1);
+ const v=createVerifier();
+ v.accept({type:'snapshot',project:PROD_REF,data:v3});
+ const image=Buffer.from('v3-private-picture-synthetic');
+ v.accept({type:'image',path:v3.tables.tc_product_images[0].storage_path,
+  mime:'image/jpeg',bytes:image.length,sha256:sha256(image),base64:image.toString('base64')});
+ v.accept({type:'end',imageCount:1});
+ assert.equal(v.report().tables.tc_inventory_corrections,1);
+ const oldV2=structuredClone(v3);oldV2.format='trummcards-cloud-backup-v2';
+ delete oldV2.tables.tc_inventory_corrections;
+ assert.equal(validateSnapshot(oldV2).counts.tc_cash_entries,0);
+ const missing=structuredClone(v3);delete missing.tables.tc_inventory_corrections;
+ assert.throws(()=>validateSnapshot(missing),/Backup-Tabelle fehlt/);
+ const wrongOwner=structuredClone(v3);
+ wrongOwner.tables.tc_inventory_corrections[0].owner_id='ffffffff-ffff-ffff-ffff-ffffffffffff';
+ assert.throws(()=>validateSnapshot(wrongOwner),/Eigentümer/);
+ const dangling=structuredClone(v3);
+ dangling.tables.tc_inventory_corrections[0].product_id='ffffffff-ffff-ffff-ffff-ffffffffffff';
+ assert.throws(()=>validateSnapshot(dangling),/Verwaister Verweis/);
+});

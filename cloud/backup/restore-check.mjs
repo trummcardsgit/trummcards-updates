@@ -45,7 +45,9 @@ try{
   'cloud/release/sql/cloud11_sale_shipments_staging.sql',
   'cloud/release/sql/cloud11_fee_profiles_staging.sql',
   'cloud/release/sql/cloud11_cash_entries_staging.sql',
-  'cloud/release/sql/cloud11_backup_snapshot_v2_staging.sql'
+  'cloud/release/sql/cloud11_backup_snapshot_v2_staging.sql',
+  'cloud/supabase/migrations/20261020000100_stock_corrections_archive.sql',
+  'cloud/release/sql/cloud123_backup_snapshot_v3_staging.sql'
  ];
  const client=new Client({connectionString:connection,connectionTimeoutMillis:10000});
  await client.connect();
@@ -63,9 +65,19 @@ try{
     if(columns.some(k=>!/^[a-z][a-z0-9_]*$/.test(k)))throw Error('Ungültiger Spaltenname.');
     const col=columns.map(k=>'"'+k+'"').join(',');
     const marks=columns.map((_,i)=>'$'+(i+1)).join(',');
-    const identity=name==='tc_stock_movements'?' OVERRIDING SYSTEM VALUE':'';
+    const identity=['tc_stock_movements','tc_inventory_corrections'].includes(name)?' OVERRIDING SYSTEM VALUE':'';
     await client.query('INSERT INTO public."'+name+'" ('+col+')'+identity+' VALUES ('+marks+')',
       columns.map(k=>row[k]));
+   }
+  }
+  // Explicit identity inserts must advance sequences to protect subsequent writes.
+  for(const table of ['tc_stock_movements','tc_inventory_corrections']){
+   const seq=await client.query('SELECT pg_get_serial_sequence($1,$2) AS name',['public.'+table,'id']);
+   if(seq.rows[0]?.name){
+    const stats=await client.query('SELECT max(id)::bigint AS last_id,count(*)::int AS count FROM public."'+table+'"');
+    const hasRows=stats.rows[0].count>0;
+    await client.query('SELECT setval($1::regclass,$2::bigint,$3::boolean)',
+      [seq.rows[0].name,hasRows?stats.rows[0].last_id:1,hasRows]);
    }
   }
   for(const [imagePath,value] of saved){

@@ -97,3 +97,72 @@ Version 1.2 TEST mit eigenem KartenDex-Menü, Pokémon-Namenssuche mit Blättern
 - Der PWA-Service-Worker enthält das neue KartenDex-JavaScript mit Version `1.2.0-test.9` und benötigt keine zweite Platzhalterbilddatei mehr beim Installieren. Separate lokale WebP-Datei bleibt als Windows-Paketbestandteil verfügbar.
 - Version `1.2.0-test.9` ist unter `gh-pages/test-12/` als Quell-Deployment angelegt. Die endgültige Veröffentlichung durch GitHub Pages und der Windows-Test-Build müssen anhand der GitHub-Actions-Ergebnisse geprüft werden; einen wartenden Pages-Build nicht als abgeschlossen markieren.
 - TEST-Datenbank, alle Echtdaten sowie Cloud-Production 1.1 unverändert.
+
+
+## 20.10.2026 – Cloud 1.2.3: Bestand ändern und Artikel entfernen (Entwicklung)
+- Zwei Funktionen für die Lagerübersicht in **Windows und PWA**: `Bestand ändern` und `Entfernen`, jeweils mit Nachfrage und Bestätigung.
+- Mengenänderungen werden serverseitig als atomare FIFO-Bestandskorrekturen geplant: Der Benutzer bestätigt den vorherigen Bestand, negative Bestände werden verhindert, Änderungen erhalten einen Grund und eine Audit-Historie.
+- Artikel entfernen bedeutet **archivieren statt Datenbankeinträge unwiderruflich löschen**. Verbleibender Bestand wird ausgebucht; Käufe, Verkäufe, Bilder und Finanznachweise bleiben zugeordnet.
+- Bei späterer Bestandsrückkehr (etwa durch Verkaufsstorno) wird der archivierte Artikel automatisch reaktiviert.
+- Korrektur-Zugangsposten werden in Finanzauswertungen und CSV ausdrücklich nicht als tatsächliche Einkaufsausgaben mitgezählt.
+- Neue Änderungen sind auf den zuletzt bereitgestellten Bildkorrekturen aufgebaut: Branch `feature/cloud-1.2.3-stock-management` (Basis `fix/cloud-1.2.2-inventory-images`).
+- Die automatischen Tests für Lagerkorrekturen, Archivierung, Finanzlogik, bisherige Bilder und den isolierten TEST-Client sind erfolgreich: [TEST-Lauf 39415390223](https://github.com/trummcardsgit/trummcards-updates/actions/runs/39415390223).
+- **Offen / noch nicht live:** Die neue Datenbankmigration `cloud/supabase/migrations/20261020000100_stock_corrections_archive.sql` ist im Repository, konnte aber aufgrund einer Sicherheitsblockierung nicht auf Supabase TEST ausgeführt werden. Daher existiert noch keine nutzbare veröffentlichte Version mit diesen beiden Funktionen. Die Supabase-PRODUCTION-Datenbank bleibt unangetastet.
+- Nächste Freigaben: Migration in TEST durch autorisierten Datenbankadministrator prüfen und ausführen; Bestandsänderung, Lösch-Sonderfälle, Verkaufsstorno, PWA/Windows synchron und Mehrfachbuchung praktisch testen; danach mit Backup/Restore und ausdrücklicher Freigabe über Produktion entscheiden.
+
+
+### 20.10.2026 – Freigabeprüfung und 1.2.3-Staging
+- Benutzer wünscht Veröffentlichung als Update. Live-Feed `gh-pages/cloud-updates/latest.yml` wurde read-only überprüft: **1.2.2** ist weiterhin aktuell.
+- Beide Datenbanken geprüft: Weder TEST noch Production haben `tc_adjust_inventory`, `tc_archive_product`, `tc_inventory_corrections` oder `tc_products.archived_at`. Daher ist 1.2.3 noch nicht funktionsfähig und **darf nicht live geschaltet werden**.
+- Production-Datensätze vor der Veröffentlichung nachgezählt: 14 Artikel, 15 Einkaufsposten, 1 Verkauf und 11 Artikelbild-Datensätze. Keine Daten verändert.
+- Vorbereitete Release-Staging-Datei: `cloud/release/prepare-cloud-123-production.mjs` mit unveränderter Windows-App-ID, identischem Cloud-Autoupdate-Feed und PWA-Cache-Version `v123`.
+- Isolierter CI-Probelauf ohne Deployment und ohne Datenbankzugriff **erfolgreich**: https://github.com/trummcardsgit/trummcards-updates/actions/runs/39423950376
+- Der Versuch, die SQL-Migration über den verbundenen Datenbankzugang anzuwenden, wurde zuvor von einer Sicherheitsprüfung blockiert. Keine Umgehung des Blocks. Migration daher von einem autorisierten Administrator prüfen und zunächst auf TEST freigeben lassen.
+- Erst nach erfolgreichem TEST-RPC-/End-to-End-Test, frischem vollständigem PROD-Backup mit geprüftem Restore und genehmigter PROD-Migration darf 1.2.3 für PWA und Windows veröffentlicht werden.
+
+
+### 20.10.2026 – SQL-Integration erfolgreich und Backup V3 vorbereitet
+- Zunächst blieb das Deployment korrekt blockiert, da `archived_at`, `tc_inventory_corrections` und beide Lager-RPCs auf Supabase TEST und PROD noch fehlten.
+- Kritischer Syntaxfehler im SQL-Triggerterminator korrigiert (`$;` → `$$;`).
+- Neuer echter PostgreSQL-17-Integrationstest in isoliertem GitHub-Actions-Dienst: synthetische Artikel/Einkaufslose/Verkäufe, FIFO-Bestandsreduktion und -erhöhung, Prüfung veralteter Mengen, Archivierung, Erhalt der Verkaufshistorie und Reaktivierung nach Rückbuchung. Erfolgreich: https://github.com/trummcardsgit/trummcards-updates/actions/runs/39424948424
+- Backup-V3-Entwicklung hinzugefügt: `cloud/release/sql/cloud123_backup_snapshot_v3_staging.sql`, `TABLES_V3` in Validator, v3-fähiger Restore-Check inklusive Identitätssequenzen, Rückwärtskompatibilität zu V1/V2 und V3-Regressionstests. Testlauf erfolgreich: https://github.com/trummcardsgit/trummcards-updates/actions/runs/39425445172
+- Freigabedokument erstellt: `cloud/release/RELEASE_1.2.3_STOCK_MANAGEMENT.md`, mit TEST-Migration, praktischen Tests, PROD-V2-Backup + Restore, PROD-Migration, PROD-V3-Sicherung, PWA/Windows-Release-Gates und Verifikation.
+- **Noch nicht LIVE:** Supabase TEST und PRODUCTION nicht verändert. Auto-Migration über verbundenes Tool weiterhin durch Sicherheitsprüfung blockiert. Ohne fachlich autorisierte und getestete Supabase-Migration kein Produktivupdate.
+
+
+### 20.10.2026 – TEST-SQL erfolgreich und eigenständige 1.2.3-PWA veröffentlicht
+- Der Benutzer hat die geprüfte Bestandsmigration selbst in **Supabase TEST** erfolgreich angewendet.
+- Read-only verifiziert: `tc_products.archived_at`, `public.tc_inventory_corrections`, RPCs `tc_adjust_inventory`/`tc_archive_product`. RLS eingeschaltet, Owner-Policy vorhanden, zwei Reaktivierungs-Trigger vorhanden; für `anon` keine RPC-Ausführungsrechte. TEST-Daten weiterhin 8 Produkte, 5 Einkaufsposten und 2 lagernde Stück zum Prüfzeitpunkt. Noch keine archivierten Produkte oder gebuchten Korrekturen.
+- Eigenständige PWA unter `gh-pages/test-123/` veröffentlicht: https://trummcardsgit.github.io/trummcards-updates/test-123/ . TEST-Projekt `cpycfxolqpidfjbhhsmr`, eigene Session-Schlüssel, eigene Service-Worker-Cachekennung, kein Produktionsschlüssel in den TEST-Dateien.
+- Automatischer Build erfolgreich: https://github.com/trummcardsgit/trummcards-updates/actions/runs/39436348268. GitHub Pages-Build erfolgreich: https://github.com/trummcardsgit/trummcards-updates/actions/runs/39436406099.
+- **Nächster Schritt:** Im TEST einen Artikel mit Bestand anlegen/korrigieren, Bestand erhöhen und senken, Entfernen bestätigen und die Historie sowie den Bestand in Windows-/PWA-TEST vergleichen. Bei Fehlern genaue Meldung und betroffenen TEST-Artikel prüfen.
+- **Kein PRODUCTION-Release:** Echtdatenbank hat die neue Migration noch nicht erhalten; Live-Feed weiterhin 1.2.2. Erst nach validiertem Praxistest, frischer geprüfter Sicherung und genehmigter PROD-Migration das Release 1.2.3 freigeben.
+
+### 20.10.2026 – TEST durch Benutzer bestätigt, PROD-Backup erfolgreich
+- Nutzer bestätigt beide praktischen Funktionen auf Cloud 1.2.3 TEST: **Lagerbestand ändern funktioniert** und **Artikel entfernen funktioniert**.
+- Frisches, verschlüsseltes Production-Preflight-Backup erfolgreich erstellt: GitHub Actions Run [39437786068](https://github.com/trummcardsgit/trummcards-updates/actions/runs/39437786068). Archiv als GitHub Actions-Artefakt verfügbar, 30 Tage Aufbewahrung laut Workflow.
+- Echtes Wiederherstellen in isolierter PostgreSQL-17-Datenbank erfolgreich: 10 Tabellen, 11 private Bilder, 15 lagernde Stück. Stand Sicherung: 14 Artikel, 15 Einkaufsposten, 1 Verkauf, 11 Artikelbilder.
+- Die PROD-Migration ist noch NICHT ausgeführt; `tc_adjust_inventory` weiterhin nicht in Production vorhanden. Produktions-Update-Feed unverändert **1.2.2**.
+- Nächste Stufe: autorisierte Durchführung der geprüften SQL-Migration im richtigen Supabase-Production-Projekt; danach Schema-/Bestandsnachprüfung, V3-Backup-RPC/Funktionstests, neues V3-Backup mit Restore und erst danach Windows/PWA Release 1.2.3.
+
+
+### 20.10.2026 – PRODUKTION: Lagermigration erfolgreich, Backup V3 zum Abschluss vorbereitet
+- Der Benutzer bestätigte das vollständige SQL-Update auf **TrummCards Production**. Per read-only Supabase-SQL verifiziert: `tc_inventory_corrections`, `archived_at`, `tc_adjust_inventory`, `tc_archive_product`, Owner-RLS und zwei Reaktivierungstrigger vorhanden.
+- PROD-Bestand nach Migration **unverändert**: 14 Artikel, 15 Einkaufsposten, 1 Verkauf, 11 Artikelbilder, 15 lagernde Stück; Korrekturprotokoll zu diesem Zeitpunkt noch leer.
+- Produktions-Backup-RPC `tc_backup_snapshot()` war noch V2, enthielt **noch nicht** `tc_inventory_corrections`. Deshalb darf 1.2.3 noch nicht freigeschaltet werden, um die spätere Wiederherstellung der Korrekturhistorie nicht zu gefährden.
+- Backup-/Restore-Unterstützung für V1/V2/V3 in den Hauptzweig `main` integriert: GitHub PR [#8](https://github.com/trummcardsgit/trummcards-updates/pull/8), Merge `cec432deeaea17c8aad6a9f80d10034cfb1ef4cf`, erfolgreicher Test [39444132051](https://github.com/trummcardsgit/trummcards-updates/actions/runs/39444132051).
+- Abgesicherter 1.2.3-Produktions-Workflow `.github/workflows/cloud-123-production-deploy.yml` vorbereitet. Der Release benötigt ausdrücklich `GO_LIVE_123.txt`, grüne Bestands-/Bildtests, V3-kompatibles Backup in `main`, **ein frisches verschlüsseltes PROD-V3-Backup mit echtem PostgreSQL-Restore**, korrektes Windows-1.2.3-Updatemanifest und unveränderte TEST-Verzeichnisse.
+- Nächster Schritt: Autorisierter Admin muss **nur noch den geprüften V3-Snapshot-RPC** aus `cloud/release/sql/cloud123_backup_snapshot_v3_staging.sql` im SQL-Editor des PRODUCTION-Projekts ausführen. Anschließend Format und Berechtigungen per read-only Abfrage prüfen, den frischen V3-Backup-/Restore-Gate nachweisen und erst dann den Release-Marker setzen.
+- **Aktueller Live-Stand**: `cloud-updates/latest.yml` meldet weiterhin **1.2.2**. Noch kein PWA/Windows-Produktionsupdate durchgeführt.
+
+
+### 20.10.2026 – Cloud 1.2.3 PRODUKTION RELEASE ERFOLGREICH
+- Supabase PRODUCTION Backup-Format V3 vom Benutzer installiert. Per SQL-Abfrage verifiziert: `tc_backup_snapshot()` liefert V3, enthält `tc_inventory_corrections`, Zugriff für `authenticated` ja, für `anon` nein.
+- Bestand beim Datenbank-Release unverändert: 14 Artikel, 15 Einkaufsposten, 11 Artikelbilder, 15 lagernde Stück; `tc_inventory_corrections` vor erster Korrektur leer.
+- Frischer PROD-V3-Backup-Restore mit 11 Tabellen, 11 privaten Bildern und 15 lagernden Stück erfolgreich: [GitHub Run 39445501084](https://github.com/trummcardsgit/trummcards-updates/actions/runs/39445501084).
+- Der vollständige Produktions-Release-Workflow [39445829493](https://github.com/trummcardsgit/trummcards-updates/actions/runs/39445829493) lief mit grünen Source-/Featuretests, frisch verschlüsseltem V3-Backup plus lokalem PostgreSQL-17-Restore, Windows-Installer-Build und GitHub-Pages-Veröffentlichung erfolgreich durch.
+- Live-PWA: https://trummcardsgit.github.io/trummcards-updates/production/ mit Version 1.2.3 (`app.js?v=1.2.3`, `trummcards-mobile-production-shell-v123`). Die Programmbefehle `tc_adjust_inventory` und `tc_archive_product` sind im veröffentlichten Code vorhanden und schreiben in das richtige PRODUCTION-Projekt.
+- Windows-Autoupdater: `cloud-updates/latest.yml` meldet Version **1.2.3**, Installationsdatei `TrummCards-Cloud-Setup-1.2.3.exe` (ca. 85,7 MB) im bestehenden Feed; auch Installer für 1.2.2 und frühere Versionen bleiben vorhanden.
+- Erfolgreich getestete neue Funktionen: „Bestand ändern“ und „Artikel entfernen/archivieren“ für Windows und PWA. Bestehende Verkäufe, Artikel und Bilder bleiben nachvollziehbar; Bestandskorrekturen werden auditiert und in Backup V3 gesichert.
+- Produktionsfunktionen wurden nicht mit einem unkontrollierten echten Bestandswechsel getestet. Empfohlen: App/PWA öffnen und erst mit einem eigenen ungefährlichen Testartikel die Bedienung kontrollieren; danach bei Bedarf Testartikel sauber entfernen.
+- **Projektchronik erweitert; Release 1.2.3 ist LIVE.**

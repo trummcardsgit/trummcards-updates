@@ -1,0 +1,87 @@
+name: TrummCards Cloud 1.2.3 - Publish isolated TEST PWA
+on:
+  push:
+    branches: [feature/cloud-1.2.3-stock-management]
+    paths: [.github/workflows/cloud-123-test-pwa-deploy.yml]
+  workflow_dispatch:
+permissions:
+  contents: write
+  pages: write
+concurrency:
+  group: trummcards-test-123-pwa-publish
+  cancel-in-progress: false
+jobs:
+  test-only:
+    if: github.repository == 'trummcardsgit/trummcards-updates' && github.ref == 'refs/heads/feature/cloud-1.2.3-stock-management'
+    runs-on: ubuntu-latest
+    env:
+      TRUMMCARDS_TEST123_ENABLE: I_ACKNOWLEDGE_TEST_ONLY
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify latest inventory and image tests before publishing
+        run: |
+          node --test cloud/release/stock-management123.test.mjs
+          node --test cloud/release/inventory-image-121.test.mjs
+          node --test cloud/release/catalog-pagination-image11.test.mjs
+          node --test cloud/release/carddex-vinted12.test.mjs
+      - name: Prepare TEST-only PWA in disposable checkout
+        run: |
+          node cloud/release/prepare-cloud-123-test.mjs
+          for f in cloud/mobile-production/web/*.js; do node --check "$f"; done
+      - name: Assert complete TEST isolation
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -Fx "const PROJECT='cpycfxolqpidfjbhhsmr';" cloud/mobile-production/web/app.js
+          grep -Fq 'const WRITES_ENABLED=true;' cloud/mobile-production/web/app.js
+          grep -Fq 'trummcards-mobile-test123-session-v1' cloud/mobile-production/web/app.js
+          grep -Fq 'trummcards-mobile-test123-shell-' cloud/mobile-production/web/sw.js
+          grep -Fq 'tc_adjust_inventory' cloud/mobile-production/web/app.js
+          grep -Fq 'tc_archive_product' cloud/mobile-production/web/app.js
+          if grep -Rq -e 'hgdexyvtgfffcasfpjyu' -e 'sb_publishable_JDdbnEq3muaOhp3LsNhBkQ_eJZ0uYEf' cloud/mobile-production/web; then
+            echo 'BLOCKED: PRODUCTION database reference in TEST PWA'; exit 1
+          fi
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const web='cloud/mobile-production/web/';
+          const m=JSON.parse(fs.readFileSync(web+'manifest.webmanifest','utf8'));
+          if(m.name!=='TrummCards Cloud 1.2.3 TEST')throw Error('Wrong PWA name');
+          const html=fs.readFileSync(web+'index.html','utf8');
+          const scripts=[...html.matchAll(/src="\.\/([^"?#]+\.js)(?:\?[^"]*)?"/g)].map(m=>m[1]);
+          for(const file of scripts){if(!fs.existsSync(web+file))throw Error('Missing '+file);}
+          if(!html.includes('app.js?v=1.2.3-test.1'))throw Error('Wrong TEST script version');
+          NODE
+      - name: Keep tested build for review
+        uses: actions/upload-artifact@v4
+        with:
+          name: TrummCards-1.2.3-TEST-PWA
+          path: cloud/mobile-production/web/
+          retention-days: 14
+          if-no-files-found: error
+      - name: Publish ONLY test-123/ on GitHub Pages
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin +refs/heads/gh-pages:refs/remotes/origin/gh-pages
+          pages_dir="$RUNNER_TEMP/trummcards-123-test-pages"
+          git worktree add --detach "$pages_dir" refs/remotes/origin/gh-pages
+          mkdir -p "$pages_dir/test-123"
+          cp -R cloud/mobile-production/web/. "$pages_dir/test-123/"
+          git -C "$pages_dir" add -- test-123
+          out_of_scope="$(git -C "$pages_dir" diff --cached --name-only | grep -v '^test-123/' || true)"
+          test -z "$out_of_scope" || { echo "STOP: unexpected change: $out_of_scope"; exit 1; }
+          if ! git -C "$pages_dir" diff --cached --quiet; then
+            git -C "$pages_dir" config user.name 'github-actions[bot]'
+            git -C "$pages_dir" config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git -C "$pages_dir" commit -m 'TEST ONLY: Publish stock controls at test-123/'
+            git -C "$pages_dir" push origin HEAD:gh-pages
+          fi
+      - name: Request Pages rebuild
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api --method POST "repos/$GITHUB_REPOSITORY/pages/builds"
