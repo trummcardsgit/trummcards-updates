@@ -240,16 +240,15 @@ jobs:
           if grep -Rq 'cpycfxolqpidfjbhhsmr' "$RUNNER_TEMP/cloud123/pwa"; then echo 'TEST database leaked'; exit 1; fi
           grep -q 'trummcards-mobile-production-shell-v123' "$RUNNER_TEMP/cloud123/pwa/sw.js"
           git fetch origin +refs/heads/gh-pages:refs/remotes/origin/gh-pages
-          git show origin/gh-pages:cloud-updates/latest.yml | grep -q '^version: 1.2.2
-          git cat-file -e origin/gh-pages:cloud-updates/TrummCards-Cloud-Setup-1.0.0.exe
-          git cat-file -e origin/gh-pages:cloud-updates/TrummCards-Cloud-Setup-1.1.0.exe
-          git cat-file -e origin/gh-pages:cloud-updates/TrummCards-Cloud-Setup-1.2.0.exe
-          git cat-file -e origin/gh-pages:cloud-updates/TrummCards-Cloud-Setup-1.2.1.exe
+          git show origin/gh-pages:cloud-updates/latest.yml | grep -q '^version: 1.2.2$'
+          for old in 1.0.0 1.1.0 1.2.0 1.2.1 1.2.2; do
+            git cat-file -e "origin/gh-pages:cloud-updates/TrummCards-Cloud-Setup-${old}.exe"
+          done
       - name: Publish only new PWA and Windows update channel paths
         shell: bash
         run: |
           set -euo pipefail
-          worktree="$RUNNER_TEMP/trummcards-121-pages"
+          worktree="$RUNNER_TEMP/trummcards-123-pages"
           git worktree add --detach "$worktree" refs/remotes/origin/gh-pages
           mkdir -p "$worktree/production" "$worktree/cloud-updates"
           cp -R "$RUNNER_TEMP/cloud123/pwa/." "$worktree/production/"
@@ -263,54 +262,16 @@ jobs:
           if git -C "$worktree" diff --cached --name-status | grep '^D'; then
             echo 'FATAL: release would delete files'; exit 1
           fi
-          test -f "$worktree/cloud-updates/TrummCards-Cloud-Setup-1.0.0.exe"
-          test -f "$worktree/cloud-updates/TrummCards-Cloud-Setup-1.1.0.exe"
-          test -f "$worktree/cloud-updates/TrummCards-Cloud-Setup-1.2.0.exe"
-          test -f "$worktree/cloud-updates/TrummCards-Cloud-Setup-1.2.1.exe"
-          test -f "$worktree/cloud-updates/TrummCards-Cloud-Setup-1.2.3.exe"
+          for old in 1.0.0 1.1.0 1.2.0 1.2.1 1.2.2 1.2.3; do
+            test -f "$worktree/cloud-updates/TrummCards-Cloud-Setup-${old}.exe"
+          done
           if git -C "$worktree" diff --cached --quiet; then
-            echo 'No changes required'; exit 0
+            echo 'Release files already match: no Pages changes required.'
+          else
+            git -C "$worktree" config user.name 'github-actions[bot]'
+            git -C "$worktree" config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git -C "$worktree" commit -m 'Release Cloud 1.2.3 stock management PWA and Windows auto-update'
+            git -C "$worktree" push origin HEAD:gh-pages
           fi
-          git -C "$worktree" config user.name 'github-actions[bot]'
-          git -C "$worktree" config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git -C "$worktree" commit -m 'Deploy Cloud 1.2.3 production PWA and Windows automatic updater; retain old data/installer'
-          git -C "$worktree" push origin HEAD:gh-pages
-      - name: Trigger GitHub Pages rebuild
-        run: gh api --method POST "repos/$GITHUB_REPOSITORY/pages/builds"
-
-          git cat-file -e origin/gh-pages:cloud-updates/TrummCards-Cloud-Setup-1.0.0.exe
-          git cat-file -e origin/gh-pages:cloud-updates/TrummCards-Cloud-Setup-1.1.0.exe
-          git cat-file -e origin/gh-pages:cloud-updates/TrummCards-Cloud-Setup-1.2.0.exe
-          git cat-file -e origin/gh-pages:cloud-updates/TrummCards-Cloud-Setup-1.2.1.exe
-      - name: Publish only new PWA and Windows update channel paths
-        shell: bash
-        run: |
-          set -euo pipefail
-          worktree="$RUNNER_TEMP/trummcards-121-pages"
-          git worktree add --detach "$worktree" refs/remotes/origin/gh-pages
-          mkdir -p "$worktree/production" "$worktree/cloud-updates"
-          cp -R "$RUNNER_TEMP/cloud123/pwa/." "$worktree/production/"
-          cp "$RUNNER_TEMP/cloud123/updates/TrummCards-Cloud-Setup-1.2.3.exe" "$worktree/cloud-updates/"
-          cp "$RUNNER_TEMP/cloud123/updates/TrummCards-Cloud-Setup-1.2.3.exe.blockmap" "$worktree/cloud-updates/"
-          cp "$RUNNER_TEMP/cloud123/updates/latest.yml" "$worktree/cloud-updates/"
-          git -C "$worktree" add -- production cloud-updates
-          if git -C "$worktree" diff --cached --name-only | grep -Ev '^(production|cloud-updates)/'; then
-            echo 'FATAL: out-of-scope paths'; exit 1
-          fi
-          if git -C "$worktree" diff --cached --name-status | grep '^D'; then
-            echo 'FATAL: release would delete files'; exit 1
-          fi
-          test -f "$worktree/cloud-updates/TrummCards-Cloud-Setup-1.0.0.exe"
-          test -f "$worktree/cloud-updates/TrummCards-Cloud-Setup-1.1.0.exe"
-          test -f "$worktree/cloud-updates/TrummCards-Cloud-Setup-1.2.0.exe"
-          test -f "$worktree/cloud-updates/TrummCards-Cloud-Setup-1.2.1.exe"
-          test -f "$worktree/cloud-updates/TrummCards-Cloud-Setup-1.2.3.exe"
-          if git -C "$worktree" diff --cached --quiet; then
-            echo 'No changes required'; exit 0
-          fi
-          git -C "$worktree" config user.name 'github-actions[bot]'
-          git -C "$worktree" config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git -C "$worktree" commit -m 'Deploy Cloud 1.2.3 production PWA and Windows automatic updater; retain old data/installer'
-          git -C "$worktree" push origin HEAD:gh-pages
       - name: Trigger GitHub Pages rebuild
         run: gh api --method POST "repos/$GITHUB_REPOSITORY/pages/builds"
