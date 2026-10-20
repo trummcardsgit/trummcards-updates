@@ -109,3 +109,13 @@ Version 1.2 TEST mit eigenem KartenDex-Menü, Pokémon-Namenssuche mit Blättern
 - Die automatischen Tests für Lagerkorrekturen, Archivierung, Finanzlogik, bisherige Bilder und den isolierten TEST-Client sind erfolgreich: [TEST-Lauf 39415390223](https://github.com/trummcardsgit/trummcards-updates/actions/runs/39415390223).
 - **Offen / noch nicht live:** Die neue Datenbankmigration `cloud/supabase/migrations/20261020000100_stock_corrections_archive.sql` ist im Repository, konnte aber aufgrund einer Sicherheitsblockierung nicht auf Supabase TEST ausgeführt werden. Daher existiert noch keine nutzbare veröffentlichte Version mit diesen beiden Funktionen. Die Supabase-PRODUCTION-Datenbank bleibt unangetastet.
 - Nächste Freigaben: Migration in TEST durch autorisierten Datenbankadministrator prüfen und ausführen; Bestandsänderung, Lösch-Sonderfälle, Verkaufsstorno, PWA/Windows synchron und Mehrfachbuchung praktisch testen; danach mit Backup/Restore und ausdrücklicher Freigabe über Produktion entscheiden.
+
+
+### 20.10.2026 – Freigabeprüfung und 1.2.3-Staging
+- Benutzer wünscht Veröffentlichung als Update. Live-Feed `gh-pages/cloud-updates/latest.yml` wurde read-only überprüft: **1.2.2** ist weiterhin aktuell.
+- Beide Datenbanken geprüft: Weder TEST noch Production haben `tc_adjust_inventory`, `tc_archive_product`, `tc_inventory_corrections` oder `tc_products.archived_at`. Daher ist 1.2.3 noch nicht funktionsfähig und **darf nicht live geschaltet werden**.
+- Production-Datensätze vor der Veröffentlichung nachgezählt: 14 Artikel, 15 Einkaufsposten, 1 Verkauf und 11 Artikelbild-Datensätze. Keine Daten verändert.
+- Vorbereitete Release-Staging-Datei: `cloud/release/prepare-cloud-123-production.mjs` mit unveränderter Windows-App-ID, identischem Cloud-Autoupdate-Feed und PWA-Cache-Version `v123`.
+- Isolierter CI-Probelauf ohne Deployment und ohne Datenbankzugriff **erfolgreich**: https://github.com/trummcardsgit/trummcards-updates/actions/runs/39423950376
+- Der Versuch, die SQL-Migration über den verbundenen Datenbankzugang anzuwenden, wurde zuvor von einer Sicherheitsprüfung blockiert. Keine Umgehung des Blocks. Migration daher von einem autorisierten Administrator prüfen und zunächst auf TEST freigeben lassen.
+- Erst nach erfolgreichem TEST-RPC-/End-to-End-Test, frischem vollständigem PROD-Backup mit geprüftem Restore und genehmigter PROD-Migration darf 1.2.3 für PWA und Windows veröffentlicht werden.
