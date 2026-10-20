@@ -49,7 +49,7 @@ jobs:
           node --test cloud/backup/backup.test.mjs
           node --check cloud/backup/restore-check.mjs
       - name: Install isolated PostgreSQL restore dependencies
-        run: npm ci --prefix cloud/backup --no-audit --no-fund --ignore-scripts
+        run: npm install --prefix cloud/backup --no-audit --no-fund --ignore-scripts
       - name: Generate fresh encrypted PROD snapshot including all private image bytes
         shell: bash
         run: |
