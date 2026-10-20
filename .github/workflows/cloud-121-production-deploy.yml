@@ -5,6 +5,7 @@ on:
       - release/cloud-1.2.1-inventory-image-hotfix
     paths:
       - cloud/release/GO_LIVE_121.txt
+      - cloud/release/GO_LIVE_121_RETRY.txt
 permissions:
   contents: write
   pages: write
