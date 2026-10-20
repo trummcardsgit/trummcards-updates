@@ -1,0 +1,212 @@
+name: TrummCards Cloud 1.2.5 - Unified PWA PRODUCTION Release
+on:
+  push:
+    branches: [release/cloud-1.2.5-unified-pwa]
+    paths:
+      - cloud/release/GO_LIVE_PWA_125.txt
+permissions:
+  contents: write
+  pages: write
+  actions: read
+concurrency:
+  group: trummcards-cloud-prod-release
+  cancel-in-progress: false
+jobs:
+  approval-and-tests:
+    name: Verify source, original production data safety and exact approved PWA
+    runs-on: ubuntu-latest
+    env:
+      TRUMMCARDS_BACKUP_ACTIVE: ${{ vars.TRUMMCARDS_BACKUP_ACTIVE }}
+      TRUMMCARDS_RESTORE_VERIFIED: ${{ vars.TRUMMCARDS_RESTORE_VERIFIED }}
+      TRUMMCARDS_PRODUCTION_APPROVED: ${{ vars.TRUMMCARDS_PRODUCTION_APPROVED }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Explicit release approval and existing account/backup gates
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REPOSITORY" = 'trummcardsgit/trummcards-updates'
+          test "$GITHUB_REF" = 'refs/heads/release/cloud-1.2.5-unified-pwa'
+          test "$(cat cloud/release/GO_LIVE_PWA_125.txt)" = 'APPROVED_UNIFIED_PWA_1.2.5_WITH_UNCHANGED_PROD_DATABASE_AND_BACKUP_V3'
+          test "$TRUMMCARDS_BACKUP_ACTIVE" = 'true'
+          test "$TRUMMCARDS_RESTORE_VERIFIED" = 'true'
+          test "$TRUMMCARDS_PRODUCTION_APPROVED" = 'true'
+      - name: Require matching successful 1.2.5 production dry run
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin release/cloud-1.2.5-unified-pwa
+          expected="$(git rev-parse HEAD)"
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs?branch=release%2Fcloud-1.2.5-unified-pwa&per_page=100" \
+            --jq '.workflow_runs | map(select(.name=="TrummCards 1.2.5 - Unified PROD PWA Dry Run (NO DEPLOY)" and .conclusion=="success")) | .[].head_sha' > "$RUNNER_TEMP/green125.txt"
+          test -s "$RUNNER_TEMP/green125.txt"
+          matched=''
+          while IFS= read -r successful; do
+            git cat-file -e "$successful^{commit}" || continue
+            if git diff --quiet "$successful" "$expected" -- \
+              cloud/mobile-production/web cloud/release/prepare-cloud-125-unified-production.mjs \
+              cloud/release/desktop125-bookings-menu.test.mjs; then
+              matched="$successful";break
+            fi
+          done < "$RUNNER_TEMP/green125.txt"
+          test -n "$matched" || { echo 'BLOCKED: not the tested unified PWA source';exit 1; }
+      - name: Require V3-compatible main backup engine and unchanged live Windows updater
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin main +refs/heads/gh-pages:refs/remotes/origin/gh-pages
+          git show origin/main:cloud/backup/validate.mjs | grep -q TABLES_V3
+          git show origin/main:cloud/backup/restore-check.mjs | grep -q tc_inventory_corrections
+          git show origin/gh-pages:cloud-updates/latest.yml | grep -q '^version: 1.2.4$'
+          git show origin/gh-pages:production/sw.js | grep -q 'trummcards-mobile-production-shell-v124'
+          for old in 1.0.0 1.1.0 1.2.0 1.2.1 1.2.2 1.2.3 1.2.4; do
+            git cat-file -e "origin/gh-pages:cloud-updates/TrummCards-Cloud-Setup-${old}.exe"
+          done
+      - name: Run all relevant existing regressions and stage unified PWA
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --test cloud/release/desktop125-bookings-menu.test.mjs
+          node --test cloud/release/catalog-image-link124.test.mjs
+          node --test cloud/release/inventory-image-121.test.mjs
+          node --test cloud/release/stock-management123.test.mjs
+          node --test cloud/release/catalog-pagination-image11.test.mjs
+          node --test cloud/release/finance11.test.mjs
+          node --test cloud/release/shipping11.test.mjs
+          node --test cloud/release/cash11.test.mjs
+          node --test cloud/backup/backup.test.mjs
+          node cloud/release/prepare-cloud-125-unified-production.mjs
+          for f in cloud/mobile-production/web/*.js; do node --check "$f"; done
+          node cloud/release/probe-prod-anon.mjs
+          grep -q 'const WRITES_ENABLED=true;' cloud/mobile-production/web/app.js
+          grep -q 'trummcards-mobile-production-shell-v125' cloud/mobile-production/web/sw.js
+          grep -q 'data-go="sales" class="desktop-bookings-link"' cloud/mobile-production/web/index.html
+          grep -q 'styles.css?v=1.2.5' cloud/mobile-production/web/index.html
+          grep -q 'trummcards-mobile-production-session-v1' cloud/mobile-production/web/app.js
+          if grep -Rq 'cpycfxolqpidfjbhhsmr' cloud/mobile-production/web; then echo 'TEST DB leaked';exit 1;fi
+      - name: Store exact release payload for post-release comparison and rollback
+        uses: actions/upload-artifact@v4
+        with:
+          name: TrummCards-Unified-PWA-125-RELEASE
+          path: cloud/mobile-production/web/
+          retention-days: 30
+          if-no-files-found: error
+
+  encrypted-v3-backup:
+    name: Fresh encrypted V3 PROD backup and isolated PostgreSQL 17 restore
+    needs: approval-and-tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: local-test-only
+          POSTGRES_DB: trummcards_restore
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      TC_BACKUP_EMAIL: ${{ secrets.TC_PROD_BACKUP_EMAIL }}
+      TC_BACKUP_PASSWORD: ${{ secrets.TC_PROD_BACKUP_PASSWORD }}
+      TC_BACKUP_PASSPHRASE: ${{ secrets.TC_PROD_BACKUP_PASSPHRASE }}
+      PG_RESTORE_URL: postgresql://postgres:local-test-only@127.0.0.1:5432/trummcards_restore
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check secrets and V3 backup/restore tests without displaying credentials
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$TC_BACKUP_EMAIL"
+          test -n "$TC_BACKUP_PASSWORD"
+          test "${#TC_BACKUP_PASSPHRASE}" -ge 24
+          node --test cloud/backup/backup.test.mjs
+      - name: Install isolated PostgreSQL restore helpers
+        run: npm install --prefix cloud/backup --no-audit --no-fund --ignore-scripts
+      - name: Fresh PROD backup with correction journal and ACTUAL isolated restore
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/backup"
+          archive="$RUNNER_TEMP/backup/TrummCards-PROD-Before-Unified-125-${{ github.run_id }}.tcbackup"
+          node cloud/backup/create.mjs "$archive"
+          node cloud/backup/verify.mjs "$archive" | tee "$RUNNER_TEMP/verify-v3.txt"
+          grep -q '"tc_inventory_corrections"' "$RUNNER_TEMP/verify-v3.txt"
+          grep -q '"tc_product_images"' "$RUNNER_TEMP/verify-v3.txt"
+          grep -q '"tc_purchase_lots"' "$RUNNER_TEMP/verify-v3.txt"
+          node cloud/backup/restore-check.mjs "$archive"
+      - name: Save ONLY encrypted backup for 30 days
+        uses: actions/upload-artifact@v4
+        with:
+          name: TrummCards-PROD-Encrypted-Before-Unified-125-${{ github.run_id }}
+          path: ${{ runner.temp }}/backup/*.tcbackup
+          retention-days: 30
+          if-no-files-found: error
+
+  publish-unified-pwa:
+    name: Change ONLY production PWA, leave Windows updater/TEST untouched
+    needs: [approval-and-tests,encrypted-v3-backup]
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/download-artifact@v4
+        with:
+          name: TrummCards-Unified-PWA-125-RELEASE
+          path: ${{ runner.temp }}/unified125
+      - name: Recheck exact release payload and previous live version before writing
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s "$RUNNER_TEMP/unified125/index.html"
+          test -s "$RUNNER_TEMP/unified125/sw.js"
+          test -s "$RUNNER_TEMP/unified125/app.js"
+          test -s "$RUNNER_TEMP/unified125/styles.css"
+          grep -q 'trummcards-mobile-production-shell-v125' "$RUNNER_TEMP/unified125/sw.js"
+          grep -q 'styles.css?v=1.2.5' "$RUNNER_TEMP/unified125/index.html"
+          grep -q 'const WRITES_ENABLED=true;' "$RUNNER_TEMP/unified125/app.js"
+          grep -q 'hgdexyvtgfffcasfpjyu' "$RUNNER_TEMP/unified125/app.js"
+          grep -q 'data-go="sales" class="desktop-bookings-link"' "$RUNNER_TEMP/unified125/index.html"
+          grep -q 'trummcards-mobile-production-session-v1' "$RUNNER_TEMP/unified125/app.js"
+          if grep -Rq 'cpycfxolqpidfjbhhsmr' "$RUNNER_TEMP/unified125"; then echo 'Unexpected TEST source';exit 1;fi
+          git fetch origin +refs/heads/gh-pages:refs/remotes/origin/gh-pages
+          git show origin/gh-pages:cloud-updates/latest.yml | grep -q '^version: 1.2.4$'
+          git show origin/gh-pages:production/sw.js | grep -q 'trummcards-mobile-production-shell-v124'
+          echo "Previous safe gh-pages commit for rollback: $(git rev-parse origin/gh-pages)"
+      - name: Atomic PWA-only publish preserving all TEST and Windows update files
+        shell: bash
+        run: |
+          set -euo pipefail
+          site="$RUNNER_TEMP/trummcards-unified125-live"
+          git worktree add --detach "$site" refs/remotes/origin/gh-pages
+          test -d "$site/production"
+          cp -R "$RUNNER_TEMP/unified125/." "$site/production/"
+          git -C "$site" add -- production
+          changes="$(git -C "$site" diff --cached --name-only)"
+          test -n "$changes" || { echo 'No PWA updates staged';exit 1; }
+          unexpected="$(printf '%s\n' "$changes" | grep -Ev '^production/' || true)"
+          test -z "$unexpected" || { echo "Unexpected out-of-scope files: $unexpected";exit 1; }
+          if git -C "$site" diff --cached --name-status | grep '^D'; then echo 'No existing live PWA files may be deleted';exit 1;fi
+          test "$(git -C "$site" show HEAD:cloud-updates/latest.yml | head -n 1)" = 'version: 1.2.4'
+          git -C "$site" config user.name 'github-actions[bot]'
+          git -C "$site" config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git -C "$site" commit -m 'TrummCards 1.2.5: unified responsive PRODUCTION PWA for Windows and mobile'
+          git -C "$site" push origin HEAD:gh-pages
+      - name: Request public GitHub Pages rebuild
+        run: gh api --method POST "repos/$GITHUB_REPOSITORY/pages/builds"
