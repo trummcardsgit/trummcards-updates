@@ -7,7 +7,7 @@ const mobile=root+'mobile-production/web/';
 const prod='hgdexyvtgfffcasfpjyu',test='cpycfxolqpidfjbhhsmr';
 const version='1.2.3';
 for(const gate of ['TRUMMCARDS_BACKUP_ACTIVE','TRUMMCARDS_RESTORE_VERIFIED','TRUMMCARDS_PRODUCTION_APPROVED']){
- if(process.env[gate]!=='true')throw Error('Cloud 1.2 production preparation missing '+gate);
+ if(process.env[gate]!=='true')throw Error('Cloud 1.2.3 production preparation missing '+gate);
 }
 const read=p=>fs.readFileSync(p,'utf8');
 const write=(p,s)=>fs.writeFileSync(p,s,'utf8');
@@ -30,7 +30,7 @@ pkg.version=version;pkg.description='TrummCards Cloud 1.2.3 Production – exist
 write(desktop+'package.json',JSON.stringify(pkg,null,2)+'\n');
 change(desktop+'main.cjs',s=>{
  s=replaceOne(s,'const UPDATE_FEED_ENABLED=false;','const UPDATE_FEED_ENABLED=true;');
- s=s.replaceAll('PRODUKTIONSVORSCHAU','TrummCards Cloud 1.2');
+ s=s.replaceAll('PRODUKTIONSVORSCHAU','TrummCards Cloud 1.2.3');
  s=s.replaceAll('Automatische Cloud-Updates sind vorbereitet. Freischaltung erst mit dem endgültigen Release.','TrummCards Cloud 1.2.3: Automatische Updates sind aktiviert.');
  return s;
 });
@@ -52,13 +52,13 @@ change(mobile+'manifest.webmanifest',s=>{
 });
 change(desktop+'tests/production.test.cjs',s=>{
  s=replaceOne(s,"const isRelease=['1.0.0','1.1.0'].includes(pkg.version);","const isRelease=['1.0.0','1.1.0','1.2.0','1.2.1','1.2.2','1.2.3'].includes(pkg.version);");
- s=replaceOne(s,"['0.9.0','1.0.0','1.1.0'].includes(pkg.version)","['0.9.0','1.0.0','1.1.0','1.2.0','1.2.1','1.2.2','1.2.3','1.2.1','1.2.2','1.2.3'].includes(pkg.version)");
+ s=replaceOne(s,"['0.9.0','1.0.0','1.1.0'].includes(pkg.version)","['0.9.0','1.0.0','1.1.0','1.2.0','1.2.1','1.2.2','1.2.3'].includes(pkg.version)");
  return replaceOne(s,"'TrummCards Cloud 1.1.0'","'TrummCards Cloud '+pkg.version");
 });
 const html=read(mobile+'index.html');
-if(!html.includes('carddex12.js?v='+version)||!html.includes('vinted12.js?v='+version)||html.includes('cardscan12.js'))throw Error('Cloud 1.2 UI is incomplete or obsolete scanner remains');
+if(!html.includes('carddex12.js?v='+version)||!html.includes('vinted12.js?v='+version)||html.includes('cardscan12.js'))throw Error('Cloud 1.2.3 UI is incomplete or obsolete scanner remains');
 const localAssets=['./','./manifest.webmanifest','./icon.svg','./logo.webp','./icon-192.png','./icon-512.png'];
-for(const match of html.matchAll(/(?:src|href)="\.\/([^"?#]+\.(?:js|css))(?:\?v=1\.2\.0)?"/g)){
+for(const match of html.matchAll(/(?:src|href)="\.\/([^"?#]+\.(?:js|css))(?:\?v=1\.2\.3)?"/g)){
  const file=match[1];if(!fs.existsSync(mobile+file))throw Error('Missing production PWA asset '+file);
  localAssets.push('./'+file+'?v='+version);
 }
