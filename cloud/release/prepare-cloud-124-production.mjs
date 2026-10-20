@@ -51,14 +51,14 @@ change(mobile+'manifest.webmanifest',s=>{
  const m=JSON.parse(s);m.description='TrummCards Cloud 1.2.4 – synchronisierte Pokémon-Karten-Lagerverwaltung';return JSON.stringify(m,null,2)+'\n';
 });
 change(desktop+'tests/production.test.cjs',s=>{
- s=replaceOne(s,"const isRelease=['1.0.0','1.1.0'].includes(pkg.version);","const isRelease=['1.0.0','1.1.0','1.2.0','1.2.1','1.2.2','1.2.4'].includes(pkg.version);");
- s=replaceOne(s,"['0.9.0','1.0.0','1.1.0'].includes(pkg.version)","['0.9.0','1.0.0','1.1.0','1.2.0','1.2.1','1.2.2','1.2.4'].includes(pkg.version)");
+ s=replaceOne(s,"const isRelease=['1.0.0','1.1.0'].includes(pkg.version);","const isRelease=['1.0.0','1.1.0','1.2.0','1.2.1','1.2.2','1.2.3','1.2.4'].includes(pkg.version);");
+ s=replaceOne(s,"['0.9.0','1.0.0','1.1.0'].includes(pkg.version)","['0.9.0','1.0.0','1.1.0','1.2.0','1.2.1','1.2.2','1.2.3','1.2.4'].includes(pkg.version)");
  return replaceOne(s,"'TrummCards Cloud 1.1.0'","'TrummCards Cloud '+pkg.version");
 });
 const html=read(mobile+'index.html');
 if(!html.includes('catalog11.js?v='+version)||!html.includes('catalog11-ui.js?v='+version)||!html.includes('carddex12.js?v='+version)||!html.includes('vinted12.js?v='+version)||html.includes('cardscan12.js'))throw Error('Cloud 1.2.4 UI is incomplete or obsolete scanner remains');
 const localAssets=['./','./manifest.webmanifest','./icon.svg','./logo.webp','./icon-192.png','./icon-512.png'];
-for(const match of html.matchAll(/(?:src|href)="\.\/([^"?#]+\.(?:js|css))(?:\?v=1\.2\.3)?"/g)){
+for(const match of html.matchAll(/(?:src|href)="\.\/([^"?#]+\.(?:js|css))(?:\?v=[0-9.]+)?"/g)){
  const file=match[1];if(!fs.existsSync(mobile+file))throw Error('Missing production PWA asset '+file);
  localAssets.push('./'+file+'?v='+version);
 }
