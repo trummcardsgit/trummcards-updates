@@ -44,7 +44,13 @@ change(web+'/app.js',s=>replaceOne(proj(s),'const WRITES_ENABLED=false;','const 
  .replaceAll('trummcards-mobile-production-pending-v1','trummcards-mobile-desktop125-pending-v1')
  .replaceAll('PRODUCTION','TEST 1.2.5').replaceAll('Production','TEST 1.2.5')
  .replaceAll('Produktionsvorschau','TEST-Version').replaceAll('0.9.0',VERSION));
-change(web+'/index.html',s=>s.replaceAll('0.9.0',VERSION).replaceAll('PRODUCTION','TEST 1.2.5')
+change(web+'/index.html',s=>s
+ .replace('Melde dich mit deinem TrummCards-Produktivkonto an. Lagerdaten werden später zwischen Windows und PWA synchronisiert. Aktuell sind Buchungen zum Schutz deiner Daten gesperrt.',
+  'Melde dich mit deinem TEST-Konto an. Diese Desktop-Testversion verwendet ausschließlich die TEST-Datenbank; Testbuchungen sind aktiviert.')
+ .replace('Die PWA verbindet sich ausschließlich mit der neuen leeren Datenbank <b>TrummCards Production</b>. Artikelanlage, Ein- und Verkäufe sowie Bilduploads bleiben bis zur Freigabe gesperrt.',
+  'Desktop TEST: Alle Änderungen in dieser App betreffen ausschließlich <b>TrummCards TEST</b>. Die echte Produktivversion bleibt unverändert.')
+ .replaceAll('0.9.0',VERSION).replaceAll('PRODUCTION','TEST 1.2.5')
+ .replaceAll('PRODUKTIONSVORSCHAU','DESKTOP TEST')
  .replaceAll('Produktivkonto','TEST-Konto').replaceAll('Produktionsvorschau','TEST-Version'));
 change(web+'/reset-password.js',s=>proj(s).replaceAll('PRODUCTION','TEST 1.2.5')
  .replaceAll('trummcards-mobile-production-session-v1','trummcards-mobile-desktop125-session-v1'));
