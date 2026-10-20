@@ -1,0 +1,60 @@
+name: TrummCards Cloud 1.2.4 - Release Dry Run (NO DEPLOY)
+on:
+  push:
+    branches: [fix/cloud-1.2.4-catalog-image-link]
+    paths:
+      - .github/workflows/cloud-124-release-dryrun.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    env:
+      TRUMMCARDS_BACKUP_ACTIVE: 'true'
+      TRUMMCARDS_RESTORE_VERIFIED: 'true'
+      TRUMMCARDS_PRODUCTION_APPROVED: 'true'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Complete regression suite
+        run: |
+          node --test cloud/release/catalog-image-link124.test.mjs
+          node --test cloud/release/inventory-image-121.test.mjs
+          node --test cloud/release/stock-management123.test.mjs
+          node --test cloud/release/catalog-pagination-image11.test.mjs
+          node --test cloud/backup/backup.test.mjs
+          node --check cloud/release/prepare-cloud-124-production.mjs
+      - name: Build production PWA safely without publishing
+        run: |
+          node cloud/release/prepare-cloud-124-production.mjs
+          for f in cloud/mobile-production/web/*.js; do node --check "$f"; done
+          node --check cloud/desktop-production/src/app.js
+          node --check cloud/desktop-production/src/catalog11.js
+          node --check cloud/desktop-production/src/catalog11-ui.js
+          node --test cloud/desktop-production/tests/production.test.cjs
+      - name: Confirm no TEST references, correct 1.2.4 identity and updated image logic
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -q "version: 1.2.4" cloud/desktop-production/package.json || grep -q '"version": "1.2.4"' cloud/desktop-production/package.json
+          grep -q 'inferCatalogImageRoot' cloud/mobile-production/web/app.js
+          grep -q 'inferCatalogImageRoot' cloud/desktop-production/src/app.js
+          grep -q 'catalog11.js?v=1.2.4' cloud/mobile-production/web/index.html
+          grep -q 'trummcards-mobile-production-shell-v124' cloud/mobile-production/web/sw.js
+          grep -q 'const WRITES_ENABLED=true;' cloud/mobile-production/web/app.js
+          grep -q 'const WRITES_ENABLED = true;' cloud/desktop-production/src/app.js
+          if grep -Rq 'cpycfxolqpidfjbhhsmr' cloud/mobile-production/web; then
+            echo 'FATAL: TEST reference leaked into production PWA'; exit 1
+          fi
+          test "$(node -p "require('./cloud/desktop-production/package.json').build.appId")" = 'at.trummcards.cloudproduction'
+          test "$(node -p "require('./cloud/desktop-production/package.json').version")" = '1.2.4'
+      - name: Retain disposable PWA build for inspection
+        uses: actions/upload-artifact@v4
+        with:
+          name: TrummCards-124-PWA-DRYRUN-NOT-PUBLISHED
+          path: cloud/mobile-production/web/
+          retention-days: 7
+          if-no-files-found: error
