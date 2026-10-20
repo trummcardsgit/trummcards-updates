@@ -185,7 +185,7 @@ begin
     where id=new.product_id and owner_id=new.owner_id and archived_at is not null;
   return null;
 end;
-$;
+$$;
 drop trigger if exists tc_reactivate_on_stock_return on public.tc_purchase_lots;
 create trigger tc_reactivate_on_stock_return
   after update of available_qty on public.tc_purchase_lots
