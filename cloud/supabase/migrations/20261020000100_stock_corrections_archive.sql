@@ -180,18 +180,21 @@ $$;
 create or replace function trummcards_private.reactivate_on_restored_stock()
 returns trigger language plpgsql security definer set search_path = '' as $$
 begin
-  if new.available_qty>old.available_qty then
-    update public.tc_products
-      set archived_at=null,updated_at=now()
-      where id=new.product_id and owner_id=new.owner_id and archived_at is not null;
-  end if;
+  update public.tc_products
+    set archived_at=null,updated_at=now()
+    where id=new.product_id and owner_id=new.owner_id and archived_at is not null;
   return null;
 end;
-$$;
+$;
 drop trigger if exists tc_reactivate_on_stock_return on public.tc_purchase_lots;
 create trigger tc_reactivate_on_stock_return
   after update of available_qty on public.tc_purchase_lots
   for each row when (new.available_qty>old.available_qty)
+  execute function trummcards_private.reactivate_on_restored_stock();
+drop trigger if exists tc_reactivate_on_new_lot on public.tc_purchase_lots;
+create trigger tc_reactivate_on_new_lot
+  after insert on public.tc_purchase_lots
+  for each row when (new.available_qty>0)
   execute function trummcards_private.reactivate_on_restored_stock();
 
 create or replace function public.tc_adjust_inventory(
