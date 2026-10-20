@@ -331,3 +331,58 @@ main{width:min(100%,1000px);padding:21px 18px 24px;margin:0 auto;flex:1}.login-s
 .cash-entry span{overflow-wrap:anywhere}
 .cash-entry .actions{display:flex;gap:8px;flex-wrap:wrap}
 @media(max-width:570px){.cash-grid{grid-template-columns:1fr}.cash-panel{padding:11px}.cash-summary-row>button{width:100%}}
+
+
+/* TrummCards Cloud 1.2: read-only KartenDex and editable Vinted listing composer. */
+.dex-panel{min-width:0}
+.dex-head h2{font-size:25px;margin:5px 0;color:#f3cc7d}
+.dex-head p,.dex-status{color:#a6b9d1;font-size:13px;line-height:1.55}
+.dex-eyebrow{display:block;color:#e6bb72;font-size:11px;font-weight:800;letter-spacing:1.2px}
+.dex-form{display:flex;flex-wrap:wrap;gap:12px;align-items:end;margin:17px 0 10px}
+.dex-form label{flex:1 1 195px;min-width:0;margin:0;color:#d7e0ee;font-size:13px;font-weight:650}
+.dex-form input,.dex-form select{width:100%;margin-top:7px}
+.dex-form button,.dex-action{background:#dcb66e;color:#172032;border:1px solid #edcf94;border-radius:10px;padding:11px 16px;font-weight:800;min-height:44px;cursor:pointer}
+.dex-form button:hover,.dex-action:hover{background:#f0cf92;color:#172032}
+.dex-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:11px;margin:12px 0}
+.dex-card{display:flex;flex-direction:column;align-items:center;text-align:center;gap:8px;background:#101c2d;color:#eef3fa;border:1px solid #3b5370;border-radius:12px;padding:11px 8px;min-height:90px;overflow-wrap:anywhere}
+.dex-card img{height:140px;width:100%;object-fit:contain}
+.dex-card span{font-size:12px;line-height:1.4}
+.dex-pager{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:12px;margin:15px 0 20px;color:#a6b9d1;font-size:12px}
+.dex-set-grid{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}
+.dex-set-button{background:#1c3049;border:1px solid #536c8d;border-radius:10px;padding:10px 12px;color:#e0ebfa}
+.dex-rule{border:0;border-top:1px solid #364a65;margin:25px 0}
+.dex-detail{display:flex;gap:20px;align-items:start;background:#1b2b40;border:1px solid #627a97;border-radius:15px;padding:17px;margin:12px 0 25px}
+.dex-detail img{max-height:285px;width:min(32%,195px);object-fit:contain;flex:none}
+.dex-detail-text{flex:1;min-width:0}
+.dex-detail h3{margin:0 0 13px;color:#f0ce8d;font-size:20px}
+.dex-info-row{display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px solid #40506a;font-size:13px}
+.dex-info-row span{color:#a9bed6}.dex-info-row strong{overflow-wrap:anywhere;text-align:right}
+#dexToArticle{margin-top:18px}
+.vinted-dialog{width:min(620px,94vw);max-height:90vh;overflow:auto;background:#142137;color:#e9effa;border:1px solid #607696;border-radius:18px;padding:22px;box-shadow:0 25px 90px #000b}
+.vinted-dialog::backdrop{background:#000b}
+.vinted-dialog-head{display:flex;align-items:start;justify-content:space-between;gap:12px}
+.vinted-dialog-head h2{margin:5px 0;color:#f0ce8d}
+.vinted-dialog-head button{min-height:38px;padding:5px 12px}
+.vinted-dialog label{display:block;margin:14px 0 8px;color:#cdd8e8;font-weight:650}
+.vinted-dialog input,.vinted-dialog select,.vinted-dialog textarea{display:block;width:100%;margin-top:8px;padding:12px;background:#0b1728;border:1px solid #4b5d76;border-radius:10px;color:#fff}
+.vinted-dialog textarea{line-height:1.5;resize:vertical}
+.vinted-preview{display:flex;align-items:center;gap:15px;background:#1d2e44;border:1px dashed #687f9f;border-radius:12px;padding:12px;margin-top:15px}
+.vinted-preview img{width:88px;height:110px;object-fit:contain;border-radius:8px;background:#101a2a}
+.vinted-preview p{font-size:12px;color:#a9bdd7}
+.vinted-link{display:inline-block;padding:12px 17px;background:#365f70;border:1px solid #658e9e;color:#fff;border-radius:10px;text-decoration:none;font-weight:700;margin-top:6px}
+@media(max-width:520px){.dex-detail{flex-direction:column}.dex-detail img{width:50%;max-width:170px;align-self:center}.dex-form{display:block}.dex-form label{display:block;margin:10px 0}.dex-form button{width:100%}.dex-pager{gap:6px}.dex-pager button{padding:8px 9px}.bottom-nav button{min-width:45px;font-size:9px}}
+
+
+/* Cloud 1.2 KartenDex: readable image fallback state and Cardmarket reference quotes. */
+.dex-image-status{display:block;font-size:11px;line-height:1.35;color:#e8c88d;overflow-wrap:anywhere;text-align:center;margin:3px 0 8px}
+.dex-card-picture{object-fit:contain;max-width:100%;min-height:90px}
+.dex-market-panel{margin:15px 0;padding:14px;border:1px solid #6a7e97;background:#102239;border-radius:12px}
+.dex-market-panel>strong{display:block;color:#f4ce89;margin-bottom:10px;font-size:15px}
+.dex-market-panel .dex-info-row strong{color:#f2d18a}
+.dex-market-panel .dex-status{margin:10px 0 0;font-size:12px}
+
+/* KartenDex 1.2: drei klar getrennte Beschriftungszeilen */
+.dex-card .dex-card-name{font-size:13px;color:#f4f0e9;font-weight:750;line-height:1.35;overflow-wrap:anywhere;}
+.dex-card .dex-card-set{font-size:12px;color:#e2c589;line-height:1.4;overflow-wrap:anywhere;}
+.dex-card .dex-card-number{font-size:11px;color:#a7bcd6;line-height:1.4;overflow-wrap:anywhere;}
+.dex-form label input{min-width:0}
