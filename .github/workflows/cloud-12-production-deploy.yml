@@ -242,7 +242,7 @@ jobs:
           grep -q 'const WRITES_ENABLED=true;' "$RUNNER_TEMP/cloud12/pwa/app.js"
           grep -q 'hgdexyvtgfffcasfpjyu' "$RUNNER_TEMP/cloud12/pwa/app.js"
           if grep -Rq 'cpycfxolqpidfjbhhsmr' "$RUNNER_TEMP/cloud12/pwa"; then echo 'TEST database leaked'; exit 1; fi
-          grep -q 'trummcards-mobile-production-shell-v11' "$RUNNER_TEMP/cloud12/pwa/sw.js"
+          grep -q 'trummcards-mobile-production-shell-v120' "$RUNNER_TEMP/cloud12/pwa/sw.js"
           git fetch origin +refs/heads/gh-pages:refs/remotes/origin/gh-pages
           git show origin/gh-pages:cloud-updates/latest.yml | grep -q '^version: 1.1.0$'
           git cat-file -e origin/gh-pages:cloud-updates/TrummCards-Cloud-Setup-1.0.0.exe
