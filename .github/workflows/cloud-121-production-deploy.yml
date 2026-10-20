@@ -248,7 +248,8 @@ jobs:
           if grep -Rq 'cpycfxolqpidfjbhhsmr' "$RUNNER_TEMP/cloud121/pwa"; then echo 'TEST database leaked'; exit 1; fi
           grep -q 'trummcards-mobile-production-shell-v121' "$RUNNER_TEMP/cloud121/pwa/sw.js"
           git fetch origin +refs/heads/gh-pages:refs/remotes/origin/gh-pages
-          git show origin/gh-pages:cloud-updates/latest.yml | grep -q '^version: 1.2.0          git cat-file -e origin/gh-pages:cloud-updates/TrummCards-Cloud-Setup-1.0.0.exe
+          git show origin/gh-pages:cloud-updates/latest.yml | grep -q '^version: 1.2.0$'
+          git cat-file -e origin/gh-pages:cloud-updates/TrummCards-Cloud-Setup-1.0.0.exe
           git cat-file -e origin/gh-pages:cloud-updates/TrummCards-Cloud-Setup-1.1.0.exe
       - name: Publish only new PWA and Windows update channel paths
         shell: bash
