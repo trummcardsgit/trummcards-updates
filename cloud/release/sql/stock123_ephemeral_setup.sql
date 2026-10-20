@@ -1,5 +1,7 @@
 -- Minimal synthetic schema for the Cloud 1.2.3 migration integration test.
 -- Runs ONLY against a disposable PostgreSQL service in GitHub Actions.
+create role authenticated nologin;
+create role anon nologin;
 create schema auth;
 create table auth.users(id uuid primary key);
 create function auth.uid() returns uuid language sql stable as $authuid$
@@ -54,3 +56,13 @@ insert into auth.users(id) values
  ('00000000-0000-4000-8000-000000000002');
 insert into trummcards_private.owner_guard(user_id)
 values ('00000000-0000-4000-8000-000000000001');
+
+create table public.tc_sales(
+ id uuid primary key default gen_random_uuid(),
+ owner_id uuid not null references auth.users(id),
+ product_id uuid not null,
+ sold_on date not null,
+ qty integer not null,
+ status text not null,
+ foreign key(product_id,owner_id) references public.tc_products(id,owner_id)
+);
