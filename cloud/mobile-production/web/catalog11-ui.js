@@ -34,10 +34,10 @@
      if(!cardIdField?.value&&!sourceField.value)return;
      cardIdField.value='';sourceField.value='';
      window.TrummMarketInstance11?.reset();hideSelection();
-     statusText('Kartendaten manuell geändert – Katalogzuordnung und Katalogbild entfernt. Eigene Fotos bleiben unverändert.');
+     statusText('Set, Kartennummer oder Sprache geändert – Katalogzuordnung und Bild entfernt. Eigene Fotos bleiben unverändert.');
    }
    form.addEventListener('input',e=>{
-     if(['name','set_name','card_number','language'].includes(e.target?.name))invalidateOnManualChange();
+     if(['set_name','card_number','language'].includes(e.target?.name))invalidateOnManualChange();
    });
    function renderCards(cards){
      results.replaceChildren();

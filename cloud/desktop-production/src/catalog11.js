@@ -214,7 +214,30 @@ async function getPokemonCard({id,language='de',fetchImpl=fetch,signal}={}){
   price:null,priceSource:null
  };
 }
+// Resolve missing catalog artwork from a VERIFIED sibling in the identical
+// Pokémon set and language. No name-based guessing and no database writes.
+// If siblings disagree on their set image directory, don't infer anything.
+function inferCatalogImageRoot(product,products){
+ if(!product||product.catalog_image_url||product.catalog_card_id||!Array.isArray(products))return '';
+ const number=String(product.card_number||'').trim(),set=String(product.set_name||'').trim(),language=String(product.language||'').trim();
+ if(!/^\d{1,4}$/.test(number)||!set||!language)return '';
+ const codes={Deutsch:'de',Englisch:'en',Japanisch:'ja',Italienisch:'it',Französisch:'fr',Spanisch:'es'};
+ const prefixes=new Set();
+ for(const sibling of products){
+  if(!sibling||sibling.id===product.id||sibling.archived_at||sibling.set_name!==set||sibling.language!==language)continue;
+  const image=String(sibling.catalog_image_url||'');
+  const match=image.match(/^(https:\/\/assets\.tcgdex\.net\/([a-z]{2})\/[A-Za-z0-9._-]+\/([A-Za-z0-9._-]+))\/(\d{1,4})$/);
+  if(!match||codes[language]!==match[2]||String(sibling.card_number||'').trim()!==match[4])continue;
+  const id=String(sibling.catalog_card_id||''),suffix='-'+match[4];
+  if(!id.endsWith(suffix)||id.slice(0,-suffix.length).toLowerCase()!==match[3].toLowerCase())continue;
+  prefixes.add(match[1]+'|'+match[4].length);
+ }
+ if(prefixes.size!==1)return '';
+ const [prefix,width]=[...prefixes][0].split('|');
+ return prefix+'/'+number.padStart(Number(width),'0');
+}
+
 const CATALOG_SOURCE='TCGdex – tcgdex.dev';
 
-window.TrummCatalog11=Object.freeze({searchPokemonCards,listPokemonSets,getPokemonSet,getPokemonCard,euroMarketQuote,CATALOG_SOURCE});
+window.TrummCatalog11=Object.freeze({searchPokemonCards,listPokemonSets,getPokemonSet,getPokemonCard,euroMarketQuote,inferCatalogImageRoot,CATALOG_SOURCE});
 })();

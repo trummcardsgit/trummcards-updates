@@ -1,0 +1,29 @@
+name: TrummCards 1.2.4 - Catalog Image Link Fix TEST
+on:
+  push:
+    branches: [fix/cloud-1.2.4-catalog-image-link]
+    paths: ['cloud/**','.github/workflows/cloud-124-image-test.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    name: Windows and PWA Nidoking catalog image regression
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Test old and new catalog/image behavior without production writes
+        run: |
+          node --test cloud/release/catalog-image-link124.test.mjs
+          node --test cloud/release/inventory-image-121.test.mjs
+          node --test cloud/release/catalog-pagination-image11.test.mjs
+          node --test cloud/release/stock-management123.test.mjs
+          node --check cloud/desktop-production/src/app.js
+          node --check cloud/mobile-production/web/app.js
+          node --check cloud/desktop-production/src/catalog11.js
+          node --check cloud/mobile-production/web/catalog11.js
+          node --check cloud/desktop-production/src/catalog11-ui.js
+          node --check cloud/mobile-production/web/catalog11-ui.js

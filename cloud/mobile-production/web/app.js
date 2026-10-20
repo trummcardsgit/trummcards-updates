@@ -72,7 +72,7 @@ function imagePathForProduct(productId){
  const lotIds=new Set(state.lots.filter(l=>l.product_id===productId).map(l=>l.id));
  const ownPhoto=state.images.find(i=>lotIds.has(i.lot_id))?.storage_path;
  if(ownPhoto)return ownPhoto;
- const catalog=productById(productId)?.catalog_image_url||'';
+ const catalog=productById(productId)?.catalog_image_url||window.TrummCatalog11?.inferCatalogImageRoot(productById(productId),state.products)||'';
  return /^https:\/\/assets\.tcgdex\.net\/[A-Za-z0-9/._-]+$/.test(catalog)?catalog:null;
 }
 function filteredInventory11(){
@@ -141,7 +141,7 @@ async function privateImageUrl(path,quality='low'){
  try{return await task;}finally{thumbnailLoading.delete(path);}
 }
 function inventoryCatalogCandidates(productId,quality='low'){
- const root=productById(productId)?.catalog_image_url||'';
+ const root=productById(productId)?.catalog_image_url||window.TrummCatalog11?.inferCatalogImageRoot(productById(productId),state.products)||'';
  if(!/^https:\/\/assets\.tcgdex\.net\/[A-Za-z0-9/._-]+$/.test(root))return [];
  const candidates=[root+'/'+quality+'.webp'];
  for(const lang of ['en','de','ja','fr','it']){
