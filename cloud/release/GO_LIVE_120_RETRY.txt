@@ -1,2 +1,3 @@
 APPROVED_CLOUD_1.2.0_PRODUCTION_WITH_EXISTING_DATA
 Release retry after successful 1.2 production rehearsal. Mandatory green TEST, fresh encrypted PROD V2 backup + restore, Windows updater and PWA build checks. Do not import TEST data.
+Retry 2 (2026-10-20): Windows/PWA build and encrypted database restore passed. Corrected version-1.2 PWA cache assertion. Retain prior live data and old installers.
