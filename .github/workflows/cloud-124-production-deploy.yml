@@ -1,0 +1,319 @@
+name: TrummCards Cloud 1.2.4 - Catalog Images PRODUCTION Release
+on:
+  push:
+    branches:
+      - fix/cloud-1.2.4-catalog-image-link
+    paths:
+      - cloud/release/GO_LIVE_124.txt
+permissions:
+  contents: write
+  pages: write
+  actions: read
+concurrency:
+  group: trummcards-cloud-prod-release
+  cancel-in-progress: false
+jobs:
+  approval-and-tests:
+    name: Confirm version, upgrade approval and source safety
+    runs-on: ubuntu-latest
+    env:
+      TRUMMCARDS_BACKUP_ACTIVE: ${{ vars.TRUMMCARDS_BACKUP_ACTIVE }}
+      TRUMMCARDS_RESTORE_VERIFIED: ${{ vars.TRUMMCARDS_RESTORE_VERIFIED }}
+      TRUMMCARDS_PRODUCTION_APPROVED: ${{ vars.TRUMMCARDS_PRODUCTION_APPROVED }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Require explicit release marker and all original production safety gates
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REPOSITORY" = 'trummcardsgit/trummcards-updates'
+          test "$GITHUB_REF" = 'refs/heads/fix/cloud-1.2.4-catalog-image-link'
+          test "$(cat cloud/release/GO_LIVE_124.txt)" = 'APPROVED_CLOUD_1.2.4_CATALOG_IMAGES_WITH_EXISTING_DATA_AND_VERIFIED_V3_BACKUP'
+          test "$TRUMMCARDS_BACKUP_ACTIVE" = 'true'
+          test "$TRUMMCARDS_RESTORE_VERIFIED" = 'true'
+          test "$TRUMMCARDS_PRODUCTION_APPROVED" = 'true'
+      - name: Require successfully tested 1.2.4 stock and image source
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin fix/cloud-1.2.4-catalog-image-link
+          expected="$(git rev-parse HEAD)"
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs?branch=feature%2Fcloud-1.2.4-stock-management&per_page=100" \
+            --jq '.workflow_runs | map(select(.name=="TrummCards 1.2.4 - Catalog Image Link Fix TEST" and .conclusion=="success")) | .[].head_sha' > "$RUNNER_TEMP/green-stock124.txt"
+          test -s "$RUNNER_TEMP/green-stock124.txt"
+          matched=""
+          while IFS= read -r successful; do
+            git cat-file -e "$successful^{commit}" || continue
+            if git diff --quiet "$successful" "$expected" -- \
+              cloud/desktop-production/src/app.js cloud/mobile-production/web/app.js \
+              cloud/desktop-production/src/catalog11.js cloud/mobile-production/web/catalog11.js \
+              cloud/desktop-production/src/catalog11-ui.js cloud/mobile-production/web/catalog11-ui.js \
+              cloud/release/catalog-image-link124.test.mjs cloud/backup/validate.mjs \
+              cloud/backup/restore-check.mjs cloud/backup/backup.test.mjs; then
+              matched="$successful"; break
+            fi
+          done < "$RUNNER_TEMP/green-stock124.txt"
+          test -n "$matched" || { echo 'BLOCKED: no matching green Cloud 1.2.4 test'; exit 1; }
+      - name: Main backup and restore must support V3 audit journal before publishing
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin main
+          git show origin/main:cloud/backup/validate.mjs | grep -q 'TABLES_V3'
+          git show origin/main:cloud/backup/restore-check.mjs | grep -q 'tc_inventory_corrections'
+      - name: Verify all 1.2 feature tests and client safety
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --test cloud/release/feature-11.test.mjs cloud/release/finance11.test.mjs cloud/release/tcgdex11.test.mjs cloud/release/shipping11.test.mjs cloud/release/market-fees11.test.mjs cloud/release/sets11.test.mjs cloud/release/cash11.test.mjs cloud/release/catalog-pagination-image11.test.mjs
+          node --test cloud/backup/backup.test.mjs
+          node --check cloud/release/prepare-cloud-124-production.mjs
+          node --test cloud/release/inventory-image-121.test.mjs
+          node --test cloud/release/catalog-image-link124.test.mjs
+          node --test cloud/release/stock-management123.test.mjs
+          node --test cloud/release/catalog-image-link124.test.mjs
+          node cloud/release/probe-prod-anon.mjs
+      - name: Prepare production PWA in temporary CI checkout
+        shell: bash
+        run: |
+          set -euo pipefail
+          node cloud/release/prepare-cloud-124-production.mjs
+          node --test cloud/release/inventory-image-121.test.mjs
+          node --check cloud/release/prepare-cloud-124-production.mjs
+          for file in cloud/mobile-production/web/*.js; do node --check "$file"; done
+      - name: Retain exact PWA 1.2 payload from this release
+        uses: actions/upload-artifact@v4
+        with:
+          name: TrummCards-Cloud-124-LIVE-PWA
+          path: cloud/mobile-production/web/
+          retention-days: 14
+          if-no-files-found: error
+
+  encrypted-v3-backup:
+    name: Backup and locally restore current PROD snapshot V3 with all private images
+    needs: approval-and-tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: local-test-only
+          POSTGRES_DB: trummcards_restore
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      TC_BACKUP_EMAIL: ${{ secrets.TC_PROD_BACKUP_EMAIL }}
+      TC_BACKUP_PASSWORD: ${{ secrets.TC_PROD_BACKUP_PASSWORD }}
+      TC_BACKUP_PASSPHRASE: ${{ secrets.TC_PROD_BACKUP_PASSPHRASE }}
+      PG_RESTORE_URL: postgresql://postgres:local-test-only@127.0.0.1:5432/trummcards_restore
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check backup secret configuration and v2-aware code
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$TC_BACKUP_EMAIL"
+          test -n "$TC_BACKUP_PASSWORD"
+          test "${#TC_BACKUP_PASSPHRASE}" -ge 24
+          grep -q 'TABLES_V3' cloud/backup/validate.mjs
+      - name: Restore utilities
+        run: npm install --prefix cloud/backup --no-audit --no-fund --ignore-scripts
+      - name: Require a fresh V3 encrypted backup with corrections and actual local restore
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/backup"
+          archive="$RUNNER_TEMP/backup/TrummCards-PROD-before-124-release-${{ github.run_id }}.tcbackup"
+          node cloud/backup/create.mjs "$archive"
+          node cloud/backup/verify.mjs "$archive" | tee "$RUNNER_TEMP/verify-v3.txt"
+          grep -q '"tc_sale_shipments"' "$RUNNER_TEMP/verify-v3.txt"
+          grep -q '"tc_platform_fee_profiles"' "$RUNNER_TEMP/verify-v3.txt"
+          grep -q '"tc_cash_entries"' "$RUNNER_TEMP/verify-v3.txt"
+          grep -q '"tc_inventory_corrections"' "$RUNNER_TEMP/verify-v3.txt"
+          # V3-only correction journal must exist in the decrypted manifest. V2 lacks this key.
+          node cloud/backup/restore-check.mjs "$archive"
+      - name: Store only encrypted archive for 30 days
+        uses: actions/upload-artifact@v4
+        with:
+          name: TrummCards-PROD-Encrypted-RELEASE-124-${{ github.run_id }}
+          path: ${{ runner.temp }}/backup/*.tcbackup
+          retention-days: 30
+          if-no-files-found: error
+
+  windows-124:
+    name: Build validated Windows 1.2 installer and generic auto-update files
+    needs: encrypted-v3-backup
+    runs-on: windows-latest
+    timeout-minutes: 45
+    env:
+      TRUMMCARDS_BACKUP_ACTIVE: 'true'
+      TRUMMCARDS_RESTORE_VERIFIED: 'true'
+      TRUMMCARDS_PRODUCTION_APPROVED: 'true'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Create production 1.2 source and verify identity
+        shell: pwsh
+        run: |
+          node cloud/release/prepare-cloud-124-production.mjs
+          node --test cloud/release/inventory-image-121.test.mjs
+          node --check cloud/release/prepare-cloud-124-production.mjs
+          if($LASTEXITCODE -ne 0){ throw 'Staging 1.2 failed' }
+      - name: Install build requirements
+        working-directory: cloud/desktop-production
+        shell: pwsh
+        run: npm install --no-audit --no-fund
+      - name: Install icon builder
+        shell: pwsh
+        run: python -m pip install --disable-pip-version-check pillow
+      - name: Build installer and verify updater metadata
+        working-directory: cloud/desktop-production
+        shell: pwsh
+        run: |
+          npm run dist
+          if($LASTEXITCODE -ne 0){ throw 'Windows build failed' }
+          $exe='TrummCards-Cloud-Setup-1.2.4.exe'
+          foreach($f in @($exe, "$exe.blockmap", 'latest.yml')){
+            if(-not(Test-Path "dist/$f")){throw "Missing update artifact $f"}
+          }
+          if((Get-Item "dist/$exe").Length -lt 10000000){throw 'Installer too small'}
+          $meta=Get-Content 'dist/latest.yml' -Raw
+          if(-not $meta.Contains('version: 1.2.4') -or -not $meta.Contains($exe)){throw 'Manifest version mismatch'}
+      - name: Preserve Windows installer, blockmap and latest.yml
+        uses: actions/upload-artifact@v4
+        with:
+          name: TrummCards-Cloud-124-LIVE-Windows
+          path: |
+            cloud/desktop-production/dist/TrummCards-Cloud-Setup-1.2.4.exe
+            cloud/desktop-production/dist/TrummCards-Cloud-Setup-1.2.4.exe.blockmap
+            cloud/desktop-production/dist/latest.yml
+          retention-days: 14
+          if-no-files-found: error
+
+  publish-cloud-124:
+    name: Publish PWA and updater without modifying TEST or removing 1.0 packages
+    needs: [approval-and-tests,encrypted-v3-backup,windows-124]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/download-artifact@v4
+        with:
+          name: TrummCards-Cloud-124-LIVE-PWA
+          path: ${{ runner.temp }}/cloud124/pwa
+      - uses: actions/download-artifact@v4
+        with:
+          name: TrummCards-Cloud-124-LIVE-Windows
+          path: ${{ runner.temp }}/cloud124/updates
+      - name: Validate update assets and current live version before replacement
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f "$RUNNER_TEMP/cloud124/pwa/app.js"
+          test -f "$RUNNER_TEMP/cloud124/pwa/sw.js"
+          test -f "$RUNNER_TEMP/cloud124/updates/latest.yml"
+          test -s "$RUNNER_TEMP/cloud124/updates/TrummCards-Cloud-Setup-1.2.4.exe"
+          test -s "$RUNNER_TEMP/cloud124/updates/TrummCards-Cloud-Setup-1.2.4.exe.blockmap"
+          grep -q 'version: 1.2.4' "$RUNNER_TEMP/cloud124/updates/latest.yml"
+          grep -q 'trummcards-mobile-production-shell-v124' "$RUNNER_TEMP/cloud124/pwa/sw.js"
+          grep -q 'const NO_IMAGE_DATA_URI=' "$RUNNER_TEMP/cloud124/pwa/carddex12.js"
+          grep -q 'inferCatalogImageRoot' "$RUNNER_TEMP/cloud124/pwa/catalog11.js"
+          grep -q 'inferCatalogImageRoot' "$RUNNER_TEMP/cloud124/pwa/app.js"
+          grep -q 'catalog11.js?v=1.2.4' "$RUNNER_TEMP/cloud124/pwa/index.html"
+          grep -q 'const WRITES_ENABLED=true;' "$RUNNER_TEMP/cloud124/pwa/app.js"
+          grep -q 'hgdexyvtgfffcasfpjyu' "$RUNNER_TEMP/cloud124/pwa/app.js"
+          if grep -Rq 'cpycfxolqpidfjbhhsmr' "$RUNNER_TEMP/cloud124/pwa"; then echo 'TEST database leaked'; exit 1; fi
+          grep -q 'trummcards-mobile-production-shell-v124' "$RUNNER_TEMP/cloud124/pwa/sw.js"
+          git fetch origin +refs/heads/gh-pages:refs/remotes/origin/gh-pages
+          git show origin/gh-pages:cloud-updates/latest.yml | grep -q '^version: 1.2.3
+          for old in 1.0.0 1.1.0 1.2.0 1.2.1 1.2.2 1.2.3; do
+            git cat-file -e "origin/gh-pages:cloud-updates/TrummCards-Cloud-Setup-${old}.exe"
+          done
+      - name: Publish only new PWA and Windows update channel paths
+        shell: bash
+        run: |
+          set -euo pipefail
+          worktree="$RUNNER_TEMP/trummcards-124-pages"
+          git worktree add --detach "$worktree" refs/remotes/origin/gh-pages
+          mkdir -p "$worktree/production" "$worktree/cloud-updates"
+          cp -R "$RUNNER_TEMP/cloud124/pwa/." "$worktree/production/"
+          cp "$RUNNER_TEMP/cloud124/updates/TrummCards-Cloud-Setup-1.2.4.exe" "$worktree/cloud-updates/"
+          cp "$RUNNER_TEMP/cloud124/updates/TrummCards-Cloud-Setup-1.2.4.exe.blockmap" "$worktree/cloud-updates/"
+          cp "$RUNNER_TEMP/cloud124/updates/latest.yml" "$worktree/cloud-updates/"
+          git -C "$worktree" add -- production cloud-updates
+          if git -C "$worktree" diff --cached --name-only | grep -Ev '^(production|cloud-updates)/'; then
+            echo 'FATAL: out-of-scope paths'; exit 1
+          fi
+          if git -C "$worktree" diff --cached --name-status | grep '^D'; then
+            echo 'FATAL: release would delete files'; exit 1
+          fi
+          for old in 1.0.0 1.1.0 1.2.0 1.2.1 1.2.2 1.2.3 1.2.4; do
+            test -f "$worktree/cloud-updates/TrummCards-Cloud-Setup-${old}.exe"
+          done
+          if git -C "$worktree" diff --cached --quiet; then
+            echo 'Release files already match: no Pages changes required.'
+          else
+            git -C "$worktree" config user.name 'github-actions[bot]'
+            git -C "$worktree" config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git -C "$worktree" commit -m 'Release Cloud 1.2.4 catalog image fix PWA and Windows auto-update'
+            git -C "$worktree" push origin HEAD:gh-pages
+          fi
+      - name: Trigger GitHub Pages rebuild
+        run: gh api --method POST "repos/$GITHUB_REPOSITORY/pages/builds"
+
+          for old in 1.0.0 1.1.0 1.2.0 1.2.1 1.2.2 1.2.3; do
+            git cat-file -e "origin/gh-pages:cloud-updates/TrummCards-Cloud-Setup-${old}.exe"
+          done
+      - name: Publish only new PWA and Windows update channel paths
+        shell: bash
+        run: |
+          set -euo pipefail
+          worktree="$RUNNER_TEMP/trummcards-124-pages"
+          git worktree add --detach "$worktree" refs/remotes/origin/gh-pages
+          mkdir -p "$worktree/production" "$worktree/cloud-updates"
+          cp -R "$RUNNER_TEMP/cloud124/pwa/." "$worktree/production/"
+          cp "$RUNNER_TEMP/cloud124/updates/TrummCards-Cloud-Setup-1.2.4.exe" "$worktree/cloud-updates/"
+          cp "$RUNNER_TEMP/cloud124/updates/TrummCards-Cloud-Setup-1.2.4.exe.blockmap" "$worktree/cloud-updates/"
+          cp "$RUNNER_TEMP/cloud124/updates/latest.yml" "$worktree/cloud-updates/"
+          git -C "$worktree" add -- production cloud-updates
+          if git -C "$worktree" diff --cached --name-only | grep -Ev '^(production|cloud-updates)/'; then
+            echo 'FATAL: out-of-scope paths'; exit 1
+          fi
+          if git -C "$worktree" diff --cached --name-status | grep '^D'; then
+            echo 'FATAL: release would delete files'; exit 1
+          fi
+          for old in 1.0.0 1.1.0 1.2.0 1.2.1 1.2.2 1.2.3 1.2.4; do
+            test -f "$worktree/cloud-updates/TrummCards-Cloud-Setup-${old}.exe"
+          done
+          if git -C "$worktree" diff --cached --quiet; then
+            echo 'Release files already match: no Pages changes required.'
+          else
+            git -C "$worktree" config user.name 'github-actions[bot]'
+            git -C "$worktree" config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git -C "$worktree" commit -m 'Release Cloud 1.2.4 catalog image fix PWA and Windows auto-update'
+            git -C "$worktree" push origin HEAD:gh-pages
+          fi
+      - name: Trigger GitHub Pages rebuild
+        run: gh api --method POST "repos/$GITHUB_REPOSITORY/pages/builds"
