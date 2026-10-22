@@ -64,7 +64,7 @@ test('KartenDex retains original production 1.2.6 layout, search, set browser an
 test('Original detail panel supports collection, wishlist and admin-only sale stock actions',()=>{
  for(const target of ['dexToArticle','dexToCollection','dexToWishlist']){
   assert.match(app,new RegExp('id="'+target+'"'));
-  assert.match(dex,new RegExp("'+target+'"));
+  assert.match(dex,new RegExp("'"+target+"'"));
  }
  assert.match(dex,/target:'collection'/);
  assert.match(dex,/target:'wishlist'/);
