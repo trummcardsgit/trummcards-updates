@@ -691,7 +691,7 @@ function cloud13Init(){
  </div>
  <p id="memoryStatus" role="status" aria-live="polite" class="tc-memory-status">Wähle zwei Karten aus.</p>
  <div id="memoryBoard" class="tc-memory-board" aria-label="Pokémon Memory-Spielfeld"></div>
- <p class="tiny tc-memory-disclaimer">Das Minispiel hat keinen Einfluss auf Lager, Sammlung, Wunschliste oder Finanzen. Kartenbilder kommen aus dem öffentlichen TCGdex-Katalog; falls ein Bild fehlt, ist die Karte weiterhin spielbar. Bestzeiten werden nur auf diesem Gerät gespeichert.</p>
+ <p class="tiny tc-memory-disclaimer">Das Minispiel hat keinen Einfluss auf Lager, Sammlung, Wunschliste oder Finanzen. Kartenbilder werden aus TCGdex oder als Ersatz von Pokémon TCG API geladen. Falls ein Bild fehlt, ist die Karte weiterhin spielbar. Bestzeiten werden nur auf diesem Gerät gespeichert.</p>
  </div></section>
  <section id="page-users" class="page" hidden><div class="panel"><h2>Benutzer verwalten</h2>
  <p>Benutzer zuerst in Supabase Authentication einladen, dann hier KartenDex-Zugriff vergeben.</p>
