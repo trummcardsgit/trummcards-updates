@@ -1,0 +1,349 @@
+:root{font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#0b121e;color:#e9edf5;color-scheme:dark;font-size:15px;--gold:#e7b96a;--border:#2a364c;--secondary:#9eafc8;--surface:#142032}
+*{box-sizing:border-box}body{margin:0;min-width:320px}button,input,select,textarea{font:inherit}button{cursor:pointer}button:disabled{opacity:.5;cursor:progress}button:active:not(:disabled){transform:translateY(1px)}[hidden]{display:none!important}#shell{min-height:100svh;display:flex;flex-direction:column;background:radial-gradient(ellipse 110% 400px at 100% 0,#1e2b42 0,transparent 72%),#0b121e}
+.topbar{padding:15px max(18px,calc((100vw - 1000px)/2));border-bottom:1px solid #28374b;display:flex;justify-content:space-between;align-items:center;gap:12px;position:sticky;top:0;background:#111b29ed;backdrop-filter:blur(14px);z-index:20}.brand{display:flex;align-items:center;gap:11px;min-width:0}.monogram{height:43px;width:43px;display:grid;place-items:center;border:1.5px solid #d9aa57;border-radius:12px;background:#2b261f;color:#ffd68c;font:bold 20px Georgia,serif;flex:none}.wordmark{min-width:0}.wordmark b{display:block;color:#f3d28e;font-size:20px;letter-spacing:-.6px}.wordmark small{display:block;color:#8397b1;letter-spacing:1.5px;font-size:9px;margin-top:1px}.wordmark small span{color:var(--gold)}.connection{display:flex;align-items:center;gap:6px;color:#a4b5cf;font-size:11px;text-align:right;max-width:118px}.dot{flex:none;width:8px;height:8px;border-radius:50%;background:#69748a}.dot.online{background:#3ac18c;box-shadow:0 0 0 3px #3ac18c18}.dot.problem{background:#e37c76}
+main{width:min(100%,1000px);padding:21px 18px 24px;margin:0 auto;flex:1}.login-screen{max-width:460px;margin:0 auto}.login-art{text-align:center;padding:28px 0 23px}.login-art span{font-size:32px;color:var(--gold);display:block;padding-bottom:15px}.login-art strong{font-size:38px;line-height:1.08;letter-spacing:-1.2px;color:#f4d69b}.login-art p{color:var(--secondary);font-size:14px}.panel{border:1px solid var(--border);border-radius:20px;background:#131f30e8;padding:22px;margin-bottom:19px;box-shadow:0 12px 45px #0001}.auth-panel{padding:25px}.micro-label,.eyebrow{font-size:10px;letter-spacing:1.7px;color:var(--gold);font-weight:800}.panel h1{font-size:27px;margin:8px 0}.panel h2{font-size:22px;margin:8px 0 12px;color:#f4f3f6}.subtle{font-size:13px;line-height:1.6;color:#a9b8cb}.tiny{font-size:11px;line-height:1.6;color:#7e91ac;margin-top:17px}.auth-panel form{margin-top:20px}form label:not(.file-button){display:block;color:#cad4e2;font-size:13px;font-weight:600;margin-bottom:7px}.field{margin-bottom:15px}.two-fields{display:grid;grid-template-columns:1fr 1fr;gap:12px}.two-fields>.field{min-width:0}.auth-panel input{margin-bottom:16px}input,select,textarea{color:#f6f8fc;background:#0c1726;border:1px solid #40516a;border-radius:12px;outline:none;min-height:48px;padding:12px;width:100%;font-size:16px;max-width:100%}input:focus,select:focus,textarea:focus{border-color:#d9ad64;box-shadow:0 0 0 3px #d9ad6424}textarea{resize:vertical}.primary,.secondary,.danger{border-radius:13px;padding:13px 16px;min-height:48px;font-weight:700;border:1px solid transparent}.primary{background:linear-gradient(120deg,#efc77d,#d9a657);color:#141c2b;box-shadow:0 8px 18px #a9772733}.primary span{margin-left:8px}.secondary{background:#23334a;color:#e3edf9;border-color:#415575;margin-top:10px}.danger{border:1px solid #964a4c;background:#3b242b;color:#ffbbb3;margin-top:12px}.full{width:100%;display:block}
+.test-note{font-size:11px;border:1px solid #81683e;border-radius:11px;padding:11px 13px;color:#edd2a6;background:#392b1a5e;line-height:1.55;margin:2px 0 18px}.test-note span{color:#f6c675;font-weight:900;letter-spacing:.8px;margin-right:5px}.topactions{display:flex;justify-content:space-between;gap:15px;align-items:center;margin:4px 0 18px}.topactions h1{font-size:29px;margin:2px 0;font-weight:760;letter-spacing:-1.2px}.icon-btn{height:44px;width:44px;border-radius:14px;background:#23334a;border:1px solid #43536d;color:#f5d28a;font-size:26px}.stats-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:24px}.stat{padding:17px 15px;background:linear-gradient(135deg,#1d2d43,#172237);border-radius:15px;border:1px solid #354359;min-width:0}.stat span{font-size:12px;color:#b2c1d3;display:block}.stat strong{display:block;font-size:25px;color:#f3d18d;letter-spacing:-1px;margin:8px 0 4px;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.stat small{font-size:10px;color:#89a1ba}.sectionhead{display:flex;align-items:center;justify-content:space-between;margin:15px 1px}.sectionhead h2,.subheading{font-size:19px;margin:0;color:#f4f0e9}.subheading{margin:26px 0 13px}.text-button{border:0;background:transparent;color:#edc477;font-weight:800;padding:8px}.searchbox{display:flex;align-items:center;gap:8px;background:#111f30;border:1px solid #34465d;border-radius:13px;padding:0 12px;margin:14px 0}.searchbox span{font-size:26px;color:#abbbcd}.searchbox input{border:none;background:transparent;box-shadow:none!important;padding:12px 0}.stack{display:flex;flex-direction:column;gap:10px}.list-card{background:#162438;border:1px solid #2b3c54;border-radius:16px;padding:15px;display:flex;align-items:center;justify-content:space-between;gap:13px;min-width:0}.item-main{min-width:0;flex:1}.item-main strong{font-size:15px;display:block;overflow-wrap:anywhere}.item-main small{display:block;color:#91a8c2;font-size:11px;line-height:1.5;margin-top:4px}.item-end{text-align:right;flex:none;max-width:46%}.item-end b{display:block;color:#f4cf8d;white-space:nowrap}.item-end small{color:#95a8c1;font-size:11px;display:block;margin-top:5px}.tiny-btn{background:#253955;border:1px solid #436081;color:#d5e5f8;border-radius:10px;padding:7px 12px;font-size:12px;margin-top:7px;min-height:35px}.empty{padding:28px 12px;text-align:center;border:1px dashed #38516a;border-radius:16px;color:#9aafc9;font-size:13px}.preview{border:1px solid #77613c;border-radius:13px;padding:13px;background:#32291966;margin-bottom:15px;color:#f6dcae;line-height:1.6;font-size:13px}.preview.good{background:#1c3d3180;color:#a7f2d1;border-color:#3a8062}.preview.bad{background:#3d262880;color:#ffb2b2;border-color:#99535a}.toast{background:#16394a;border:1px solid #5a89a4;border-radius:14px;color:#e9f7fe;padding:13px 15px;margin-bottom:16px;line-height:1.5;font-size:13px;overflow-wrap:anywhere}.toast.error{background:#49252c;border-color:#a6535c;color:#ffd5d6}.toast.success{background:#173d33;border-color:#3b8064;color:#baf3d9}.pending{border:1px solid #b98f48;background:#3b301f;color:#ffe4ac;padding:13px;margin:0 0 18px;border-radius:12px;font-size:13px;line-height:1.5}.pending button{margin-top:8px}.setting-row{display:flex;justify-content:space-between;gap:14px;border-bottom:1px solid #364256;padding:13px 0;font-size:13px}.setting-row span{color:#a7b7cc}.setting-row b{text-align:right;overflow-wrap:anywhere;max-width:60%}.file-button{display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;font-size:13px;border:1px dashed #9a793f;border-radius:14px;background:#282a2d;color:#f5d18e;font-weight:800;padding:18px 9px;min-height:85px;cursor:pointer}.file-button input{width:0;height:0;opacity:0;position:absolute;pointer-events:none}.image-selection{color:#a9b7ca;font-size:12px;margin:0 0 15px}.photo-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}.photo-card{background:#172337;border:1px solid #2c405a;border-radius:13px;padding:9px;min-width:0}.photo-card img{width:100%;aspect-ratio:1;object-fit:contain;background:#0a1522;border-radius:9px}.photo-card p{margin:8px 0 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:12px;color:#b7c9df}.bottom-nav{position:sticky;bottom:0;z-index:30;background:#111b2af5;backdrop-filter:blur(18px);display:flex;justify-content:space-around;padding:8px 3px calc(8px + env(safe-area-inset-bottom));border-top:1px solid #2c3d54}.bottom-nav button{background:transparent;border:0;color:#95aac4;display:flex;flex-direction:column;align-items:center;gap:4px;padding:5px 1px;font-weight:650;font-size:10px;min-width:54px}.bottom-nav button span{font-size:22px;line-height:1}.bottom-nav button.active{color:#f4ca85}.bottom-nav button:focus-visible{outline:2px solid var(--gold)}footer{padding:13px 20px 17px;color:#6e829d;display:flex;justify-content:space-between;font-size:9px;letter-spacing:.5px;border-top:1px solid #203049}footer span{color:#987a52}
+@media(min-width:760px){main{padding:32px 30px 28px}.login-screen{margin-top:10px}.stats-grid{grid-template-columns:repeat(4,minmax(0,1fr))}.bottom-nav{position:static;justify-content:center;gap:30px}.bottom-nav button{font-size:12px}.topbar{padding-top:20px;padding-bottom:20px}.photo-grid{grid-template-columns:repeat(4,minmax(0,1fr))}.stat strong{font-size:27px}.panel{padding:28px}}
+@media(max-width:380px){main{padding:15px 12px}.topbar{padding:12px}.wordmark b{font-size:17px}.connection{font-size:10px}.two-fields{gap:8px}.stat{padding:14px 10px}.stat strong{font-size:22px}.test-note{font-size:10px}}
+
+/* Cloud TEST v0.2: original TrummCards branding + article photo workflow */
+.brand-logo{width:58px;height:58px;object-fit:contain;flex:none;filter:drop-shadow(0 2px 6px #a8833d33)}
+.login-logo{display:block;width:138px;max-width:65%;height:auto;object-fit:contain;margin:0 auto 12px}
+.article-photo-field{border:1px solid #455879;border-radius:14px;padding:15px;margin:8px 0 17px;background:#122137}
+.article-photo-field p{margin:9px 0 14px}
+.article-photo-preview{display:flex;align-items:center;gap:12px;font-size:12px;color:#c8d8ee;margin-top:12px;min-height:42px}
+.article-photo-preview img{width:90px;height:90px;object-fit:contain;border-radius:11px;border:1px solid #59708f;background:#0d1522;flex:none}
+.article-photo-preview span{overflow-wrap:anywhere}
+.list-card{min-width:0}
+.list-image-button{display:grid;place-items:center;padding:0;background:#121b2b;border:1px solid #465777;border-radius:12px;flex:0 0 62px;width:62px;height:73px;overflow:hidden}
+.list-image-button:focus-visible{outline:2px solid #e6bd76}
+.list-image-button img{width:100%;height:100%;object-fit:cover}
+.list-image-button .image-placeholder{color:#8d9fb9;font-size:24px}
+.item-main{min-width:0;flex:1}
+.sale-date-qty .field{min-width:0}
+.qty-stepper{display:grid;grid-template-columns:44px minmax(0,1fr) 44px;gap:0;border:1px solid #465875;border-radius:12px;overflow:hidden;background:#0c1726;min-height:48px;width:100%}
+.qty-stepper button{background:#253955;color:#f7d494;border:0;font-size:24px;font-weight:800;padding:0;min-width:0}
+.qty-stepper input{width:100%;min-width:0;border:0;border-radius:0;background:#0c1726;text-align:center;padding:9px 2px;font-size:18px;font-weight:700;min-height:46px;appearance:textfield;-moz-appearance:textfield}
+.qty-stepper input::-webkit-inner-spin-button,.qty-stepper input::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+.qty-stepper:focus-within{outline:2px solid #e3b765;outline-offset:1px}
+.image-dialog{position:fixed;inset:0;margin:auto;max-height:92vh;max-width:95vw;width:min(540px,95vw);border:1px solid #7489a9;border-radius:17px;padding:36px 12px 13px;background:#0e1a2a;color:#f5f0e8;box-shadow:0 20px 90px #000b}
+.image-dialog::backdrop{background:#000c;backdrop-filter:blur(5px)}
+.image-dialog img{max-width:100%;max-height:73vh;object-fit:contain;display:block;margin:0 auto}
+.image-dialog p{text-align:center;font-weight:600}
+.image-dialog-close{position:absolute;right:10px;top:7px;border:0;background:#2b3d54;color:#fff;border-radius:7px;padding:6px 10px}
+@media(max-width:560px){.sale-date-qty{grid-template-columns:minmax(0,1fr)}.brand-logo{width:49px;height:49px}}
+
+/* Cloud TEST v0.3 – visible card thumbnails and iPhone-friendly booking forms. */
+.list-image-button{flex:0 0 66px;width:66px;height:76px;background:#0d1a2b;border-color:#526681}
+.list-image-button img{width:100%;height:100%;object-fit:contain;background:#0c1828;padding:3px;border-radius:10px}
+.list-image-button img:not([hidden]) + .image-placeholder{display:none}
+.list-image-button .image-placeholder{font-size:22px;color:#9badc5}
+
+.booking-panel{border-color:#354863;background:linear-gradient(155deg,#17263a,#111d30);padding:24px}
+.booking-panel .subtle{line-height:1.65;margin:10px 0 20px}
+.booking-panel form{max-width:100%;min-width:0}
+.booking-panel .field{min-width:0;margin-bottom:18px}
+.booking-panel .field>label{display:block;min-height:19px;line-height:1.35;font-size:13px;font-weight:700;color:#d7e1f0;margin:0 0 9px}
+.booking-panel .two-fields{grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;align-items:start}
+.booking-panel :is(input,select,textarea){display:block;box-sizing:border-box;width:100%;max-width:100%;min-width:0;min-height:53px;height:53px;margin:0;padding:12px 14px;border:1px solid #50617c;border-radius:13px;background:#0c192a;color:#f7f9ff;font-size:16px;line-height:1.3;box-shadow:inset 0 1px 3px #0003;outline:none}
+.booking-panel textarea{height:auto;min-height:88px}
+.booking-panel :is(input,select,textarea)::placeholder{color:#8da0b8;opacity:1}
+.booking-panel :is(input,select,textarea):focus{border-color:#e6b96c;box-shadow:0 0 0 3px #e7b96a2a,inset 0 1px 2px #0002}
+.booking-panel select{padding-right:28px;text-overflow:ellipsis}
+.booking-panel input[type="date"]{min-width:0;text-align:left;color-scheme:dark;overflow:hidden}
+.booking-panel input[type="date"]::-webkit-date-and-time-value{text-align:left;min-width:0}
+.booking-panel input[type="date"]::-webkit-datetime-edit{text-align:left;min-width:0;padding:0}
+.booking-panel input[type="date"]::-webkit-calendar-picker-indicator{opacity:.75;filter:invert(.85);margin-left:auto}
+.booking-panel input[type="number"]{appearance:textfield;-moz-appearance:textfield}
+.booking-panel .qty-stepper{min-width:0;min-height:53px;height:53px;grid-template-columns:48px minmax(0,1fr) 48px;border-radius:13px;border-color:#50617c}
+.booking-panel .qty-stepper button{background:#2a405c;display:grid;place-items:center;font-size:25px;line-height:1}
+.booking-panel .qty-stepper input{height:51px;min-height:51px;min-width:0;padding:9px 4px;text-align:center;border:0;box-shadow:none;border-radius:0}
+.booking-panel .qty-stepper:focus-within{outline:2px solid #e6b96c;outline-offset:2px}
+.booking-panel .preview{margin-top:8px;line-height:1.6}
+.booking-panel .primary{min-height:53px}
+@media(max-width:560px){
+ .topbar{padding-top:calc(13px + env(safe-area-inset-top, 0px))}
+ .booking-panel{padding:19px 16px;border-radius:17px}
+ .booking-panel .two-fields{grid-template-columns:minmax(0,1fr);gap:0}
+ .booking-panel .field{margin-bottom:16px}
+ .booking-panel .subtle{margin-bottom:18px}
+ .booking-panel :is(input,select,textarea){padding-inline:14px}
+ .list-card{gap:11px;padding:12px}
+ .list-image-button{flex-basis:62px;width:62px;height:74px}
+ .item-end{max-width:36%}
+}
+@media(max-width:380px){
+ .booking-panel{padding:17px 13px}
+ .booking-panel .field>label{font-size:12px}
+ .list-card{gap:9px}
+ .list-image-button{flex-basis:56px;width:56px;height:66px}
+}
+
+
+/* Cloud TEST v0.4 – redesigned iPhone purchase and sales forms.
+   Each section is a visually separated field group; short screens never
+   force two inputs into an unreadably narrow column. */
+.booking-panel{
+  width:100%;max-width:770px;margin-inline:auto;padding:24px;
+  background:linear-gradient(160deg,#152337 0%,#101c2c 100%);
+  border:1px solid #33465f;border-radius:19px;
+  overflow:visible;
+}
+.booking-panel>.micro-label{font-size:10px;letter-spacing:1.7px;color:#f0c782}
+.booking-panel>h2{font-size:clamp(22px,4.8vw,26px);line-height:1.2;margin:9px 0 8px;letter-spacing:-.6px}
+.booking-panel>.subtle{font-size:13px;line-height:1.5;margin:0 0 22px;max-width:52ch}
+.booking-form{display:grid;grid-template-columns:minmax(0,1fr);gap:16px;min-width:0}
+.booking-panel .booking-group{
+  display:block;min-width:0;max-width:100%;margin:0;
+  border:1px solid #354b64;border-radius:15px;
+  padding:14px 16px 15px;
+  background:linear-gradient(160deg,#16273d,#142237);
+  box-shadow:0 3px 12px #050b1517;
+}
+.booking-panel .booking-group legend{
+  padding:0 7px;font-size:13px;line-height:23px;
+  color:#f1d29d;font-weight:750;letter-spacing:.2px;
+}
+.booking-panel .group-number{
+  display:inline-grid;place-items:center;vertical-align:middle;
+  width:22px;height:22px;margin-right:7px;border-radius:7px;
+  font-size:10px;font-weight:850;line-height:1;
+  background:#304058;border:1px solid #576a82;color:#f7d394;
+}
+.booking-panel .booking-group .field{min-width:0;margin:0 0 14px}
+.booking-panel .booking-group .field:last-child{margin-bottom:0}
+.booking-panel .booking-group .field>label{
+  display:block;height:auto;min-height:0;white-space:normal;overflow-wrap:break-word;
+  font-size:12.5px;line-height:1.3;font-weight:680;
+  letter-spacing:.1px;color:#cedaed;margin:0 0 8px;
+}
+.booking-panel .booking-grid{
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:13px;min-width:0;align-items:end;
+}
+.booking-panel .booking-grid .field{min-width:0;margin:0}
+.booking-panel .booking-grid + .field{margin-top:14px}
+.booking-panel .booking-group :is(input,select,textarea){
+  display:block;box-sizing:border-box;width:100%;max-width:100%;min-width:0;
+  height:52px;min-height:52px;padding:11px 14px;margin:0;
+  background:#091729;border:1px solid #4c617d;border-radius:12px;
+  color:#f2f6fd;font-size:16px;line-height:1.35;font-weight:530;
+  box-shadow:inset 0 1px 4px #00000030;
+  outline:0;
+}
+.booking-panel .booking-group :is(input,select,textarea):focus{
+  border-color:#f1c279;box-shadow:0 0 0 3px #f1c27930,inset 0 1px 3px #0003;
+}
+.booking-panel .booking-group :is(input,select,textarea)::placeholder{
+  color:#8ea3bb;opacity:1;font-weight:450;
+}
+.booking-panel .booking-group select{
+  appearance:auto;padding-right:28px;white-space:nowrap;text-overflow:ellipsis;
+}
+.booking-panel .booking-group input[type=date]{
+  display:block;width:100%;max-width:100%;min-width:0;
+  font-family:inherit;font-size:16px;color-scheme:dark;
+  -webkit-min-logical-width:0;text-align:left;line-height:1.3;
+}
+.booking-panel .booking-group input[type=date]::-webkit-date-and-time-value{
+  min-width:0;text-align:left;margin:0;
+}
+.booking-panel .booking-group input[type=date]::-webkit-datetime-edit{
+  min-width:0;text-align:left;padding:0;
+}
+.booking-panel .booking-group input[type=date]::-webkit-calendar-picker-indicator{
+  opacity:.85;margin-left:auto;cursor:pointer;
+}
+.booking-panel .booking-group input[type=number]{
+  appearance:textfield;-moz-appearance:textfield;
+  font-variant-numeric:tabular-nums;
+}
+.booking-panel .booking-group input[type=number]::-webkit-inner-spin-button,
+.booking-panel .booking-group input[type=number]::-webkit-outer-spin-button{
+  -webkit-appearance:none;margin:0;
+}
+.booking-panel .money-input{position:relative;display:block;min-width:0;width:100%}
+.booking-panel .money-input>span{
+  position:absolute;right:15px;top:50%;transform:translateY(-50%);
+  font-weight:800;color:#f0c57b;font-size:16px;
+  line-height:1;pointer-events:none;
+}
+.booking-panel .booking-group .money-input>input{
+  width:100%;text-align:right;padding-left:12px;padding-right:40px;
+  font-variant-numeric:tabular-nums;letter-spacing:.15px;
+}
+.booking-panel .booking-group .qty-stepper{
+  display:grid;grid-template-columns:52px minmax(0,1fr) 52px;
+  height:52px;min-height:52px;min-width:0;width:100%;
+  margin:0;border:1px solid #4c617d;border-radius:12px;
+  overflow:hidden;background:#091729;
+}
+.booking-panel .booking-group .qty-stepper>button{
+  display:grid;place-items:center;min-width:0;height:50px;
+  margin:0;padding:0;background:#2b435e;border:0;
+  color:#f4cb87;font-size:26px;font-weight:800;line-height:1;
+  touch-action:manipulation;
+}
+.booking-panel .booking-group .qty-stepper>button:active{background:#375677}
+.booking-panel .booking-group .qty-stepper>input{
+  border:0;border-radius:0;min-width:0;width:100%;
+  min-height:50px;height:50px;margin:0;padding:9px 4px;text-align:center;
+  font-size:19px;font-weight:760;line-height:1;background:#091729;
+  box-shadow:none;
+}
+.booking-panel .booking-group .qty-stepper:focus-within{
+  outline:2px solid #f1c279;outline-offset:2px;
+}
+.booking-panel .booking-form>.preview{
+  border-radius:12px;padding:13px 14px;margin:0;
+  font-size:12.5px;line-height:1.55;
+}
+.booking-panel .booking-submit{
+  min-height:53px;width:100%;margin:0;
+  border-radius:12px;font-size:15px;
+}
+@media(max-width:680px){
+  .booking-panel{
+    margin-inline:auto;border-radius:17px;padding:18px 14px;
+  }
+  .booking-panel>.subtle{margin-bottom:19px}
+  .booking-form{gap:14px}
+  .booking-panel .booking-group{
+    min-width:0;padding:12px 12px 14px;border-radius:13px;
+  }
+  .booking-panel .booking-grid{
+    grid-template-columns:minmax(0,1fr);gap:14px;
+  }
+  .booking-panel .booking-grid .field{margin:0}
+  .booking-panel .booking-group .field{margin-bottom:15px}
+  .booking-panel .booking-group .field:last-child{margin-bottom:0}
+  .booking-panel .booking-grid+.field{margin-top:15px}
+  .booking-panel .booking-group :is(input,select,textarea){
+    min-height:50px;height:50px;padding:10px 13px;
+  }
+  .booking-panel .booking-group .money-input>input{
+    padding-right:40px;padding-left:12px;
+  }
+  .booking-panel .booking-group .qty-stepper{height:50px;min-height:50px}
+  .booking-panel .booking-group .qty-stepper>button{height:48px}
+  .booking-panel .booking-group .qty-stepper>input{height:48px;min-height:48px}
+}
+@media(max-width:380px){
+ .booking-panel{padding:14px 10px;border-radius:14px}
+ .booking-panel .booking-group{padding:12px 10px 13px}
+ .booking-panel .booking-group .qty-stepper{
+   grid-template-columns:48px minmax(0,1fr) 48px;
+ }
+}
+
+/* Keep grid field margins from doubling the mobile row gap. */
+@media(max-width:680px){.booking-panel .booking-group .booking-grid .field{margin:0}}
+
+
+/* TrummCards Cloud TEST 1.3 release candidate. Separate from TEST. */
+.test-note.production-preview{background:#3c2d1f;border:1px solid #b98444;color:#ffe5b9;line-height:1.5}
+.test-note.production-preview span{color:#fbe0a7;font-weight:850}
+.wordmark small span{color:#edca89}
+
+
+/* Cloud 1.1 catalog search and finance dashboard – shared responsive surfaces */
+.catalog-panel{border:1px solid #536a86;border-radius:14px;background:#122238;padding:16px;margin:12px 0 20px}
+.catalog-panel h3{margin:3px 0 12px}
+.catalog-search-form{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end}
+.catalog-search-form>label,.catalog-search-form>.field{flex:1 1 175px;min-width:0}
+.catalog-search-form input,.catalog-search-form select{max-width:100%}
+.catalog-results{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px;margin:10px 0}
+.catalog-item{display:flex;align-items:center;gap:10px;min-width:0;min-height:68px;border-radius:11px;border:1px solid #5b7497;background:#172d47;color:#f2ebd7;padding:9px;text-align:left;cursor:pointer;overflow-wrap:anywhere}
+.catalog-item:hover,.catalog-item:focus-visible{border-color:#edc47c;outline-offset:2px}
+.catalog-item img{height:55px;width:41px;object-fit:contain;border-radius:5px}
+.catalog-item span{min-width:0;font-size:12px;line-height:1.4}
+.catalog-selected{display:flex;align-items:center;gap:16px;margin-top:12px;padding:12px;background:#0c1d30;border:1px solid #475f7d;border-radius:11px}
+.catalog-selected[hidden]{display:none}
+.catalog-selected img{height:120px;width:auto;max-width:87px;object-fit:contain}
+.catalog-selected span{font-size:13px;line-height:1.6}
+.finance-metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:12px;margin:15px 0}
+.finance-metric{padding:14px;background:#0c1d30;border:1px solid #526982;border-radius:12px;min-width:0}
+.finance-metric small{display:block;color:#b6c6dc;line-height:1.4}
+.finance-metric strong{display:block;color:#f6d38d;font-size:20px;margin-top:7px;overflow-wrap:anywhere}
+.finance-bars{display:grid;gap:9px;margin:12px 0 22px}
+.finance-bar-row{display:grid;grid-template-columns:minmax(75px,135px) minmax(40px,1fr) minmax(70px,105px);gap:8px;align-items:center;font-size:12px}
+.finance-bar-row>span{min-width:0;overflow-wrap:anywhere}
+.finance-bar-row>strong{text-align:right;white-space:nowrap;font-size:12px}
+.finance-bar-track{height:14px;border-radius:12px;background:#24364e;overflow:hidden}
+.finance-bar{height:100%;min-width:2px;border-radius:12px;background:#e5ba68}
+.finance-bar.negative{background:#d97d73}
+@media(max-width:570px){.catalog-search-form{display:block}.catalog-search-form>button{width:100%;margin:8px 0}.catalog-results{grid-template-columns:repeat(2,minmax(0,1fr))}.finance-bar-row{grid-template-columns:70px minmax(35px,1fr) 85px;gap:6px}.finance-metric strong{font-size:17px}}
+
+
+/* TrummCards 1.1 sale shipment workflow */
+.shipment-panel{border:1px solid #536a83}
+.shipment-panel .shipment-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}
+.shipment-panel label{display:flex;flex-direction:column;gap:7px;min-width:0;overflow-wrap:anywhere}
+.shipment-panel label input,.shipment-panel label select{box-sizing:border-box;width:100%;min-width:0;max-width:100%}
+#shipmentStatus{min-height:24px;overflow-wrap:anywhere}
+#shipmentSave:disabled{opacity:.5;cursor:not-allowed}
+@media(max-width:620px){.shipment-panel .shipment-grid{grid-template-columns:minmax(0,1fr)}}
+
+
+/* Cloud 1.1 price/fee comparison – clear, readable on mobile and Windows. */
+.market-price-info{align-self:center;padding:10px 12px;border-radius:9px;border:1px solid #53677d;color:#cfd9e8;font-size:12px;line-height:1.5}
+.fee-panel{margin:16px 0;padding:14px;border:1px solid #53677d;border-radius:12px}
+.fee-profile-form .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px}
+.fee-profile-form label{display:flex;flex-direction:column;gap:6px;min-width:0}
+.fee-profile-form input,.fee-profile-form select{box-sizing:border-box;width:100%;min-width:0}
+.fee-profile-form input[type=checkbox]{width:auto}
+.fee-profile-list{display:grid;gap:8px;margin:14px 0 0}
+.fee-rule{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;background:#0e2238;border-radius:9px;padding:10px;font-size:13px}
+.fee-rule strong{color:#eed192}.fee-rule span{overflow-wrap:anywhere}
+#feeSuggestStatus{font-size:12px;color:#aebece;margin:7px 0}
+@media(max-width:570px){.fee-profile-form .grid{grid-template-columns:1fr}.fee-rule{align-items:flex-start;flex-direction:column;gap:4px}}
+
+
+/* Cloud 1.1 Pokémon set browser: responsive, accessible, no proprietary images stored. */
+.catalog-set-browser{border-top:1px solid #53677d;margin-top:18px;padding-top:16px}
+.catalog-set-browser h3{font-size:1rem;margin:5px 0 12px}
+.catalog-set-results{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:9px;margin:12px 0}
+.catalog-set-choice{background:#172d47;border:1px solid #587595;color:#f0e7d6;min-height:55px;padding:11px;text-align:left;border-radius:10px;cursor:pointer;overflow-wrap:anywhere;line-height:1.4}
+.catalog-set-choice:hover,.catalog-set-choice:focus-visible{outline:2px solid #f5c987;outline-offset:2px}
+.catalog-set-detail{margin-top:15px;border:1px solid #52677d;padding:14px;border-radius:12px;background:#0d1c30}
+.catalog-set-detail[hidden]{display:none}
+.catalog-set-detail label{display:flex;flex-direction:column;gap:7px;max-width:500px}
+.catalog-set-detail input{width:100%;box-sizing:border-box;max-width:100%}
+.catalog-page-actions{display:flex;gap:10px;justify-content:space-between;align-items:center;flex-wrap:wrap}
+.catalog-page-actions span{font-size:12px}
+.catalog-page-actions button:disabled{opacity:.45;cursor:not-allowed}
+#catalogSetMore[hidden]{display:none}
+@media(max-width:570px){.catalog-set-results{grid-template-columns:repeat(2,minmax(0,1fr))}.catalog-set-choice{font-size:12px;padding:10px}.catalog-page-actions button{flex:1 1 35%;max-width:100%}}
+
+
+/* Cloud 1.1: cash payment journal and Austrian year-based summary */
+.cash-panel{margin:20px 0 12px;padding:16px;border:1px solid #536982;border-radius:13px;background:#112239}
+.cash-panel h3{margin:0 0 9px}
+.cash-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(175px,1fr));gap:12px;margin:14px 0}
+.cash-grid label{display:flex;flex-direction:column;gap:6px;min-width:0;overflow-wrap:anywhere}
+.cash-grid input,.cash-grid select{width:100%;min-width:0;max-width:100%;box-sizing:border-box}
+.cash-description{grid-column:1/-1}
+.cash-summary-row{display:flex;flex-wrap:wrap;gap:12px;align-items:end;justify-content:space-between;margin-top:20px}
+.cash-summary-row label{display:flex;flex-direction:column;gap:6px}
+.cash-entries{display:grid;gap:9px;margin:12px 0 5px;max-height:420px;overflow-y:auto}
+.cash-entry{padding:12px;background:#0b1c2f;border:1px solid #4b6078;border-radius:10px;display:grid;gap:6px}
+.cash-entry strong{color:#f2d393}
+.cash-entry span{overflow-wrap:anywhere}
+.cash-entry .actions{display:flex;gap:8px;flex-wrap:wrap}
+@media(max-width:570px){.cash-grid{grid-template-columns:1fr}.cash-panel{padding:11px}.cash-summary-row>button{width:100%}}
+
+
+/* Cloud 1.3: Dex / personal lists in a compact mobile layout */
+#cloud13Pages .cloud13-form{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-top:12px}
+#cloud13Pages .cloud13-form input,#cloud13Pages .cloud13-form select{width:100%;min-width:0;padding:11px;border:1px solid #5b7497;border-radius:10px;background:#101f33;color:#f2ebd7}
+#cloud13Pages .cloud13-form button{padding:12px;border-radius:10px;border:1px solid #d8ac66;background:#d8ac66;color:#18263a;font-weight:700}
+#cloud13Pages .cloud13-card{display:flex;align-items:center;gap:14px;min-width:0;margin-bottom:10px}
+#cloud13Pages .cloud13-card>div{min-width:0;overflow-wrap:anywhere}
+#cloud13Pages .cloud13-card-photo{width:58px;height:80px;object-fit:contain;flex-shrink:0}
+#cloud13Pages .cloud13-selected-image{display:block;width:120px;max-width:50%;height:auto;margin:12px auto}
+#cloud13Pages .cloud13-choices{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+#cloud13Pages .cloud13-choices button{padding:10px 12px;border-radius:9px;border:1px solid #d8ac66;background:#19334e;color:#fff}
+#cloud13Pages [hidden]{display:none!important}
+#bottomNav{flex-wrap:wrap}
+#bottomNav button[hidden]{display:none!important}
+@media(max-width:570px){#bottomNav{display:flex;flex-wrap:nowrap;overflow-x:auto;justify-content:flex-start;scrollbar-width:thin}#bottomNav button{flex:0 0 auto;min-width:62px;font-size:11px;padding:9px 6px}#cloud13Pages .cloud13-form{grid-template-columns:1fr}}
