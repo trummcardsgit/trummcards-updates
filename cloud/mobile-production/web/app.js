@@ -757,7 +757,7 @@ async function start(){
  // Preserve the fragment only for same-origin handoff to the password-reset form.
  const fragment=new URLSearchParams(location.hash.slice(1));
  const query=new URLSearchParams(location.search);
- if(fragment.get('type')==='recovery'||fragment.has('error_code')||fragment.has('error')||(query.get('type')==='recovery')){
+ if(['recovery','invite'].includes(fragment.get('type'))||fragment.has('error_code')||fragment.has('error')||['recovery','invite'].includes(query.get('type'))){
   location.replace('./reset-password.html'+location.search+location.hash);return;
  }
  bind();showLogin();f($('purchaseForm'),'date').value=today();f($('saleForm'),'date').value=today();
