@@ -56,8 +56,8 @@ function bind({getUserId=()=>''}={}){
   level=$('memoryDifficulty'),newBtn=$('memoryNew'),time=$('memoryTime'),
   best=$('memoryBest'),moves=$('memoryMoves'),pairs=$('memoryPairs');
  if(!root||!board||!newBtn)throw Error('Memory-Oberfläche ist nicht vollständig.');
- let state=null,active=false,round=0,started=false,runningFrom=null,elapsed=0,ticker=null,turnBack=null;
- const cardInfo=new Map();
+ let state=null,active=false,round=0,started=false,runningFrom=null,elapsed=0,ticker=null,turnBack=null,imagesPending=false;
+ const cardInfo=new Map(),imageLoading=new Map();
  const safeRoot=root=>typeof root==='string'&&/^https:\/\/assets\.tcgdex\.net\/[A-Za-z0-9/._-]+$/.test(root)?root:'';
  const formatTime=ms=>{const n=Math.floor(Math.max(0,ms)/1000);return String(Math.floor(n/60)).padStart(2,'0')+':'+String(n%60).padStart(2,'0');};
  const elapsedMs=()=>elapsed+(runningFrom===null?0:Date.now()-runningFrom);
@@ -99,13 +99,18 @@ function bind({getUserId=()=>''}={}){
   button.classList.toggle('is-matched',item.matched);
   button.setAttribute('aria-label',item.matched?'Gefunden: '+item.name:item.shown?item.name:'Verdeckte Karte '+(index+1));
   button.setAttribute('aria-pressed',item.shown?'true':'false');
-  button.disabled=item.matched;
+  button.disabled=item.matched||imagesPending;
+ }
+ function knownImageRoot(id){
+  // All initial Memory cards come from TCGdex's English Base Set (1999).
+  const match=/^base1-(\d{1,3})$/.exec(id);
+  return match?'https://assets.tcgdex.net/en/base/base1/'+Number(match[1]):'';
  }
  function fillImage(img,id){
-  const info=cardInfo.get(id);if(!info||!safeRoot(info.imageCandidate))return;
-  img.onload=()=>{img.hidden=false;};
+  const info=cardInfo.get(id);if(!info?.url)return;
+  img.onload=()=>{if(img.dataset.memoryId===id)img.hidden=false;};
   img.onerror=()=>{img.hidden=true;img.removeAttribute('src');};
-  img.src=info.imageCandidate+'/low.webp';
+  img.loading='eager';img.decoding='async';img.src=info.url;
  }
  function render(){
   board.replaceChildren();board.dataset.level=state.level;
@@ -117,9 +122,12 @@ function bind({getUserId=()=>''}={}){
    const logo=document.createElement('small');logo.textContent='TRUMMCARDS';
    back.append(gem,logo);
    const front=document.createElement('span');front.className='tc-memory-front';
-   const img=document.createElement('img');img.alt='';img.hidden=true;img.loading='lazy';
+   const img=document.createElement('img');img.alt='';img.hidden=true;img.loading='eager';img.decoding='async';
    img.dataset.memoryId=item.key;fillImage(img,item.key);
-   const placeholder=document.createElement('span');placeholder.className='tc-memory-placeholder';placeholder.textContent='✧';
+   const placeholder=document.createElement('span');placeholder.className='tc-memory-placeholder';
+   const symbol=document.createElement('b');symbol.textContent='✧';
+   const missing=document.createElement('small');missing.textContent='Kein Bild';
+   placeholder.append(symbol,missing);
    const name=document.createElement('span');name.className='tc-memory-name';name.textContent=item.name;
    front.append(img,placeholder,name);inner.append(back,front);button.append(inner);
    button.addEventListener('click',()=>play(index));board.append(button);
@@ -127,30 +135,73 @@ function bind({getUserId=()=>''}={}){
   });
   stats();
  }
- async function loadImages(myRound){
-  if(!window.TrummCatalog11?.getPokemonCard)return;
-  const keys=[...new Set(state.cards.map(x=>x.key))].filter(k=>!cardInfo.has(k));
-  let cursor=0;
-  async function worker(){
-   for(;;){
-    const key=keys[cursor++];if(!key)return;
+ function preloadUrl(url){
+  // An eager, detached Image preloads even when a face-down card is not visible.
+  return new Promise(resolve=>{
+   const img=new Image();let settled=false;
+   const finish=ok=>{if(settled)return;settled=true;img.onload=null;img.onerror=null;resolve(ok);};
+   img.onload=()=>finish(true);img.onerror=()=>finish(false);img.src=url;
+  });
+ }
+ async function getImage(key){
+  const saved=cardInfo.get(key);
+  if(saved?.url)return saved;
+  if(imageLoading.has(key))return imageLoading.get(key);
+  const task=(async()=>{
+   let root=knownImageRoot(key);
+   if(!root&&window.TrummCatalog11?.getPokemonCard){
     try{
      const result=await window.TrummCatalog11.getPokemonCard({id:key,language:'en'});
-     const root=safeRoot(result?.imageCandidate);
-     cardInfo.set(key,{imageCandidate:root,name:result?.name||''});
-     if(myRound!==round)return;
-     for(const img of board.querySelectorAll('img[data-memory-id]'))
-      if(img.dataset.memoryId===key)fillImage(img,key);
-    }catch{cardInfo.set(key,{imageCandidate:null});}
+     root=safeRoot(result?.imageCandidate);
+    }catch{}
+   }
+   root=safeRoot(root);
+   const url=root?root+'/low.webp':'';
+   const ok=url?await preloadUrl(url):false;
+   const info={url:ok?url:''};
+   cardInfo.set(key,info);
+   return info;
+  })().finally(()=>imageLoading.delete(key));
+  imageLoading.set(key,task);
+  return task;
+ }
+ async function loadImages(myRound){
+  const keys=[...new Set(state.cards.map(x=>x.key))],count=keys.length;
+  let cursor=0,finished=0;
+  async function worker(){
+   for(;;){
+    const key=keys[cursor++];if(!key||myRound!==round)return;
+    try{await getImage(key);}catch{cardInfo.set(key,{url:''});}
+    if(myRound!==round)return;
+    finished++;
+    for(const img of board.querySelectorAll('img[data-memory-id]'))
+     if(img.dataset.memoryId===key)fillImage(img,key);
+    if(imagesPending)status.textContent='Echte Kartenbilder werden geladen: '+finished+' / '+count+' …';
    }
   }
-  await Promise.all(Array.from({length:Math.min(3,keys.length)},()=>worker()));
+  let timer=null;
+  try{
+   // Do not block the game indefinitely when the catalogue/CDN is unavailable.
+   await Promise.race([
+    Promise.all(Array.from({length:Math.min(4,count)},()=>worker())),
+    new Promise(resolve=>{timer=setTimeout(resolve,6500);})
+   ]);
+  }finally{if(timer!==null)clearTimeout(timer);}
+  if(myRound!==round)return;
+  imagesPending=false;
+  board.removeAttribute('aria-busy');
+  state.cards.forEach((_,index)=>paintCard(index));
+  status.textContent=finished===count
+   ? 'Finde die gleichen Pokémon-Karten. Die Zeit startet mit deiner ersten Karte.'
+   : 'Du kannst jetzt spielen. Fehlende Kartenbilder werden bei Verfügbarkeit nachgeladen.';
  }
  function newGame(){
   round++;if(turnBack!==null){clearTimeout(turnBack);turnBack=null;}
   pause();started=false;elapsed=0;
+  imagesPending=true;
   state=createState(level.value);
-  status.textContent='Finde die gleichen Pokémon-Karten. Die Zeit startet mit deiner ersten Karte.';
+  status.textContent='Echte Kartenbilder werden geladen …';
+  board.setAttribute('aria-busy','true');
   render();void loadImages(round);
  }
  function play(index){
