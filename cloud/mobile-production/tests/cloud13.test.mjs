@@ -141,6 +141,40 @@ test('Cardmarket valuation ignores unknown, ambiguous, undated and stale card pr
  assert.equal(sums.wishlist.priced,3);
  assert.equal(sums.wishlist.missing,1);
 });
+test('KartenDex directly saves fully identified card into both lists with chosen quantity',async()=>{
+ const begin=app.indexOf('async function cloud13UseCard('),end=app.indexOf('function cloud13ApplyRole()',begin);
+ assert.ok(begin>0&&end>begin,'Importer available');
+ const impl=app.slice(begin,end);
+ const saves=[],pages=[];
+ const deps={
+  window:{TrummCatalog11:{getPokemonCard:async()=>({
+   id:'base1-4',name:'Glurak',setName:'Basis-Set',localId:'4',rarity:'Rare',
+   imageCandidate:'https://assets.tcgdex.net/de/base/base1/4'
+  })}},
+  cloud13Role:'dex',cloud13Lang:{de:'Deutsch'},
+  cloud13CatalogImage:async()=> 'https://assets.tcgdex.net/en/base/base1/4',
+  cloud13Image:()=>'',resetArticle(){throw Error('not admin');},$(){throw Error('no manual forms expected');},
+  f(){throw Error('no manual forms expected');},showPage:v=>pages.push(v),
+  authorizedRequest:async(_url,req)=>{saves.push(JSON.parse(req.body));},
+  API_HEADERS:{'Content-Type':'application/json'},
+  cloud13Refresh:async()=>{},notice:()=>{},prompt:()=> '2'
+ };
+ const importer=new Function('d','let cloud13ImportBusy=false;const {window,cloud13Role,cloud13Lang,cloud13CatalogImage,cloud13Image,resetArticle,$,f,showPage,authorizedRequest,API_HEADERS,cloud13Refresh,notice,prompt}=d;'+impl+'return cloud13UseCard;')(deps);
+ await importer({id:'base1-4',language:'de',target:'collection'});
+ await importer({id:'base1-4',language:'de',target:'wishlist'});
+ assert.deepEqual(pages,['collection','wishlist']);
+ assert.equal(saves.length,2);
+ assert.deepEqual(saves.map(x=>x.list_type),['collection','wishlist']);
+ for(const saved of saves){
+  assert.equal(saved.quantity,2);
+  assert.equal(saved.name,'Glurak');
+  assert.equal(saved.set_name,'Basis-Set');
+  assert.equal(saved.card_number,'4');
+  assert.equal(saved.catalog_card_id,'base1-4');
+  assert.equal(saved.catalog_image_url,'https://assets.tcgdex.net/en/base/base1/4');
+ }
+});
+
 test('Full-size preview and missing-image artwork remain available',()=>{
  assert.match(app,/cloud13PaintImage\(photo,item\)/);
  assert.match(app,/\$\('imageViewer'\)\.showModal\(\)/);
