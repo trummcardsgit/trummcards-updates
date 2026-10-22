@@ -90,23 +90,65 @@ test('Cloud 1.3 uses the unified desktop production layout and preserves current
 });
 
 
-test('Collection and wishlist retain full KartenDex identity and artwork',()=>{
+test('Manual forms are removed and both personal dashboards use live prices',()=>{
+ assert.doesNotThrow(()=>new Function(app));
+ assert.doesNotMatch(app,/cloud13CollectionForm|cloud13WishlistForm|async function cloud13LoadItem/);
+ assert.match(app,/id="cloud13Total-collection"/);
+ assert.match(app,/id="cloud13Total-wishlist"/);
+ assert.match(app,/id="cloud13Count-collection"/);
+ assert.match(app,/id="cloud13Count-wishlist"/);
+ assert.match(app,/Marktpreise aktualisieren/);
+ assert.match(app,/Karten im KartenDex auswählen/);
+ assert.match(app,/data-cloud13-refresh/);
  assert.match(app,/const imageRoot=await cloud13CatalogImage\(card,language\)/);
- assert.match(app,/name:card\.name,set_name:card\.setName,card_number:card\.localId/);
- assert.match(app,/catalog_card_id:card\.id/);
- assert.match(app,/catalog_image_url:imageRoot/);
- assert.match(app,/cloud13Preview\(form\)/);
- assert.match(app,/item\.catalog_image_url=resolved/);
- assert.match(app,/meta\.textContent='Set: '/);
+ assert.match(app,/card_number:values\.card_number,language:values\.language/);
+ assert.match(app,/catalog_image_url:values\.catalog_image_url/);
+ assert.match(app,/prompt\('Wie viele Exemplare/);
  assert.match(app,/cloud13PaintImage\(photo,item\)/);
- assert.match(app,/cloud13CatalogImage\(\{id:item\.catalog_card_id,imageCandidate:item\.catalog_image_url\},item\.language\)/);
+ assert.match(app,/zoomRoot\+'\/high\.webp'/);
+ assert.match(app,/cloud13ItemQuote/);
+ assert.match(app,/TrummPersonalMarket13\.summarize/);
+ assert.match(app,/data-cloud13-variant/);
+ assert.match(app,/method:'PATCH'/);
+ assert.match(app,/cloud13QuoteTTL=10\*60\*1000/);
+ assert.match(css,/\.cloud13-dashboard/);
+ assert.match(css,/\.cloud13-quote/);
+ assert.match(html,/personal-market13\.js\?v=0\.9\.0/);
+});
+test('Cardmarket valuation ignores unknown, ambiguous, undated and stale card prices',()=>{
+ const window={TrummCardDex12:{
+  filteredMarketQuote(pricing){
+   if(!pricing)return null;
+   return {rows:pricing.rows,updatedAt:pricing.updatedAt};
+  }
+ }};
+ const market=new Function('window',read('../web/personal-market13.js')+'return window.TrummPersonalMarket13;')(window);
+ const now=Date.parse('2026-10-22T08:00:00Z'),recent=new Date(now-24*3600000).toISOString();
+ const detail={pricing:{updatedAt:recent,rows:[{label:'Normal (ohne Holo)',value:10},{label:'Holo',value:20}]}};
+ const normal={card_variant:'Normal'},holo={card_variant:'Holo'},unset={card_variant:''};
+ assert.equal(market.select(normal,detail,now).value,10);
+ assert.equal(market.select(holo,detail,now).value,20);
+ assert.equal(market.select(unset,detail,now).value,null,'Unknown variant must not be guessed');
+ assert.equal(market.select(holo,{pricing:{...detail.pricing,updatedAt:new Date(now-31*86400000).toISOString()}},now).value,null);
+ assert.equal(market.select(holo,{pricing:{...detail.pricing,updatedAt:null}},now).value,null);
+ assert.equal(market.select(holo,null,now).value,null);
+ const items=[{list_type:'collection',quantity:2,card_variant:'Holo'},
+  {list_type:'wishlist',quantity:3,card_variant:'Normal'},
+  {list_type:'wishlist',quantity:1,card_variant:''}];
+ const sums=market.summarize(items,item=>market.select(item,detail,now));
+ assert.equal(sums.collection.value,40);
+ assert.equal(sums.wishlist.value,30);
+ assert.equal(sums.wishlist.priced,3);
+ assert.equal(sums.wishlist.missing,1);
+});
+test('Full-size preview and missing-image artwork remain available',()=>{
+ assert.match(app,/cloud13PaintImage\(photo,item\)/);
+ assert.match(app,/\$\('imageViewer'\)\.showModal\(\)/);
  assert.match(app,/cloud13EmptyImage\(\)/);
  assert.match(app,/viewerImage/);
- assert.match(app,/imageViewer/);
  assert.match(css,/\.cloud13-image-button/);
- assert.match(css,/\.cloud13-import-preview/);
  assert.match(dex,/noImageDataUri:NO_IMAGE_DATA_URI/);
- assert.equal((app.match(/class="cloud13-import-preview"/g)||[]).length,2);
+ assert.equal((app.match(/class="cloud13-import-preview"/g)||[]).length,0);
 });
 
 test('Release builder isolates TEST from PROD',()=>{
