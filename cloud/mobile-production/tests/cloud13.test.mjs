@@ -189,6 +189,19 @@ test('Full-size preview and missing-image artwork remain available',()=>{
  assert.equal((app.match(/class="cloud13-import-preview"/g)||[]).length,0);
 });
 
+test('Invited users can set their first password through safe TEST callback route',()=>{
+ const resetPage=read('../web/reset-password.html'),reset=read('../web/reset-password.js');
+ assert.doesNotThrow(()=>new Function(reset));
+ assert.match(app,/\['recovery','invite'\]\.includes\(fragment\.get\('type'\)\)/);
+ assert.match(reset,/!\\?\['recovery','invite'\]\.includes\(type\)/);
+ assert.match(reset,/token_hash:params\.get\('token_hash'\),type/);
+ assert.match(reset,/type==='invite'/);
+ assert.match(reset,/password:pw/);
+ assert.match(resetPage,/id="updateTitle"/);
+ assert.match(resetPage,/id="updateIntro"/);
+ assert.match(reset,/redirect_to=/);
+});
+
 test('Release builder isolates TEST from PROD',()=>{
  assert.match(builder,/const target=path\.resolve\('cloud\/test-13-build'\)/);
  assert.match(builder,/content=content\.replaceAll\(production,test\)\.replaceAll\(prodKey,testKey\)/);
