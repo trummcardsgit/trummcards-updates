@@ -14,7 +14,7 @@ const builder=read('../../release/build-cloud-13-test.mjs');
 
 test('PWA JavaScript parses and keeps distinct admin and Dex navigation',()=>{
  assert.doesNotThrow(()=>new Function(app));
- assert.match(app,/cloud13Role==='dex'\s*&&\s*!\['dex','more','collection','wishlist'\]/);
+ assert.match(app,/cloud13Role==='dex'\s*&&\s*!\['carddex','more','collection','wishlist'\]/);
  assert.match(app,/if\(target==='stock'&&cloud13Role!=='admin'\)/);
  assert.match(app,/if\(cloud13Role!=='admin'\)/);
 });
@@ -49,7 +49,7 @@ test('KartenDex retains original production 1.2.6 layout, search, set browser an
  for(const id of ['dexSearchForm','dexQuery','dexSearchSet','dexSearchNumber','dexLanguage',
   'dexResults','dexPrev','dexNext','dexDetail','dexSetForm','dexSets',
   'dexSetCards','dexSetPrev','dexSetNext','dexMoreSets','dexDetailImage']){
-  assert.match(app,new RegExp('id="'+id+'"'),id+' is required');
+  assert.match(html,new RegExp('id="'+id+'"'),id+' is required');
  }
  assert.match(dex,/card\.setName\|\|'Set wird geladen/);
  for(const cls of ['dex-card-name','dex-card-set','dex-card-number','dex-grid','dex-detail']){
@@ -63,7 +63,7 @@ test('KartenDex retains original production 1.2.6 layout, search, set browser an
 });
 test('Original detail panel supports collection, wishlist and admin-only sale stock actions',()=>{
  for(const target of ['dexToArticle','dexToCollection','dexToWishlist']){
-  assert.match(app,new RegExp('id="'+target+'"'));
+  assert.match(html,new RegExp('id="'+target+'"'));
   assert.match(dex,new RegExp("'"+target+"'"));
  }
  assert.match(dex,/target:'collection'/);
@@ -71,6 +71,22 @@ test('Original detail panel supports collection, wishlist and admin-only sale st
  assert.match(dex,/target:'stock'/);
  assert.match(app,/\$\('dexToArticle'\)\.hidden=isDex/);
  assert.match(app,/window\.TrummCardDex12\?\.bind\(\{onUseCard:cloud13UseCard\}\)/);
+});
+
+test('Cloud 1.3 uses the unified desktop production layout and preserves current stock/Vinted features',()=>{
+ assert.match(css,/#shell\s*\{/);
+ assert.match(css,/grid-template-columns:238px minmax\(0,1fr\)/);
+ assert.match(css,/#shell>\.bottom-nav/);
+ assert.match(html,/class="desktop-bookings-link"/);
+ assert.match(html,/data-go="carddex"/);
+ assert.match(html,/id="vintedDialog"/);
+ assert.match(html,/image-link12\.js/);
+ assert.match(html,/vinted12\.js/);
+ assert.match(app,/function manageInventoryStock/);
+ assert.match(app,/vintedUI12=window\.TrummVinted12\?\.bind/);
+ assert.match(app,/cloud13Init\(\)/);
+ assert.doesNotMatch(app,/id="page-dex"/);
+ assert.match(app,/page-collection/);
 });
 
 test('Release builder isolates TEST from PROD',()=>{
