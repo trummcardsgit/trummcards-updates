@@ -26,7 +26,7 @@ const errorText=e=>{let s=String(e?.message||e||'Unbekannter Fehler');if(e?.code
 function notice(message,type='info'){const el=$('toast');el.hidden=false;el.className='toast '+type;el.textContent=message;window.scrollTo({top:0,behavior:'smooth'});}
 function clearNotice(){$('toast').hidden=true;}
 function connected(label,kind='idle'){$('connLabel').textContent=label;$('connDot').className='dot '+kind;}
-function showLogin(){cloud13Role=null;cloud13Selected=null;session=null;$('loginScreen').hidden=false;$('appScreen').hidden=true;$('bottomNav').hidden=true;connected('Anmeldung');}
+function showLogin(){cloud13QuoteEpoch++;cloud13Role=null;cloud13Selected=null;session=null;$('loginScreen').hidden=false;$('appScreen').hidden=true;$('bottomNav').hidden=true;connected('Anmeldung');}
 function showApp(){$('loginScreen').hidden=true;$('appScreen').hidden=false;$('bottomNav').hidden=false;connected('Online','online');cloud13ApplyRole();}
 function persistSession(data){session={access_token:data.access_token,refresh_token:data.refresh_token,expires_at:data.expires_at||Math.floor(Date.now()/1000)+(data.expires_in||3600),user:data.user||session?.user};localStorage.setItem(STORE,JSON.stringify(session));}
 function clearSession(){session=null;localStorage.removeItem(STORE);}
@@ -41,7 +41,7 @@ async function tableGet(table,query){return authorizedRequest('/rest/v1/'+table+
 async function apiUser(){return authorizedRequest('/auth/v1/user',{headers:{Accept:'application/json'}});}
 async function checkAccount(){const u=await apiUser();if(!u?.id)throw Error('Anmeldung nicht erkannt.');cloud13Role=await rpc('tc_pwa_access_role');if(!['admin','dex'].includes(cloud13Role))throw Error('Dieses Benutzerkonto ist nicht für TrummCards freigeschaltet.');if(session)session.user=u;localStorage.setItem(STORE,JSON.stringify(session));return u;}
 async function login(event){event.preventDefault();const form=event.currentTarget;const btn=$('signInBtn');btn.disabled=true;clearNotice();try{const email=val(form,'email'),password=val(form,'password');const data=await raw(apiBase()+'/auth/v1/token?grant_type=password',{method:'POST',headers:{...API_HEADERS,apikey:KEY},body:JSON.stringify({email,password})});persistSession(data);const u=await checkAccount();f(form,'password').value='';$('accountEmail').textContent=u.email||'TrummCards-Konto';showApp();await refreshAll();navigate(cloud13Role==='dex'?'carddex':'home');notice('Angemeldet – Cloud-Daten synchronisiert.','success');}catch(e){notice(errorText(e),'error');if(session){await signOut(false);}}finally{btn.disabled=false;}}
-async function signOut(goLogin=true){cloud13Role=null;cloud13Items=[];cloud13Viewers=[];cloud13Selected=null;if(session){try{await authorizedRequest('/auth/v1/logout',{method:'POST'});}catch{}}clearSession();state={products:[],inventory:[],lots:[],sales:[],images:[],productImages:[],shipments:[],feeProfiles:[],cashEntries:[]};clearThumbnailCache();imageObjects.forEach(u=>URL.revokeObjectURL(u));imageObjects=[];showLogin();if(goLogin)notice('Du wurdest abgemeldet.','success');}
+async function signOut(goLogin=true){cloud13QuoteEpoch++;cloud13Role=null;cloud13Items=[];cloud13Viewers=[];cloud13Selected=null;if(session){try{await authorizedRequest('/auth/v1/logout',{method:'POST'});}catch{}}clearSession();state={products:[],inventory:[],lots:[],sales:[],images:[],productImages:[],shipments:[],feeProfiles:[],cashEntries:[]};clearThumbnailCache();imageObjects.forEach(u=>URL.revokeObjectURL(u));imageObjects=[];showLogin();if(goLogin)notice('Du wurdest abgemeldet.','success');}
 function showPage(name){
  if(cloud13Role==='dex'&&!['carddex','more','collection','wishlist'].includes(name))name='carddex';
  if(cloud13Role!=='admin'&&name==='users')name='carddex';
@@ -416,7 +416,8 @@ async function savePhoto(e){e.preventDefault();if(!WRITES_ENABLED){notice(NO_WRI
 async function renderPhotos(){imageObjects.forEach(u=>URL.revokeObjectURL(u));imageObjects=[];const parent=$('photosList');parent.replaceChildren();if(!state.images.length){parent.innerHTML='<div class="empty">Noch keine Bilder hochgeladen.</div>';return;}for(const item of state.images.slice(0,16)){if(activePage!=='photos')break;const box=document.createElement('div');box.className='photo-card';const img=document.createElement('img');img.alt='Artikelbild von '+productName(state.lots.find(l=>l.id===item.lot_id)?.product_id);img.loading='lazy';const desc=document.createElement('p');desc.textContent=img.alt;box.append(img,desc);parent.append(box);try{const token=await getToken();const response=await fetch(`${apiBase()}/storage/v1/object/authenticated/trummcards-lot-images/${item.storage_path}`,{headers:{apikey:KEY,Authorization:'Bearer '+token}});if(!response.ok)throw Error('Bild nicht geladen');const blob=await response.blob(),url=URL.createObjectURL(blob);imageObjects.push(url);img.src=url;}catch{desc.textContent+=' (Laden nicht möglich)';}}}
 async function manageInventoryStock(id,archive=false){if(!WRITES_ENABLED){notice(NO_WRITES,'error');return;}const p=productById(id);if(!p||p.archived_at)return;const before=available(id);let target=0;if(!archive){const entered=prompt('Neuer Lagerbestand für „'+p.name+'“ (aktuell '+before+'): ',String(before));if(entered===null)return;if(!/^(0|[1-9]\d*)$/.test(entered.trim())||Number(entered)>1000000){notice('Ungültige Stückzahl.','error');return;}target=Number(entered);if(target===before)return;}const reason=prompt('Grund für '+(archive?'Entfernung':'Bestandsänderung')+' von „'+p.name+'“:','Inventurkorrektur');if(reason===null)return;if(reason.trim().length<3||reason.trim().length>260){notice('Grund muss zwischen 3 und 260 Zeichen haben.','error');return;}if(!confirm(archive?'Artikel entfernen und '+before+' Stück ausbuchen? Buchungshistorie bleibt erhalten.':'Bestand von '+before+' auf '+target+' ändern?'))return;await withBusy(async()=>{const args=archive?{p_product_id:id,p_expected_qty:before,p_reason:reason.trim()}:{p_product_id:id,p_expected_qty:before,p_target_qty:target,p_reason:reason.trim(),p_unit_cost:null};await rpc(archive?'tc_archive_product':'tc_adjust_inventory',args);await refreshAll();notice(archive?'Artikel archiviert und aus Lager entfernt.':'Bestand korrigiert und protokolliert.','success');});}
 // Cloud 1.3: PWA account-specific lists, catalogue imports and admin-only inventory draft.
-let cloud13Role=null,cloud13Items=[],cloud13Viewers=[],cloud13Selected=null;
+let cloud13Role=null,cloud13Items=[],cloud13Viewers=[],cloud13Selected=null,cloud13ImportBusy=false,cloud13QuoteBusy=false,cloud13QuoteEpoch=0;
+const cloud13QuoteCache=new Map(),cloud13QuoteTTL=10*60*1000;
 const cloud13Lang={de:'Deutsch',en:'Englisch',ja:'Japanisch',it:'Italienisch'};
 const cloud13Image=u=>/^https:\/\/assets\.tcgdex\.net\/[A-Za-z0-9/._-]+$/.test(u||'')?u+'/low.webp':'';
 const cloud13EmptyImage=()=>window.TrummCardDex12?.noImageDataUri||'';
@@ -434,7 +435,7 @@ async function cloud13CatalogImage(card,language){
 function cloud13PaintImage(img,record){
  const placeholder=cloud13EmptyImage(),root=record.catalog_image_url;
  let startedRecovery=false;
- const noImage=()=>{img.onerror=null;img.src=placeholder;img.alt='Kein Bild verfügbar';};
+ const noImage=()=>{img.onerror=null;delete img.dataset.catalogRoot;img.src=placeholder;img.alt='Kein Bild verfügbar';};
  async function recover(){
   if(startedRecovery)return noImage();
   startedRecovery=true;
@@ -442,7 +443,7 @@ function cloud13PaintImage(img,record){
   const fallback=await cloud13CatalogImage({id:record.catalog_card_id,imageCandidate:''},record.language);
   if(!img.isConnected)return;
   if(fallback&&fallback!==root){
-   img.onerror=noImage;
+   img.onerror=noImage;img.dataset.catalogRoot=fallback;
    img.src=cloud13Image(fallback);
    return;
   }
@@ -451,23 +452,77 @@ function cloud13PaintImage(img,record){
  img.onerror=()=>{void recover();};
  img.loading='lazy';
  img.alt='Kartenbild von '+(record.name||'Pokémon-Karte');
- if(cloud13Image(root))img.src=cloud13Image(root);
+ if(cloud13Image(root)){img.dataset.catalogRoot=root;img.src=cloud13Image(root);}
  else if(record.catalog_card_id)void recover();
  else noImage();
 }
-function cloud13Preview(form){
- const area=form.querySelector('.cloud13-import-preview');
- const root=String(f(form,'catalog_image_url')?.value||'');
- const cardId=String(f(form,'catalog_card_id')?.value||'');
- area.hidden=!cardId;
- if(!cardId)return;
- area.querySelector('strong').textContent=String(f(form,'name')?.value||'');
- area.querySelector('small').textContent='Set: '+String(f(form,'set_name')?.value||'')+
-   ' · Nr.: '+String(f(form,'card_number')?.value||'');
- cloud13PaintImage(area.querySelector('img'),{
-  name:String(f(form,'name')?.value||''),catalog_card_id:cardId,
-  catalog_image_url:root,language:String(f(form,'language')?.value||'Deutsch')
- });
+const cloud13QuoteKey=item=>String(item.catalog_card_id||'')+'|'+(window.TrummImageLink12?.langCode(item.language)||'de');
+function cloud13ItemQuote(item){
+ const record=cloud13QuoteCache.get(cloud13QuoteKey(item));
+ return window.TrummPersonalMarket13?.select(item,record?.detail)||{value:null,reason:'Kein aktueller Preis verfügbar',rows:[],updatedAt:null};
+}
+function cloud13QuoteStatus(item){
+ const quote=cloud13ItemQuote(item),cached=cloud13QuoteCache.get(cloud13QuoteKey(item));
+ const date=quote.updatedAt?new Date(quote.updatedAt).toLocaleDateString('de-AT'):'';
+ if(quote.value!==null)return 'Cardmarket-Richtwert: '+euro(quote.value)+' / Karte · Gesamt '+euro(quote.value*Number(item.quantity))+
+   (date?' · Stand '+date:'')+' · '+quote.reason;
+ return cached?.error?'Marktpreis nicht abrufbar (erneut versuchen)'
+   :!item.catalog_card_id?'Kein Katalogbezug – kein Marktpreis'
+   :!cached?'Preis wird geladen …':quote.reason+(date?' · Stand '+date:'');
+}
+function cloud13RenderQuotes(){
+ if(!['admin','dex'].includes(cloud13Role))return;
+ for(const item of cloud13Items){
+  const node=document.querySelector('[data-cloud13-price="'+item.id+'"]');
+  if(node)node.textContent=cloud13QuoteStatus(item);
+  const selector=document.querySelector('[data-cloud13-variant="'+item.id+'"]');
+  if(selector)selector.hidden=cloud13ItemQuote(item).rows.length<2;
+ }
+ const totals=window.TrummPersonalMarket13.summarize(cloud13Items,cloud13ItemQuote);
+ for(const type of ['collection','wishlist']){
+  const total=totals[type];
+  $('cloud13Total-'+type).textContent=euro(total.value);
+  $('cloud13Count-'+type).textContent=total.quantity+' Karten · '+total.priced+' mit aktuellem Preis';
+  $('cloud13Coverage-'+type).textContent=total.missing
+   ?total.missing+' Karten ohne belastbaren aktuellen Preis – nicht mit 0 € bewertet.'
+   :'Alle erfassten Karten mit einem verwendbaren Richtwert.';
+ }
+}
+async function cloud13LoadMarketQuotes(force=false){
+ if(cloud13QuoteBusy||!['admin','dex'].includes(cloud13Role))return;
+ cloud13QuoteBusy=true;const epoch=cloud13QuoteEpoch;
+ const pending=[],now=Date.now();
+ for(const item of cloud13Items){
+  if(!item.catalog_card_id)continue;
+  const key=cloud13QuoteKey(item),cached=cloud13QuoteCache.get(key);
+  if(!pending.some(p=>p.key===key)&&(force||!cached||now-cached.at>cloud13QuoteTTL))
+   pending.push({key,id:item.catalog_card_id,language:window.TrummImageLink12.langCode(item.language)});
+ }
+ $('cloud13MarketStatus').textContent=pending.length?'Aktualisiere '+pending.length+' Kartenpreise …':'Preise aus dem letzten Abruf (max. 10 Minuten alt).';
+ let cursor=0;
+ async function worker(){
+  for(;;){
+   if(epoch!==cloud13QuoteEpoch)return;
+   const current=pending[cursor++];if(!current)return;
+   try{
+    const detail=await window.TrummCatalog11.getPokemonCard({id:current.id,language:current.language});
+    if(epoch!==cloud13QuoteEpoch)return;
+    cloud13QuoteCache.set(current.key,{detail,at:Date.now(),error:false});
+   }catch(error){
+    if(epoch!==cloud13QuoteEpoch)return;
+    cloud13QuoteCache.set(current.key,{detail:null,at:Date.now(),error:true});
+   }
+   cloud13RenderQuotes();
+  }
+ }
+ try{await Promise.all(Array.from({length:Math.min(3,pending.length)},()=>worker()));}
+ finally{
+  cloud13QuoteBusy=false;
+  if(epoch===cloud13QuoteEpoch){
+   cloud13RenderQuotes();
+   $('cloud13MarketStatus').textContent='Preisquelle: TCGdex / Cardmarket. Gezählt werden nur Richtwerte mit Preisdatum innerhalb der letzten 30 Tage und eindeutig zuordenbarer Ausführung. Kein garantierter Verkaufspreis.';
+  }
+ }
 }
 async function cloud13Refresh(){
  if(!['admin','dex'].includes(cloud13Role))return;
@@ -486,7 +541,9 @@ async function cloud13Refresh(){
    cloud13PaintImage(photo,item);picture.append(photo);card.append(picture);
    picture.addEventListener('click',()=>{
     if(!photo.src||photo.src===cloud13EmptyImage())return notice('Für diese Karte ist kein Bild verfügbar.','info');
-    $('viewerImage').src=photo.currentSrc||photo.src;
+    const zoomRoot=photo.dataset.catalogRoot;
+    $('viewerImage').onerror=()=>{$('viewerImage').onerror=null;$('viewerImage').src=photo.currentSrc||photo.src;};
+    $('viewerImage').src=cloud13Image(zoomRoot)?zoomRoot+'/high.webp':(photo.currentSrc||photo.src);
     $('viewerImage').alt='Kartenbild von '+item.name;
     $('viewerCaption').textContent=item.name+' · '+(item.set_name||'Set unbekannt')+' · Nr. '+(item.card_number||'–');
     $('imageViewer').showModal();
@@ -496,9 +553,17 @@ async function cloud13Refresh(){
    const meta=document.createElement('p');
    meta.textContent='Set: '+(item.set_name||'Nicht angegeben')+' · Kartennummer: '+(item.card_number||'Nicht angegeben')+
       ' · '+item.language+' · '+Number(item.quantity)+' Stk.'+
-      (item.amount_eur==null?'':' · '+euro(item.amount_eur))+(item.note?' · '+item.note:'');
+      (item.note?' · '+item.note:'');
    const remove=document.createElement('button');remove.type='button';remove.dataset.personalDelete=item.id;remove.textContent='Entfernen';
    details.append(title,meta);
+   const quoteText=document.createElement('p');quoteText.className='cloud13-quote';quoteText.dataset.cloud13Price=item.id;
+   quoteText.textContent='Preis wird geladen …';details.append(quoteText);
+   const variant=document.createElement('select');variant.className='cloud13-variant';
+   variant.dataset.cloud13Variant=item.id;variant.setAttribute('aria-label','Kartenausführung');
+   for(const [value,label] of [['','Ausführung auswählen'],['Normal','Normal'],['Holo','Holo']]){
+    const option=document.createElement('option');option.value=value;option.textContent=label;variant.append(option);
+   }
+   variant.value=item.card_variant||'';variant.hidden=true;details.append(variant);
    if(type==='wishlist'){
     const acquire=document.createElement('button');
     acquire.type='button';acquire.dataset.cloud13Acquire=item.id;
@@ -510,25 +575,10 @@ async function cloud13Refresh(){
   }
   if(!entries.length)el.textContent='Noch keine Karten vorhanden.';
  }
+ cloud13RenderQuotes();
+ void cloud13LoadMarketQuotes();
  const users=$('cloud13UserRows');users.replaceChildren();
  for(const viewer of cloud13Viewers){const label=document.createElement('p');label.textContent=viewer.email;users.append(label);}
-}
-async function cloud13LoadItem(type,form){
- const raw=Object.fromEntries(new FormData(form));
- const item={list_type:type,name:String(raw.name||'').trim(),set_name:String(raw.set_name||'').trim(),card_number:String(raw.card_number||'').trim(),
-  language:String(raw.language||'Deutsch'),quantity:Number(raw.quantity),note:String(raw.note||'').trim(),
-  priority:raw.priority?Number(raw.priority):null,amount_eur:raw.amount_eur===''||raw.amount_eur===undefined?null:Number(raw.amount_eur),
-  catalog_card_id:String(raw.catalog_card_id||''),catalog_image_url:String(raw.catalog_image_url||'')};
- if(!item.name||!Number.isSafeInteger(item.quantity)||item.quantity<1||item.quantity>10000)throw Error('Ungültige Kartenangaben.');
- // Confirm/recover the catalog image before saving, just like Lager's image-link resolver.
- if(item.catalog_card_id){
-  const resolved=await cloud13CatalogImage({id:item.catalog_card_id,imageCandidate:item.catalog_image_url},item.language);
-  item.catalog_image_url=resolved;
- }
- await authorizedRequest('/rest/v1/tc_personal_cards',{method:'POST',headers:{...API_HEADERS,Prefer:'return=minimal'},body:JSON.stringify(item)});
- await cloud13Refresh();
- form.reset();cloud13Preview(form);
- return item;
 }
 async function cloud13UseCard({id,language='de',target}={}){
  if(!['admin','dex'].includes(cloud13Role))return notice('Bitte zuerst anmelden.','error');
@@ -547,12 +597,21 @@ async function cloud13UseCard({id,language='de',target}={}){
    showPage('article');
    notice('Kartendaten übernommen. Artikel prüfen, speichern und anschließend bei Bedarf den Einkauf buchen.','success');
   }else{
-   const form=$(target==='collection'?'cloud13CollectionForm':'cloud13WishlistForm');
-   form.reset();
-   for(const [key,value] of Object.entries(values)){const input=f(form,key);if(input)input.value=value||'';}
-   cloud13Preview(form);
-   showPage(target);
-   notice('Name, Set, Kartennummer und Kartenbild aus dem KartenDex übernommen. Menge prüfen und speichern.','success');
+   if(cloud13ImportBusy)return;
+   const input=prompt('Wie viele Exemplare in '+(target==='collection'?'deine Sammlung':'deine Wunschliste')+' übernehmen?','1');
+   if(input===null)return;
+   if(!/^[1-9]\d*$/.test(input.trim())||Number(input)>10000){
+    notice('Bitte eine Stückzahl zwischen 1 und 10.000 eingeben.','error');return;
+   }
+   cloud13ImportBusy=true;
+   try{
+    await authorizedRequest('/rest/v1/tc_personal_cards',{method:'POST',headers:{...API_HEADERS,Prefer:'return=minimal'},
+     body:JSON.stringify({list_type:target,name:values.name,set_name:values.set_name,
+      card_number:values.card_number,language:values.language,catalog_card_id:values.catalog_card_id,
+      catalog_image_url:values.catalog_image_url,quantity:Number(input),note:''})});
+    await cloud13Refresh();showPage(target);
+    notice('Karte mit Name, Set, Nummer und Bild übernommen.','success');
+   }finally{cloud13ImportBusy=false;}
   }
  }catch(error){notice(errorText(error),'error');}
 }
@@ -574,30 +633,23 @@ function cloud13Init(){
  }
  const pages=document.createElement('div');pages.id='cloud13Pages';
  pages.innerHTML=`
- <section id="page-collection" class="page" hidden><div class="panel"><h2>Meine Sammlung</h2><p>Nur für dich sichtbar. Diese Karten verändern das Verkaufslager nicht.</p>
- <form id="cloud13CollectionForm" class="cloud13-form"><input name="name" maxlength="300" required placeholder="Kartenname">
- <input name="set_name" maxlength="200" placeholder="Set"><input name="card_number" maxlength="60" placeholder="Kartennummer">
- <select name="language"><option>Deutsch</option><option>Englisch</option><option>Japanisch</option><option>Italienisch</option></select>
- <input name="quantity" type="number" min="1" max="10000" value="1" required>
- <input name="amount_eur" type="number" min="0" step="0.01" placeholder="Geschätzter Einzelwert EUR">
- <input name="note" maxlength="2000" placeholder="Notiz">
- <input name="catalog_card_id" type="hidden"><input name="catalog_image_url" type="hidden">
- <div class="cloud13-import-preview" hidden><img alt="Kartenbild aus dem KartenDex"><div><strong></strong><small></small><span>Bildvorschau aus dem Pokémon-Katalog</span></div></div>
- <button type="button" class="secondary" data-go="carddex">Karte im KartenDex auswählen</button>
- <button type="submit">Zur Sammlung hinzufügen</button></form></div>
+ <section id="page-collection" class="page" hidden>
+ <div class="panel cloud13-dashboard"><div class="micro-label">DEINE POKÉMON-SAMMLUNG</div><h2>Meine Sammlung</h2>
+ <p class="subtle">Automatisch aus dem KartenDex übernommen · Nur für dich sichtbar.</p>
+ <div class="cloud13-metrics"><div class="cloud13-metric"><span>Marktwert der bewertbaren Karten</span><strong id="cloud13Total-collection">–</strong><small id="cloud13Count-collection"></small></div></div>
+ <p id="cloud13Coverage-collection" class="subtle"></p>
+ <button type="button" class="secondary" data-cloud13-refresh>Marktpreise aktualisieren</button>
+ <button type="button" class="secondary" data-go="carddex">Karten im KartenDex auswählen</button></div>
  <div id="cloud13CollectionRows" class="stack"></div></section>
- <section id="page-wishlist" class="page" hidden><div class="panel"><h2>Meine Wunschliste</h2>
- <form id="cloud13WishlistForm" class="cloud13-form"><input name="name" maxlength="300" required placeholder="Kartenname">
- <input name="set_name" maxlength="200" placeholder="Set"><input name="card_number" maxlength="60" placeholder="Kartennummer">
- <select name="language"><option>Deutsch</option><option>Englisch</option><option>Japanisch</option><option>Italienisch</option></select>
- <input name="quantity" type="number" min="1" max="10000" value="1" required>
- <select name="priority"><option value="1">Hoch</option><option value="2">Mittel</option><option value="3">Niedrig</option></select>
- <input name="note" maxlength="2000" placeholder="Notiz">
- <input name="catalog_card_id" type="hidden"><input name="catalog_image_url" type="hidden">
- <div class="cloud13-import-preview" hidden><img alt="Kartenbild aus dem KartenDex"><div><strong></strong><small></small><span>Bildvorschau aus dem Pokémon-Katalog</span></div></div>
- <button type="button" class="secondary" data-go="carddex">Karte im KartenDex auswählen</button>
- <button type="submit">Zur Wunschliste hinzufügen</button></form></div>
+ <section id="page-wishlist" class="page" hidden>
+ <div class="panel cloud13-dashboard"><div class="micro-label">DEINE KARTENWÜNSCHE</div><h2>Meine Wunschliste</h2>
+ <p class="subtle">Preisübersicht der gesuchten Karten · Nur für dich sichtbar.</p>
+ <div class="cloud13-metrics"><div class="cloud13-metric"><span>Marktwert der bewertbaren Wunschkarten</span><strong id="cloud13Total-wishlist">–</strong><small id="cloud13Count-wishlist"></small></div></div>
+ <p id="cloud13Coverage-wishlist" class="subtle"></p>
+ <button type="button" class="secondary" data-cloud13-refresh>Marktpreise aktualisieren</button>
+ <button type="button" class="secondary" data-go="carddex">Karten im KartenDex auswählen</button></div>
  <div id="cloud13WishlistRows" class="stack"></div></section>
+ <p id="cloud13MarketStatus" role="status" class="subtle cloud13-market-note"></p>
  <section id="page-users" class="page" hidden><div class="panel"><h2>Benutzer verwalten</h2>
  <p>Benutzer zuerst in Supabase Authentication einladen, dann hier KartenDex-Zugriff vergeben.</p>
  <form id="cloud13UserForm" class="cloud13-form"><input type="email" name="email" required placeholder="E-Mail-Adresse">
@@ -608,7 +660,22 @@ function cloud13Init(){
  const reports=$('page-more').querySelector('.panel:nth-child(2)');
  if(reports)reports.id='cloud13AdminReports';
  else{const panel=document.createElement('div');panel.id='cloud13AdminReports';$('page-more').append(panel);}
+ pages.addEventListener('change',async e=>{
+  const variant=e.target.closest('[data-cloud13-variant]');
+  if(!variant)return;
+  const item=cloud13Items.find(i=>i.id===variant.dataset.cloud13Variant);
+  if(!item)return;
+  variant.disabled=true;
+  try{
+   await authorizedRequest('/rest/v1/tc_personal_cards?id=eq.'+encodeURIComponent(item.id),
+    {method:'PATCH',headers:{...API_HEADERS,Prefer:'return=minimal'},body:JSON.stringify({card_variant:variant.value})});
+   item.card_variant=variant.value;cloud13RenderQuotes();
+  }catch(error){notice(errorText(error),'error');variant.value=item.card_variant||'';}
+  finally{variant.disabled=false;}
+ });
  pages.addEventListener('click',async e=>{
+  const refresh=e.target.closest('[data-cloud13-refresh]');
+  if(refresh){cloud13QuoteCache.clear();await cloud13LoadMarketQuotes(true);return;}
   const acquired=e.target.closest('[data-cloud13-acquire]');
   if(acquired){
    const original=cloud13Items.find(item=>item.id===acquired.dataset.cloud13Acquire&&item.list_type==='wishlist');
@@ -633,19 +700,6 @@ function cloud13Init(){
   if(remove&&confirm('Diese Karte aus deiner persönlichen Liste entfernen?')){
    try{await authorizedRequest('/rest/v1/tc_personal_cards?id=eq.'+encodeURIComponent(remove.dataset.personalDelete),{method:'DELETE',headers:{Prefer:'return=minimal'}});await cloud13Refresh();}catch(error){notice(errorText(error),'error');}
   }
- });
- for(const id of ['cloud13CollectionForm','cloud13WishlistForm'])$(id).addEventListener('input',event=>{
-  if(!['name','set_name','card_number','language'].includes(event.target?.name))return;
-  const form=event.currentTarget;
-  if(f(form,'catalog_card_id').value){
-   f(form,'catalog_card_id').value='';f(form,'catalog_image_url').value='';
-   cloud13Preview(form);
-  }
- });
- for(const [type,id] of [['collection','cloud13CollectionForm'],['wishlist','cloud13WishlistForm']])$(id).addEventListener('submit',async event=>{
-  event.preventDefault();if(!['dex','admin'].includes(cloud13Role))return;
-  try{await cloud13LoadItem(type,event.currentTarget);notice('In persönlicher '+(type==='collection'?'Sammlung':'Wunschliste')+' gespeichert.','success');}
-  catch(error){notice(errorText(error),'error');}
  });
  $('cloud13UserForm').addEventListener('submit',async event=>{
   event.preventDefault();if(cloud13Role!=='admin')return;
