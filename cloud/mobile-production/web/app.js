@@ -363,7 +363,15 @@ async function cloud13Refresh(){
    const title=document.createElement('strong');title.textContent=item.name;
    const meta=document.createElement('p');meta.textContent=[item.set_name,item.card_number,item.language,Number(item.quantity)+' Stk.',item.amount_eur==null?'':euro(item.amount_eur),item.note].filter(Boolean).join(' · ');
    const remove=document.createElement('button');remove.type='button';remove.dataset.personalDelete=item.id;remove.textContent='Entfernen';
-   details.append(title,meta,remove);card.append(details);el.append(card);
+   details.append(title,meta);
+   if(type==='wishlist'){
+    const acquire=document.createElement('button');
+    acquire.type='button';acquire.dataset.cloud13Acquire=item.id;
+    acquire.textContent='Gekauft – zur Sammlung übernehmen';
+    acquire.className='cloud13-acquire';
+    details.append(acquire);
+   }
+   details.append(remove);card.append(details);el.append(card);
   }
   if(!entries.length)el.textContent='Noch keine Karten vorhanden.';
  }
@@ -476,6 +484,26 @@ function cloud13Init(){
  $('cloud13DexSearch').addEventListener('submit',e=>{e.preventDefault();const fd=new FormData(e.currentTarget);query=String(fd.get('search')||'').trim();lang=String(fd.get('lang')||'de');void search(true);});
  $('cloud13DexMore').addEventListener('click',()=>void search(false));
  pages.addEventListener('click',async e=>{
+  const acquired=e.target.closest('[data-cloud13-acquire]');
+  if(acquired){
+   const original=cloud13Items.find(item=>item.id===acquired.dataset.cloud13Acquire&&item.list_type==='wishlist');
+   if(!original)return notice('Wunschlisteneintrag nicht gefunden. Bitte aktualisieren.','error');
+   const answer=prompt('Wie viele Karten hast du gekauft? (1 bis '+original.quantity+')',String(original.quantity));
+   if(answer===null)return;
+   const trimmed=answer.trim();
+   if(!/^[1-9]\\d*$/.test(trimmed)||Number(trimmed)>Number(original.quantity)){
+    notice('Bitte eine gültige Stückzahl zwischen 1 und '+original.quantity+' eingeben.','error');return;
+   }
+   acquired.disabled=true;
+   try{
+    await rpc('tc_acquire_wishlist_card',{p_wishlist_id:original.id,p_quantity:Number(trimmed)});
+    await cloud13Refresh();
+    showPage('collection');
+    notice('Karte in deine persönliche Sammlung übernommen. Das Verkaufslager bleibt unverändert.','success');
+   }catch(error){notice(errorText(error),'error');}
+   finally{acquired.disabled=false;}
+   return;
+  }
   const candidate=e.target.closest('[data-cloud13-card]');
   if(candidate){try{await cloud13SelectCard(candidate.dataset.cloud13Card,candidate.dataset.cloud13Lang);$('cloud13Selected').scrollIntoView({block:'nearest'});}catch(error){notice(errorText(error),'error');}return;}
   const importButton=e.target.closest('[data-cloud13-import]');
