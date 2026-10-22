@@ -600,7 +600,7 @@ async function cloud13UseCard({id,language='de',target}={}){
    if(cloud13ImportBusy)return;
    const input=prompt('Wie viele Exemplare in '+(target==='collection'?'deine Sammlung':'deine Wunschliste')+' übernehmen?','1');
    if(input===null)return;
-   if(!/^[1-9]\\d*$/.test(input.trim())||Number(input)>10000){
+   if(!/^[1-9]\d*$/.test(input.trim())||Number(input)>10000){
     notice('Bitte eine Stückzahl zwischen 1 und 10.000 eingeben.','error');return;
    }
    cloud13ImportBusy=true;
