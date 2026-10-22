@@ -1,5 +1,5 @@
 'use strict';
-const CACHE='trummcards-mobile-production-shell-v2';
+const CACHE='trummcards-mobile-production-shell-v1';
 const SHELL=['./','./app.js?v=0.9.0','./styles.css?v=0.9.0','./catalog11.js?v=0.9.0','./carddex12.js?v=0.9.0','./manifest.webmanifest','./icon.svg','./logo.webp','./icon-192.png','./icon-512.png'];
 self.addEventListener('install',event=>{event.waitUntil(caches.open(CACHE).then(c=>c.addAll(SHELL)).then(()=>self.skipWaiting()));});
 self.addEventListener('activate',event=>{event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k.startsWith('trummcards-mobile-production-shell-')&&k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim()));});
