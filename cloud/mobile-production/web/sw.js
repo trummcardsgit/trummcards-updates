@@ -1,6 +1,6 @@
 'use strict';
-const CACHE='trummcards-mobile-production-shell-v1';
-const SHELL=['./','./app.js?v=0.9.0','./styles.css?v=0.9.0','./catalog11.js?v=0.9.0','./carddex12.js?v=0.9.0','./manifest.webmanifest','./icon.svg','./logo.webp','./icon-192.png','./icon-512.png'];
+const CACHE='trummcards-mobile-production-shell-v133';
+const SHELL=["./","./index.html","./manifest.webmanifest","./icon.svg","./logo.webp","./icon-180.png","./icon-192.png","./icon-512.png","./reset-password.html","./styles.css?v=0.9.0","./catalog11.js?v=0.9.0","./image-link12.js?v=0.9.0","./catalog11-ui.js?v=0.9.0","./sets11-ui.js?v=0.9.0","./market11-ui.js?v=0.9.0","./fees11.js?v=0.9.0","./fees11-ui.js?v=0.9.0","./finance11.js?v=0.9.0","./finance11-ui.js?v=0.9.0","./cash11.js?v=0.9.0","./cash11-ui.js?v=0.9.0","./shipping11.js?v=0.9.0","./shipping11-ui.js?v=0.9.0","./carddex12.js?v=0.9.0","./vinted12.js?v=0.9.0","./app.js?v=0.9.0","./reset-password.js?v=0.9.0"];
 self.addEventListener('install',event=>{event.waitUntil(caches.open(CACHE).then(c=>c.addAll(SHELL)).then(()=>self.skipWaiting()));});
 self.addEventListener('activate',event=>{event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k.startsWith('trummcards-mobile-production-shell-')&&k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim()));});
 self.addEventListener('fetch',event=>{
