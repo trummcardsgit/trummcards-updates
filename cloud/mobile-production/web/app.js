@@ -1,4 +1,4 @@
-/* TrummCards Mobile Cloud PRODUCTION RC v0.9.0 – static GitHub Pages client; only a public key.
+/* TrummCards Mobile Cloud PRODUCTION RC v1.2.5 – static GitHub Pages client; only a public key.
  * Data is readable/writeable only with a Supabase JWT and the database owner RLS guard.
  * Test data ONLY. A connection is required to write; no offline operation replay.
  */
@@ -11,7 +11,7 @@ const NO_WRITES='Produktionsvorschau: Echtdaten und Buchungen bleiben bis zur Re
 let ROOT='',KEY='',session=null,authCheckPromise=null,refreshPromise=null,loading=false,busy=false,activePage='home',lastPurchaseEntry='unit',pendingImage=null,imageObjects=[];
 let state={products:[],inventory:[],lots:[],sales:[],images:[],productImages:[],shipments:[],feeProfiles:[],cashEntries:[]};
 let articleImageFile=null,articleImagePreviewUrl=null,thumbnailObserver=null;
-let catalogPicker11=null,setPicker11=null,financeUI11=null,shippingUI11=null,marketUI11=null,feesUI11=null,cashUI11=null;
+let catalogPicker11=null,setPicker11=null,financeUI11=null,shippingUI11=null,marketUI11=null,feesUI11=null,cashUI11=null,cardDexUI12=null,vintedUI12=null;
 const thumbnailCache=new Map(),thumbnailLoading=new Map();
 const API_HEADERS={'Content-Type':'application/json'};
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&quot;',"'":'&#39;'}[c]));
@@ -40,9 +40,22 @@ async function rpc(name,args={}){return authorizedRequest('/rest/v1/rpc/'+encode
 async function tableGet(table,query){return authorizedRequest('/rest/v1/'+table+'?'+query,{headers:{Accept:'application/json'}});}
 async function apiUser(){return authorizedRequest('/auth/v1/user',{headers:{Accept:'application/json'}});}
 async function checkAccount(){const u=await apiUser();if(!u?.id)throw Error('Anmeldung nicht erkannt.');cloud13Role=await rpc('tc_pwa_access_role');if(!['admin','dex'].includes(cloud13Role))throw Error('Dieses Benutzerkonto ist nicht für TrummCards freigeschaltet.');if(session)session.user=u;localStorage.setItem(STORE,JSON.stringify(session));return u;}
-async function login(event){event.preventDefault();const form=event.currentTarget;const btn=$('signInBtn');btn.disabled=true;clearNotice();try{const email=val(form,'email'),password=val(form,'password');const data=await raw(apiBase()+'/auth/v1/token?grant_type=password',{method:'POST',headers:{...API_HEADERS,apikey:KEY},body:JSON.stringify({email,password})});persistSession(data);const u=await checkAccount();f(form,'password').value='';$('accountEmail').textContent=u.email||'TrummCards-Konto';showApp();await refreshAll();navigate(cloud13Role==='dex'?'dex':'home');notice(cloud13Role==='dex'?'KartenDex-Zugang aktiv.':'Angemeldet – Cloud-Daten synchronisiert.','success');}catch(e){notice(errorText(e),'error');if(session){await signOut(false);}}finally{btn.disabled=false;}}
+async function login(event){event.preventDefault();const form=event.currentTarget;const btn=$('signInBtn');btn.disabled=true;clearNotice();try{const email=val(form,'email'),password=val(form,'password');const data=await raw(apiBase()+'/auth/v1/token?grant_type=password',{method:'POST',headers:{...API_HEADERS,apikey:KEY},body:JSON.stringify({email,password})});persistSession(data);const u=await checkAccount();f(form,'password').value='';$('accountEmail').textContent=u.email||'TrummCards-Konto';showApp();await refreshAll();navigate(cloud13Role==='dex'?'carddex':'home');notice('Angemeldet – Cloud-Daten synchronisiert.','success');}catch(e){notice(errorText(e),'error');if(session){await signOut(false);}}finally{btn.disabled=false;}}
 async function signOut(goLogin=true){cloud13Role=null;cloud13Items=[];cloud13Viewers=[];cloud13Selected=null;if(session){try{await authorizedRequest('/auth/v1/logout',{method:'POST'});}catch{}}clearSession();state={products:[],inventory:[],lots:[],sales:[],images:[],productImages:[],shipments:[],feeProfiles:[],cashEntries:[]};clearThumbnailCache();imageObjects.forEach(u=>URL.revokeObjectURL(u));imageObjects=[];showLogin();if(goLogin)notice('Du wurdest abgemeldet.','success');}
-function showPage(name){if(cloud13Role==='dex'&&!['dex','more','collection','wishlist'].includes(name))name='dex';const allowed=['home','article','purchase','sale','sales','photos','finance','more','dex','collection','wishlist','users'];if(!allowed.includes(name))name='home';activePage=name;for(const id of allowed)$('page-'+id).hidden=id!==name;for(const btn of document.querySelectorAll('[data-go]'))btn.classList.toggle('active',btn.dataset.go===name);const titles={home:'Übersicht',article:'Artikel',purchase:'Einkauf',sale:'Verkauf',sales:'Buchungen',photos:'Artikelbilder',finance:'Finanzen',more:'Einstellungen',dex:'KartenDex',collection:'Sammlung',wishlist:'Wunschliste',users:'Benutzer'};$('screenTitle').textContent=titles[name];window.scrollTo({top:0,behavior:'instant'});if(name==='photos')renderPhotos().catch(e=>notice(errorText(e),'error'));if(name==='finance')financeUI11?.render();}
+function showPage(name){
+ if(cloud13Role==='dex'&&!['carddex','more','collection','wishlist'].includes(name))name='carddex';
+ if(cloud13Role!=='admin'&&name==='users')name='carddex';
+ const allowed=['home','article','purchase','sale','sales','photos','finance','carddex','more','collection','wishlist','users'];
+ if(!allowed.includes(name))name=cloud13Role==='dex'?'carddex':'home';
+ activePage=name;
+ for(const id of allowed){const el=$('page-'+id);if(el)el.hidden=id!==name;}
+ for(const btn of document.querySelectorAll('[data-go]'))btn.classList.toggle('active',btn.dataset.go===name);
+ const titles={home:'Übersicht',article:'Artikel',purchase:'Einkauf',sale:'Verkauf',sales:'Buchungen',photos:'Artikelbilder',finance:'Finanzen',carddex:'KartenDex',more:'Einstellungen',collection:'Meine Sammlung',wishlist:'Meine Wunschliste',users:'Benutzerberechtigungen'};
+ $('screenTitle').textContent=titles[name];
+ window.scrollTo({top:0,behavior:'instant'});
+ if(name==='photos')renderPhotos().catch(e=>notice(errorText(e),'error'));
+ if(name==='finance')financeUI11?.render();
+}
 function navigate(name){if(name==='article'&&activePage!=='article')resetArticle();showPage(name);}
 function productById(id){return state.products.find(p=>p.id===id);}
 function productName(id){return productById(id)?.name||'Unbekannter Artikel';}
@@ -51,7 +64,7 @@ function fifoPreview(productId,quantity){const list=state.lots.filter(l=>l.produ
 function profit(s){return money(Number(s.price||0)+Number(s.shipping_income||0)-Number(s.shipping_cost||0)-Number(s.fees||0)-Number(s.other_cost||0)-Number(s.cogs_total||0));}
 function updateOptions(element,rows,makeLabel,placeholder){const chosen=element.value;const sig=JSON.stringify(rows.map(p=>[p.id,makeLabel(p)]));if(element.dataset.signature===sig)return;element.dataset.signature=sig;element.replaceChildren();const opt=document.createElement('option');opt.value='';opt.textContent=placeholder;element.append(opt);for(const p of rows){const option=document.createElement('option');option.value=p.id;option.textContent=makeLabel(p);element.append(option);}if(rows.some(r=>r.id===chosen))element.value=chosen;}
 async function refreshAll(opts={}){if(!session||loading||document.visibilityState==='hidden')return;loading=true;connected('Synchronisiere …');try{if(cloud13Role==='dex'){await cloud13Refresh();connected('Online','online');return;}const [products,inventory,lots,sales,images,productImages,shipments,feeProfiles,cashEntries]=await Promise.all([
- tableGet('tc_products','select=id,sku,name,set_name,language,card_condition,card_number,rarity,card_variant,storage_location,grading_company,grading_grade,grading_certificate,catalog_card_id,catalog_image_url,market_price_eur,market_price_source,market_price_checked_at,note,created_at&order=name.asc&limit=1000'),
+ tableGet('tc_products','select=id,sku,name,set_name,language,card_condition,card_number,rarity,card_variant,storage_location,grading_company,grading_grade,grading_certificate,catalog_card_id,catalog_image_url,archived_at,market_price_eur,market_price_source,market_price_checked_at,note,created_at&order=name.asc&limit=1000'),
  tableGet('tc_inventory','select=product_id,available_qty,remaining_cost&limit=1000'),
  tableGet('tc_purchase_lots','select=id,product_id,bought_on,purchased_qty,available_qty,purchase_total,extra_cost,allocated_cost,source,note,created_at&order=bought_on.asc&limit=1000'),
  tableGet('tc_sales','select=id,product_id,sold_on,qty,price,shipping_income,shipping_cost,fees,other_cost,cogs_total,platform,note,status,created_at&order=created_at.desc&limit=1000'),
@@ -62,17 +75,36 @@ async function refreshAll(opts={}){if(!session||loading||document.visibilityStat
  tableGet('tc_cash_entries','select=id,payment_on,direction,category,amount_eur,description,document_reference,sale_id,purchase_lot_id,created_at&order=payment_on.desc&limit=1000')
  ]);state={products,inventory,lots,sales,images,productImages,shipments,feeProfiles,cashEntries};renderData();const at=new Date().toLocaleTimeString('de-AT',{hour:'2-digit',minute:'2-digit',second:'2-digit'});$('lastUpdated').textContent=at;connected('Stand '+at,'online');if(cloud13Role==='admin')await cloud13Refresh();if(opts.toast)notice('Cloud-Daten aktualisiert.','success');}catch(e){connected('Offline?','problem');if(opts.toast)notice(errorText(e),'error');console.error('TrummCards mobile sync:',e);}finally{loading=false;}}
 function renderData(){const {products,inventory,sales,lots}=state;
- $('statProducts').textContent=products.length.toLocaleString('de-AT');$('statPieces').textContent=inventory.reduce((a,x)=>a+Number(x.available_qty),0).toLocaleString('de-AT');$('statValue').textContent=euro(inventory.reduce((a,x)=>a+Number(x.remaining_cost),0));$('statProfit').textContent=euro(sales.filter(s=>s.status==='booked').reduce((a,x)=>a+profit(x),0));
- renderProducts();renderHistory();const name=p=>p.name+' · '+(p.sku||'ohne SKU');updateOptions(f($('purchaseForm'),'product'),products,name,'Artikel wählen');updateOptions(f($('saleForm'),'product'),products.filter(p=>available(p.id)>0),p=>p.name+' ('+available(p.id)+' Stk.)','Artikel mit Bestand wählen');updateOptions(f($('photoForm'),'lot'),lots,l=>productName(l.product_id)+' · '+l.bought_on+' · '+l.id.slice(0,6),'Einkauf wählen');updatePurchasePreview();updateSalePreview();renderPending();financeUI11?.render();shippingUI11?.render();feesUI11?.render();cashUI11?.render();
+ $('statProducts').textContent=products.filter(p=>!p.archived_at).length.toLocaleString('de-AT');$('statPieces').textContent=inventory.filter(x=>!productById(x.product_id)?.archived_at).reduce((a,x)=>a+Number(x.available_qty),0).toLocaleString('de-AT');$('statValue').textContent=euro(inventory.filter(x=>!productById(x.product_id)?.archived_at).reduce((a,x)=>a+Number(x.remaining_cost),0));$('statProfit').textContent=euro(sales.filter(s=>s.status==='booked').reduce((a,x)=>a+profit(x),0));
+ renderProducts();renderHistory();const name=p=>p.name+' · '+(p.sku||'ohne SKU');updateOptions(f($('purchaseForm'),'product'),products.filter(p=>!p.archived_at),name,'Artikel wählen');updateOptions(f($('saleForm'),'product'),products.filter(p=>!p.archived_at&&available(p.id)>0),p=>p.name+' ('+available(p.id)+' Stk.)','Artikel mit Bestand wählen');updateOptions(f($('photoForm'),'lot'),lots,l=>productName(l.product_id)+' · '+l.bought_on+' · '+l.id.slice(0,6),'Einkauf wählen');updatePurchasePreview();updateSalePreview();renderPending();financeUI11?.render();shippingUI11?.render();feesUI11?.render();cashUI11?.render();
  }
 
+
+const recoveredCatalogImages=new Map(),recoveringCatalogImages=new Map();
+function recoverableProductImage(p){return Boolean(window.TrummImageLink12?.recoverableId(p));}
+async function findInventoryCatalogImage(productId){
+ if(recoveredCatalogImages.has(productId))return recoveredCatalogImages.get(productId);
+ if(recoveringCatalogImages.has(productId))return recoveringCatalogImages.get(productId);
+ const product=productById(productId),cardId=window.TrummImageLink12?.recoverableId(product);
+ if(!product||!cardId)return null;
+ const task=(async()=>{
+  try{
+   const result=await window.TrummImageLink12.resolve({catalog:window.TrummCatalog11,id:cardId,language:product.language});
+   const root=result?.root||null;
+   if(productById(productId)===product)recoveredCatalogImages.set(productId,root);
+   return root;
+  }catch(err){console.info('KartenDex-Lagerbild:',errorText(err));return null;}
+ })();
+ recoveringCatalogImages.set(productId,task);
+ try{return await task;}finally{recoveringCatalogImages.delete(productId);}
+}
 function imagePathForProduct(productId){
  const hero=state.productImages.find(i=>i.product_id===productId);
  if(hero)return hero.storage_path;
  const lotIds=new Set(state.lots.filter(l=>l.product_id===productId).map(l=>l.id));
  const ownPhoto=state.images.find(i=>lotIds.has(i.lot_id))?.storage_path;
  if(ownPhoto)return ownPhoto;
- const catalog=productById(productId)?.catalog_image_url||'';
+ const catalog=recoveredCatalogImages.get(productId)||productById(productId)?.catalog_image_url||window.TrummCatalog11?.inferCatalogImageRoot(productById(productId),state.products)||'';
  return /^https:\/\/assets\.tcgdex\.net\/[A-Za-z0-9/._-]+$/.test(catalog)?catalog:null;
 }
 function filteredInventory11(){
@@ -88,7 +120,7 @@ function filteredInventory11(){
   langFilter.dataset.optionsSignature=sig;
  }
  const language=langFilter.value,stock=$('inventoryStockFilter').value,sort=$('inventorySort').value;
- const products=state.products.filter(p=>{
+ const products=state.products.filter(p=>{if(p.archived_at)return false;
   const qty=available(p.id);
   if(language&&p.language!==language)return false;
   if(stock==='available'&&qty<=0)return false;
@@ -102,7 +134,7 @@ function filteredInventory11(){
   if(sort==='location')return (a.storage_location||'').localeCompare(b.storage_location||'','de')||a.name.localeCompare(b.name,'de');
   return a.name.localeCompare(b.name,'de');
  });
- $('inventoryFilterCount').textContent=products.length+' von '+state.products.length+' Artikeln';
+ $('inventoryFilterCount').textContent=products.length+' von '+state.products.filter(p=>!p.archived_at).length+' Artikeln';
  return products;
 }
 function renderProducts(){
@@ -113,10 +145,10 @@ function renderProducts(){
   const avgCost=Number(inv?.available_qty||0)>0?Number(inv.remaining_cost)/Number(inv.available_qty):null;
   const market=p.market_price_eur==null?null:Number(p.market_price_eur);
   const estimate=market==null?'':'<small>Marktwert*: '+euro(market)+(avgCost==null?'':' · Differenz '+euro(market-avgCost)+' vor Gebühren/St.')+'</small>';
-  const thumb=imagePathForProduct(p.id)?
+  const thumb=(imagePathForProduct(p.id)||recoverableProductImage(p))?
    '<button type="button" class="list-image-button" data-photo-open="'+p.id+'" title="Artikelbild vergrößern"><img data-thumb="'+p.id+'" alt="Bild von '+esc(p.name)+'" loading="eager" decoding="async" width="64" height="74" hidden><span class="image-placeholder" aria-hidden="true">▧</span></button>':
    '<div class="list-image-button" aria-label="Noch kein Artikelbild"><span class="image-placeholder">▧</span></div>';
-  return '<div class="list-card">'+thumb+'<div class="item-main"><strong>'+esc(p.name)+'</strong><small>'+esc(p.set_name||'Ohne Set')+(p.card_number?' · Nr. '+esc(p.card_number):'')+' · '+esc(p.sku||'ohne SKU')+'</small>'+(p.storage_location?'<small>📦 '+esc(p.storage_location)+'</small>':'')+estimate+'<button type="button" class="tiny-btn" data-edit="'+p.id+'">Bearbeiten</button></div><div class="item-end"><b>'+Number(inv?.available_qty||0)+' Stk.</b><small>'+euro(inv?.remaining_cost||0)+'</small></div></div>';
+  return '<div class="list-card">'+thumb+'<div class="item-main"><strong>'+esc(p.name)+'</strong><small>'+esc(p.set_name||'Ohne Set')+(p.card_number?' · Nr. '+esc(p.card_number):'')+' · '+esc(p.sku||'ohne SKU')+'</small>'+(p.storage_location?'<small>📦 '+esc(p.storage_location)+'</small>':'')+estimate+'<button type="button" class="tiny-btn" data-edit="'+p.id+'">Bearbeiten</button> <button type="button" class="tiny-btn" data-vinted="'+p.id+'">Vinted</button> <button type="button" class="tiny-btn" data-stock-adjust="'+p.id+'">Bestand ändern</button> <button type="button" class="tiny-btn danger" data-stock-archive="'+p.id+'">Entfernen</button></div><div class="item-end"><b>'+Number(inv?.available_qty||0)+' Stk.</b><small>'+euro(inv?.remaining_cost||0)+'</small></div></div>';
  }).join(''):'<div class="empty">Keine Artikel gefunden. Erfasse deinen ersten Testartikel.</div>';
  prepareInventoryThumbnails();
 }
@@ -140,15 +172,48 @@ async function privateImageUrl(path,quality='low'){
  thumbnailLoading.set(path,task);
  try{return await task;}finally{thumbnailLoading.delete(path);}
 }
+function inventoryCatalogCandidates(productId,quality='low'){
+ const root=recoveredCatalogImages.get(productId)||productById(productId)?.catalog_image_url||window.TrummCatalog11?.inferCatalogImageRoot(productById(productId),state.products)||'';
+ if(!/^https:\/\/assets\.tcgdex\.net\/[A-Za-z0-9/._-]+$/.test(root))return [];
+ const candidates=[root+'/'+quality+'.webp'];
+ for(const lang of ['en','de','ja','fr','it']){
+  const alternate=root.replace(/^(https:\/\/assets\.tcgdex\.net\/)\w+(\/.*)$/,(_,host,suffix)=>host+lang+suffix);
+  if(alternate!==root)candidates.push(alternate+'/'+quality+'.webp');
+ }
+ if(quality==='high')candidates.push(root+'/low.webp');
+ return [...new Set(candidates)];
+}
+function loadPictureWithFallback(img,urls){
+ const candidates=[...new Set(urls.filter(Boolean))];
+ let cursor=0;
+ return new Promise(resolve=>{
+  function next(){
+   if(!img.isConnected){resolve(false);return;}
+   const candidate=candidates[cursor++];
+   if(!candidate){
+    img.onload=null;img.onerror=null;img.hidden=true;
+    if(img.nextElementSibling)img.nextElementSibling.hidden=false;
+    resolve(false);return;
+   }
+   img.onload=()=>{img.hidden=false;if(img.nextElementSibling)img.nextElementSibling.hidden=true;resolve(true);};
+   img.onerror=next;img.src=candidate;
+  }
+  next();
+ });
+}
 async function fillThumbnail(img){
- const path=imagePathForProduct(img.dataset.thumb);
+ const id=img.dataset.thumb;
+ let path=imagePathForProduct(id);
+ if(!path)path=await findInventoryCatalogImage(id);
  if(!path||!img.isConnected)return;
- try{
-  const url=await privateImageUrl(path);
-  if(!img.isConnected||imagePathForProduct(img.dataset.thumb)!==path)return;
-  img.src=url;img.hidden=false;
-  if(img.nextElementSibling)img.nextElementSibling.hidden=true;
- }catch(e){console.info('Vorschaubild:',errorText(e));}
+ let first=null;
+ try{first=await privateImageUrl(path);}catch(e){console.info('Vorschaubild:',errorText(e));}
+ if(!img.isConnected)return;
+ let ok=await loadPictureWithFallback(img,[first,...inventoryCatalogCandidates(id)]);
+ if(!ok&&recoverableProductImage(productById(id))){
+  const verified=await findInventoryCatalogImage(id);
+  if(verified&&img.isConnected)ok=await loadPictureWithFallback(img,inventoryCatalogCandidates(id));
+ }
 }
 function prepareInventoryThumbnails(){
  if(thumbnailObserver){thumbnailObserver.disconnect();thumbnailObserver=null;}
@@ -175,12 +240,19 @@ function prepareInventoryThumbnails(){
  }else targets.forEach(load);
 }
 async function openProductImage(id){
- const path=imagePathForProduct(id);if(!path)return;
- try{
-  const url=await privateImageUrl(path,'high');
-  $('viewerImage').src=url;$('viewerCaption').textContent=productName(id);
-  if(!$('imageViewer').open)$('imageViewer').showModal();
- }catch(e){notice(errorText(e),'error');}
+ let path=imagePathForProduct(id);
+ if(!path)path=await findInventoryCatalogImage(id);
+ if(!path){notice('Für diesen Artikel ist kein Kartenbild verfügbar.','error');return;}
+ let first=null;
+ try{first=await privateImageUrl(path,'high');}catch(e){console.info('Artikelbild:',errorText(e));}
+ $('viewerCaption').textContent=productName(id);
+ if(!$('imageViewer').open)$('imageViewer').showModal();
+ let ok=await loadPictureWithFallback($('viewerImage'),[first,...inventoryCatalogCandidates(id,'high')]);
+ if(!ok&&recoverableProductImage(productById(id))){
+  const verified=await findInventoryCatalogImage(id);
+  if(verified)ok=await loadPictureWithFallback($('viewerImage'),inventoryCatalogCandidates(id,'high'));
+ }
+ if(!ok)notice('Für diesen Artikel konnte kein Kartenbild geladen werden.','error');
 }
 function previewArticlePhoto(file){
  if(articleImagePreviewUrl)URL.revokeObjectURL(articleImagePreviewUrl);
@@ -342,7 +414,7 @@ async function cancelSale(id){if(!WRITES_ENABLED){notice(NO_WRITES,'error');retu
 async function processPhoto(file){if(!file)throw Error('Bitte ein Foto auswählen.');if(file.size>30*1024*1024)throw Error('Das Foto darf maximal 30 MB vor der Komprimierung groß sein.');let bitmap=null;try{bitmap=await createImageBitmap(file);}catch{bitmap=null;}if(!bitmap){const img=new Image();const url=URL.createObjectURL(file);try{await new Promise((ok,fail)=>{img.onload=ok;img.onerror=()=>fail(Error('Bildformat nicht lesbar. Bitte JPEG oder PNG verwenden.'));img.src=url;});}finally{URL.revokeObjectURL(url);}bitmap=img;}const max=1600,scale=Math.min(1,max/Math.max(bitmap.width,bitmap.height)),canvas=document.createElement('canvas');canvas.width=Math.max(1,Math.round(bitmap.width*scale));canvas.height=Math.max(1,Math.round(bitmap.height*scale));canvas.getContext('2d').drawImage(bitmap,0,0,canvas.width,canvas.height);if(bitmap.close)bitmap.close();const blob=await new Promise((res,rej)=>canvas.toBlob(b=>b?res(b):rej(Error('Bild konnte nicht verarbeitet werden.')),'image/jpeg',.85));if(blob.size>10*1024*1024)throw Error('Bild bleibt trotz Komprimierung größer als 10 MB.');return blob;}
 async function savePhoto(e){e.preventDefault();if(!WRITES_ENABLED){notice(NO_WRITES,'error');return;}await withBusy(async()=>{const form=e.currentTarget,lotId=val(form,'lot'),lot=state.lots.find(l=>l.id===lotId);if(!lot)throw Error('Bitte ein Einkaufslos wählen.');if(!pendingImage)throw Error('Bitte ein Foto aufnehmen oder auswählen.');const photo=await processPhoto(pendingImage);const photoId=crypto.randomUUID();const path=`${session.user.id}/${lotId}/${photoId}.jpg`;const token=await getToken();const upload=await fetch(`${apiBase()}/storage/v1/object/trummcards-lot-images/${path}`,{method:'POST',headers:{apikey:KEY,Authorization:'Bearer '+token,'Content-Type':'image/jpeg','x-upsert':'false'},body:photo});if(!upload.ok){let err={};try{err=await upload.json();}catch{}throw Error(err.message||err.error||'Bild-Upload fehlgeschlagen ('+upload.status+').');}try{await authorizedRequest('/rest/v1/tc_lot_images',{method:'POST',headers:{...API_HEADERS,Prefer:'return=minimal'},body:JSON.stringify({id:photoId,owner_id:session.user.id,lot_id:lotId,storage_path:path,display_order:0,mime_type:'image/jpeg'})});}catch(e){try{await authorizedRequest('/storage/v1/object/trummcards-lot-images',{method:'DELETE',headers:API_HEADERS,body:JSON.stringify({prefixes:[path]})});}catch{}throw e;}pendingImage=null;form.reset();$('photoSelection').textContent='Noch kein Bild ausgewählt.';await refreshAll();await renderPhotos();notice('Artikelbild erfolgreich im privaten Cloud-Speicher gesichert.','success');});}
 async function renderPhotos(){imageObjects.forEach(u=>URL.revokeObjectURL(u));imageObjects=[];const parent=$('photosList');parent.replaceChildren();if(!state.images.length){parent.innerHTML='<div class="empty">Noch keine Bilder hochgeladen.</div>';return;}for(const item of state.images.slice(0,16)){if(activePage!=='photos')break;const box=document.createElement('div');box.className='photo-card';const img=document.createElement('img');img.alt='Artikelbild von '+productName(state.lots.find(l=>l.id===item.lot_id)?.product_id);img.loading='lazy';const desc=document.createElement('p');desc.textContent=img.alt;box.append(img,desc);parent.append(box);try{const token=await getToken();const response=await fetch(`${apiBase()}/storage/v1/object/authenticated/trummcards-lot-images/${item.storage_path}`,{headers:{apikey:KEY,Authorization:'Bearer '+token}});if(!response.ok)throw Error('Bild nicht geladen');const blob=await response.blob(),url=URL.createObjectURL(blob);imageObjects.push(url);img.src=url;}catch{desc.textContent+=' (Laden nicht möglich)';}}}
-
+async function manageInventoryStock(id,archive=false){if(!WRITES_ENABLED){notice(NO_WRITES,'error');return;}const p=productById(id);if(!p||p.archived_at)return;const before=available(id);let target=0;if(!archive){const entered=prompt('Neuer Lagerbestand für „'+p.name+'“ (aktuell '+before+'): ',String(before));if(entered===null)return;if(!/^(0|[1-9]\d*)$/.test(entered.trim())||Number(entered)>1000000){notice('Ungültige Stückzahl.','error');return;}target=Number(entered);if(target===before)return;}const reason=prompt('Grund für '+(archive?'Entfernung':'Bestandsänderung')+' von „'+p.name+'“:','Inventurkorrektur');if(reason===null)return;if(reason.trim().length<3||reason.trim().length>260){notice('Grund muss zwischen 3 und 260 Zeichen haben.','error');return;}if(!confirm(archive?'Artikel entfernen und '+before+' Stück ausbuchen? Buchungshistorie bleibt erhalten.':'Bestand von '+before+' auf '+target+' ändern?'))return;await withBusy(async()=>{const args=archive?{p_product_id:id,p_expected_qty:before,p_reason:reason.trim()}:{p_product_id:id,p_expected_qty:before,p_target_qty:target,p_reason:reason.trim(),p_unit_cost:null};await rpc(archive?'tc_archive_product':'tc_adjust_inventory',args);await refreshAll();notice(archive?'Artikel archiviert und aus Lager entfernt.':'Bestand korrigiert und protokolliert.','success');});}
 // Cloud 1.3: PWA account-specific lists, catalogue imports and admin-only inventory draft.
 let cloud13Role=null,cloud13Items=[],cloud13Viewers=[],cloud13Selected=null;
 const cloud13Lang={de:'Deutsch',en:'Englisch',ja:'Japanisch',it:'Italienisch'};
@@ -421,53 +493,17 @@ function cloud13ApplyRole(){
  $('cloud13UserAccess').hidden=isDex;
  $('dexToArticle').hidden=isDex;
  // Collection and wishlist are personal and available to every activated PWA user.
- for(const page of ['dex','collection','wishlist','more'])document.querySelectorAll('[data-go="'+page+'"]').forEach(b=>b.hidden=false);
+ for(const page of ['carddex','collection','wishlist','more'])document.querySelectorAll('[data-go="'+page+'"]').forEach(b=>b.hidden=false);
  $('cloud13AdminReports').hidden=isDex;
  $('welcomeText').textContent=isDex?'DEIN KARTENDEX':'TRUMMCARDS CLOUD';
 }
 function cloud13Init(){
  const nav=$('bottomNav');
- for(const [page,label] of [['dex','⌕ KartenDex'],['collection','♡ Sammlung'],['wishlist','☆ Wunschliste']]){
+ for(const [page,label] of [['collection','♡ Sammlung'],['wishlist','☆ Wunschliste']]){
   const b=document.createElement('button');b.type='button';b.dataset.go=page;b.textContent=label;nav.append(b);
  }
  const pages=document.createElement('div');pages.id='cloud13Pages';
  pages.innerHTML=`
- <section id="page-dex" class="page" hidden><div class="panel dex-panel">
-<div class="dex-head"><div><span class="dex-eyebrow">POKÉMON KARTENKATALOG · TCGDEX</span><h2>KartenDex</h2><p>Karten und komplette Sets nachschlagen – unabhängig vom Lager, ohne einen Artikel anzulegen.</p></div></div>
-
-<form id="dexSearchForm" class="dex-form">
- <label>Pokémon / Kartenname<input id="dexQuery" type="search" maxlength="100" placeholder="z. B. Glurak-GX"></label>
- <label>Set-Name<input id="dexSearchSet" type="search" maxlength="100" placeholder="z. B. Verborgenes Schicksal"></label>
- <label>Kartennummer<input id="dexSearchNumber" type="text" inputmode="text" maxlength="30" placeholder="z. B. 9 oder 009/147"></label>
- <label>Sprache<select id="dexLanguage"><option value="de">Deutsch</option><option value="en">Englisch</option><option value="ja">Japanisch</option><option value="it">Italienisch</option></select></label>
- <button type="submit" class="dex-action">Karten suchen</button>
-</form>
-<p id="dexSearchStatus" role="status" class="dex-status">Kartenname eingeben oder unten ein Set auswählen.</p>
-<div id="dexResults" class="dex-grid"></div>
-<div class="dex-pager"><button type="button" id="dexPrev" disabled>← Vorherige</button><span id="dexPageLabel">Noch keine Suche</span><button type="button" id="dexNext" disabled>Weitere 20 →</button></div>
-<div id="dexDetail" class="dex-detail" hidden>
- <img id="dexDetailImage" hidden alt="Kartenbild aus TCGdex">
- <div class="dex-detail-text"><h3 id="dexDetailTitle"></h3><div id="dexDetailMeta"></div>
- <div class="dex-import-actions">
- <button type="button" class="dex-action" id="dexToCollection">Zur persönlichen Sammlung</button>
- <button type="button" class="dex-action" id="dexToWishlist">Zur Wunschliste</button>
- <button type="button" class="dex-action" id="dexToArticle">Ins Verkaufslager übernehmen</button>
- </div>
- <p class="dex-status">Katalogbilder sind externe Vorschaubilder. Für Verkaufsinserate eigene Fotos verwenden.</p></div>
-</div>
-<hr class="dex-rule">
-<h3>Pokémon-Sets durchsuchen</h3>
-<form id="dexSetForm" class="dex-form">
- <label>Set-Name (optional)<input id="dexSetQuery" type="search" maxlength="100" placeholder="z. B. 151, Basis-Set"></label>
- <button type="submit" class="dex-action">Sets anzeigen</button>
-</form>
-<p id="dexSetStatus" role="status" class="dex-status"></p>
-<div id="dexSets" class="dex-set-grid"></div>
-<button type="button" id="dexMoreSets" hidden>Weitere Sets laden</button>
-<p id="dexSetCardsStatus" role="status" class="dex-status"></p>
-<div id="dexSetCards" class="dex-grid"></div>
-<div class="dex-pager"><button type="button" id="dexSetPrev" disabled>← Karten</button><span>Set-Karten</span><button type="button" id="dexSetNext" disabled>Weitere Karten →</button></div>
-</div></section>
  <section id="page-collection" class="page" hidden><div class="panel"><h2>Meine Sammlung</h2><p>Nur für dich sichtbar. Diese Karten verändern das Verkaufslager nicht.</p>
  <form id="cloud13CollectionForm" class="cloud13-form"><input name="name" maxlength="300" required placeholder="Kartenname">
  <input name="set_name" maxlength="200" placeholder="Set"><input name="card_number" maxlength="60" placeholder="Kartennummer">
@@ -544,9 +580,19 @@ function bind(){
  $('closeImageViewer').addEventListener('click',()=>$('imageViewer').close());
  $('imageViewer').addEventListener('click',e=>{if(e.target===$('imageViewer'))$('imageViewer').close();});
  marketUI11=window.TrummMarketUI11?.bind();window.TrummMarketInstance11=marketUI11;
- window.TrummCardDex12?.bind({onUseCard:cloud13UseCard});
  catalogPicker11=window.TrummCatalogUI11?.bind();
  setPicker11=window.TrummSetUI11?.bind({selectCard:id=>catalogPicker11.selectCard(id)});
+ cardDexUI12=window.TrummCardDex12?.bind({onUseCard:cloud13UseCard});
+
+ vintedUI12=window.TrummVinted12?.bind({
+  getProducts:()=>state.products.filter(p=>!p.archived_at),
+  getOwnImage:async p=>{
+   const hero=state.productImages.find(x=>x.product_id===p.id);
+   const lots=new Set(state.lots.filter(x=>x.product_id===p.id).map(x=>x.id));
+   const own=hero?.storage_path||state.images.find(x=>lots.has(x.lot_id))?.storage_path;
+   return own?privateImageUrl(own):null;
+  }
+ });
  financeUI11=window.TrummFinanceUI11?.bind(()=>({sales:state.sales,lots:state.lots,products:state.products}));
  shippingUI11=window.TrummShippingUI11?.bind({getSales:()=>state.sales,getShipments:()=>state.shipments,productName,save:saveShipment11});
  feesUI11=window.TrummFeesUI11?.bind({getProfiles:()=>state.feeProfiles,save:saveFeeProfile11,parseEuro:v=>parseMoney(v,true),onFeeApplied:updateSalePreview});
@@ -556,7 +602,7 @@ function bind(){
  $('saleForm').addEventListener('submit',saveSale);
  $('photoForm').addEventListener('submit',savePhoto);
  for(const id of ['search','inventoryLanguageFilter','inventoryStockFilter','inventorySort'])$(id).addEventListener(id==='search'?'input':'change',renderProducts);
- document.addEventListener('click',async e=>{const go=e.target.closest('[data-go]');if(go){navigate(go.dataset.go);return;}const thumb=e.target.closest('[data-photo-open]');if(thumb){await openProductImage(thumb.dataset.photoOpen);return;}const edit=e.target.closest('[data-edit]');if(edit){editArticle(edit.dataset.edit);return;}const cashSale=e.target.closest('[data-cash-sale]');if(cashSale){showPage('finance');cashUI11?.beginLinkedPayment('sale',cashSale.dataset.cashSale);return;}const cashLot=e.target.closest('[data-cash-lot]');if(cashLot){showPage('finance');cashUI11?.beginLinkedPayment('lot',cashLot.dataset.cashLot);return;}const ship=e.target.closest('[data-shipping-sale]');if(ship){showPage('sales');shippingUI11?.load(ship.dataset.shippingSale,true);$('shipmentPanel').scrollIntoView({behavior:'smooth',block:'nearest'});return;}const del=e.target.closest('[data-void]');if(del){await cancelSale(del.dataset.void);}});
+ document.addEventListener('click',async e=>{const go=e.target.closest('[data-go]');if(go){navigate(go.dataset.go);return;}const adj=e.target.closest('[data-stock-adjust]');if(adj){await manageInventoryStock(adj.dataset.stockAdjust);return;}const arc=e.target.closest('[data-stock-archive]');if(arc){await manageInventoryStock(arc.dataset.stockArchive,true);return;}const thumb=e.target.closest('[data-photo-open]');if(thumb){await openProductImage(thumb.dataset.photoOpen);return;}const vinted=e.target.closest('[data-vinted]');if(vinted){void vintedUI12?.open(vinted.dataset.vinted);return;}const edit=e.target.closest('[data-edit]');if(edit){editArticle(edit.dataset.edit);return;}const cashSale=e.target.closest('[data-cash-sale]');if(cashSale){showPage('finance');cashUI11?.beginLinkedPayment('sale',cashSale.dataset.cashSale);return;}const cashLot=e.target.closest('[data-cash-lot]');if(cashLot){showPage('finance');cashUI11?.beginLinkedPayment('lot',cashLot.dataset.cashLot);return;}const ship=e.target.closest('[data-shipping-sale]');if(ship){showPage('sales');shippingUI11?.load(ship.dataset.shippingSale,true);$('shipmentPanel').scrollIntoView({behavior:'smooth',block:'nearest'});return;}const del=e.target.closest('[data-void]');if(del){await cancelSale(del.dataset.void);}});
  for(const n of ['qty','unit','total'])f($('purchaseForm'),n).addEventListener('input',()=>syncPurchase(n));
  for(const n of ['product','qty','price','shippingIncome','shippingCost','fees','other'])f($('saleForm'),n).addEventListener(n==='product'?'change':'input',updateSalePreview);
  for(const [id,offset] of [['saleQtyMinus',-1],['saleQtyPlus',1]])$(id).addEventListener('click',()=>{
@@ -577,7 +623,7 @@ async function start(){
   location.replace('./reset-password.html'+location.search+location.hash);return;
  }
  bind();showLogin();f($('purchaseForm'),'date').value=today();f($('saleForm'),'date').value=today();
- try{const cfg={project_ref:PROJECT,url:'https://'+PROJECT+'.supabase.co',anon_key:"sb_publishable_JDdbnEq3muaOhp3LsNhBkQ_eJZ0uYEf"};if(cfg.project_ref!==PROJECT||cfg.url!=='https://hgdexyvtgfffcasfpjyu.supabase.co'||!/^sb_publishable_[A-Za-z0-9_-]+$/.test(cfg.anon_key))throw Error('Unerwartete Produktions-Konfiguration.');ROOT=cfg.url;KEY=cfg.anon_key;restoreSession();if(session){const u=await checkAccount();$('accountEmail').textContent=u.email||'TrummCards-Konto';showApp();await refreshAll();navigate(cloud13Role==='dex'?'dex':'home');}else showLogin();}catch(e){clearSession();showLogin();notice('Verbindung fehlgeschlagen: '+errorText(e),'error');}
+ try{const cfg={project_ref:PROJECT,url:'https://'+PROJECT+'.supabase.co',anon_key:"sb_publishable_JDdbnEq3muaOhp3LsNhBkQ_eJZ0uYEf"};if(cfg.project_ref!==PROJECT||cfg.url!=='https://hgdexyvtgfffcasfpjyu.supabase.co'||!/^sb_publishable_[A-Za-z0-9_-]+$/.test(cfg.anon_key))throw Error('Unerwartete Produktions-Konfiguration.');ROOT=cfg.url;KEY=cfg.anon_key;restoreSession();if(session){const u=await checkAccount();$('accountEmail').textContent=u.email||'TrummCards-Konto';showApp();await refreshAll();navigate(cloud13Role==='dex'?'carddex':'home');}else showLogin();}catch(e){clearSession();showLogin();notice('Verbindung fehlgeschlagen: '+errorText(e),'error');}
  if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('./sw.js',{scope:'./'}).catch(e=>console.info('PWA Cache nicht aktiv:',e.message));
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start);else start();
