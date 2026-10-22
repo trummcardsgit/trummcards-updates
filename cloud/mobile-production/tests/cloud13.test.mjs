@@ -225,7 +225,7 @@ test('Memory game uses a dedicated route for both roles and keeps stock data unt
  assert.match(css,/\.tc-memory-board/);
  assert.match(css,/\.tc-memory-card\.is-open/);
  assert.match(css,/\.tc-memory-dex-nav/);
- assert.doesNotMatch(memory,/tc_products|tc_personal_cards|tc_purchase|tc_sales|Supabase|fetch\s*\('/);
+ assert.doesNotMatch(memory,/tc_products|tc_personal_cards|tc_purchase|tc_sales|authorizedRequest|\brpc\s*\(|fetch\s*\('/);
  assert.match(memory,/getPokemonCard/);
  assert.match(memory,/localStorage\.setItem/);
  assert.match(memory,/getUserId/);
