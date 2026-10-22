@@ -89,6 +89,26 @@ test('Cloud 1.3 uses the unified desktop production layout and preserves current
  assert.match(app,/page-collection/);
 });
 
+
+test('Collection and wishlist retain full KartenDex identity and artwork',()=>{
+ assert.match(app,/const imageRoot=await cloud13CatalogImage\(card,language\)/);
+ assert.match(app,/name:card\.name,set_name:card\.setName,card_number:card\.localId/);
+ assert.match(app,/catalog_card_id:card\.id/);
+ assert.match(app,/catalog_image_url:imageRoot/);
+ assert.match(app,/cloud13Preview\(form\)/);
+ assert.match(app,/item\.catalog_image_url=resolved/);
+ assert.match(app,/meta\.textContent='Set: '/);
+ assert.match(app,/cloud13PaintImage\(photo,item\)/);
+ assert.match(app,/cloud13CatalogImage\(\{id:item\.catalog_card_id,imageCandidate:item\.catalog_image_url\},item\.language\)/);
+ assert.match(app,/cloud13EmptyImage\(\)/);
+ assert.match(app,/viewerImage/);
+ assert.match(app,/imageViewer/);
+ assert.match(css,/\.cloud13-image-button/);
+ assert.match(css,/\.cloud13-import-preview/);
+ assert.match(dex,/noImageDataUri:NO_IMAGE_DATA_URI/);
+ assert.equal((app.match(/class="cloud13-import-preview"/g)||[]).length,2);
+});
+
 test('Release builder isolates TEST from PROD',()=>{
  assert.match(builder,/const target=path\.resolve\('cloud\/test-13-build'\)/);
  assert.match(builder,/content=content\.replaceAll\(production,test\)\.replaceAll\(prodKey,testKey\)/);
