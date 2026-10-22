@@ -390,28 +390,36 @@ async function cloud13LoadItem(type,form){
  form.reset();
  return item;
 }
-async function cloud13SelectCard(cardId,language){
- const data=await window.TrummCatalog11.getPokemonCard({id:cardId,language});
- cloud13Selected={name:data.name,set_name:data.setName,card_number:data.localId,language:cloud13Lang[language],
-  catalog_card_id:data.id,catalog_image_url:cloud13Image(data.imageCandidate)?data.imageCandidate:'',
-  rarity:data.rarity||''};
- const selected=$('cloud13Selected');selected.hidden=false;selected.replaceChildren();
- const title=document.createElement('h3');title.textContent=data.name+' · '+data.setName+' #'+data.localId;
- selected.append(title);
- const img=cloud13Image(data.imageCandidate);
- if(img){const photo=document.createElement('img');photo.src=img;photo.alt=data.name;photo.className='cloud13-selected-image';selected.append(photo);}
- const choices=document.createElement('div');choices.className='cloud13-choices';
- for(const [type,label] of [['collection','Zur Sammlung'],['wishlist','Zur Wunschliste'],...(cloud13Role==='admin'?[['stock','Ins Verkaufslager']]:[])]){
-  const button=document.createElement('button');button.type='button';button.dataset.cloud13Import=type;button.textContent=label;
-  choices.append(button);
- }
- selected.append(choices);
+async function cloud13UseCard({id,language='de',target}={}){
+ if(!['admin','dex'].includes(cloud13Role))return notice('Bitte zuerst anmelden.','error');
+ if(target==='stock'&&cloud13Role!=='admin')return notice('Nur Administratoren dürfen Artikel ins Verkaufslager übernehmen.','error');
+ if(!['stock','collection','wishlist'].includes(target))return;
+ try{
+  const card=await window.TrummCatalog11.getPokemonCard({id,language});
+  const values={name:card.name,set_name:card.setName,card_number:card.localId,
+   language:cloud13Lang[language]||'Deutsch',catalog_card_id:card.id,
+   catalog_image_url:cloud13Image(card.imageCandidate)?card.imageCandidate:'',rarity:card.rarity||''};
+  if(target==='stock'){
+   resetArticle();
+   const form=$('articleForm');
+   for(const [key,value] of Object.entries(values)){const input=f(form,key);if(input)input.value=value||'';}
+   showPage('article');
+   notice('Kartendaten übernommen. Artikel prüfen, speichern und anschließend bei Bedarf den Einkauf buchen.','success');
+  }else{
+   const form=$(target==='collection'?'cloud13CollectionForm':'cloud13WishlistForm');
+   form.reset();
+   for(const [key,value] of Object.entries(values)){const input=f(form,key);if(input)input.value=value||'';}
+   showPage(target);
+   notice('Karte aus dem KartenDex übernommen. Menge ergänzen und in deiner persönlichen Liste speichern.','success');
+  }
+ }catch(error){notice(errorText(error),'error');}
 }
 function cloud13ApplyRole(){
  const isDex=cloud13Role==='dex';
  const hide=['home','article','purchase','sale','sales','photos','finance','users'];
  for(const page of hide)document.querySelectorAll('[data-go="'+page+'"]').forEach(b=>b.hidden=isDex);
  $('cloud13UserAccess').hidden=isDex;
+ $('dexToArticle').hidden=isDex;
  // Collection and wishlist are personal and available to every activated PWA user.
  for(const page of ['dex','collection','wishlist','more'])document.querySelectorAll('[data-go="'+page+'"]').forEach(b=>b.hidden=false);
  $('cloud13AdminReports').hidden=isDex;
@@ -419,19 +427,47 @@ function cloud13ApplyRole(){
 }
 function cloud13Init(){
  const nav=$('bottomNav');
- for(const [page,label] of [['dex','⌕ Dex'],['collection','♡ Sammlung'],['wishlist','☆ Wunschliste']]){
+ for(const [page,label] of [['dex','⌕ KartenDex'],['collection','♡ Sammlung'],['wishlist','☆ Wunschliste']]){
   const b=document.createElement('button');b.type='button';b.dataset.go=page;b.textContent=label;nav.append(b);
  }
  const pages=document.createElement('div');pages.id='cloud13Pages';
  pages.innerHTML=`
- <section id="page-dex" class="page" hidden><div class="panel">
- <h2>KartenDex</h2><p>Wähle eine Pokémon-Karte und übernimm sie direkt in deine persönliche Sammlung oder Wunschliste.</p>
- <form id="cloud13DexSearch" class="catalog-search-form"><input name="search" required minlength="2" maxlength="100" placeholder="Pokémon-Karte suchen">
- <select name="lang"><option value="de">Deutsch</option><option value="en">Englisch</option><option value="ja">Japanisch</option><option value="it">Italienisch</option></select>
- <button type="submit">Karten suchen</button></form><p id="cloud13DexStatus" role="status"></p>
- <div id="cloud13DexResults" class="catalog-results"></div>
- <button id="cloud13DexMore" type="button" hidden>Weitere Karten laden</button>
- <div id="cloud13Selected" class="panel" hidden></div></div></section>
+ <section id="page-dex" class="page" hidden><div class="panel dex-panel">
+<div class="dex-head"><div><span class="dex-eyebrow">POKÉMON KARTENKATALOG · TCGDEX</span><h2>KartenDex</h2><p>Karten und komplette Sets nachschlagen – unabhängig vom Lager, ohne einen Artikel anzulegen.</p></div></div>
+
+<form id="dexSearchForm" class="dex-form">
+ <label>Pokémon / Kartenname<input id="dexQuery" type="search" maxlength="100" placeholder="z. B. Glurak-GX"></label>
+ <label>Set-Name<input id="dexSearchSet" type="search" maxlength="100" placeholder="z. B. Verborgenes Schicksal"></label>
+ <label>Kartennummer<input id="dexSearchNumber" type="text" inputmode="text" maxlength="30" placeholder="z. B. 9 oder 009/147"></label>
+ <label>Sprache<select id="dexLanguage"><option value="de">Deutsch</option><option value="en">Englisch</option><option value="ja">Japanisch</option><option value="it">Italienisch</option></select></label>
+ <button type="submit" class="dex-action">Karten suchen</button>
+</form>
+<p id="dexSearchStatus" role="status" class="dex-status">Kartenname eingeben oder unten ein Set auswählen.</p>
+<div id="dexResults" class="dex-grid"></div>
+<div class="dex-pager"><button type="button" id="dexPrev" disabled>← Vorherige</button><span id="dexPageLabel">Noch keine Suche</span><button type="button" id="dexNext" disabled>Weitere 20 →</button></div>
+<div id="dexDetail" class="dex-detail" hidden>
+ <img id="dexDetailImage" hidden alt="Kartenbild aus TCGdex">
+ <div class="dex-detail-text"><h3 id="dexDetailTitle"></h3><div id="dexDetailMeta"></div>
+ <div class="dex-import-actions">
+ <button type="button" class="dex-action" id="dexToCollection">Zur persönlichen Sammlung</button>
+ <button type="button" class="dex-action" id="dexToWishlist">Zur Wunschliste</button>
+ <button type="button" class="dex-action" id="dexToArticle">Ins Verkaufslager übernehmen</button>
+ </div>
+ <p class="dex-status">Katalogbilder sind externe Vorschaubilder. Für Verkaufsinserate eigene Fotos verwenden.</p></div>
+</div>
+<hr class="dex-rule">
+<h3>Pokémon-Sets durchsuchen</h3>
+<form id="dexSetForm" class="dex-form">
+ <label>Set-Name (optional)<input id="dexSetQuery" type="search" maxlength="100" placeholder="z. B. 151, Basis-Set"></label>
+ <button type="submit" class="dex-action">Sets anzeigen</button>
+</form>
+<p id="dexSetStatus" role="status" class="dex-status"></p>
+<div id="dexSets" class="dex-set-grid"></div>
+<button type="button" id="dexMoreSets" hidden>Weitere Sets laden</button>
+<p id="dexSetCardsStatus" role="status" class="dex-status"></p>
+<div id="dexSetCards" class="dex-grid"></div>
+<div class="dex-pager"><button type="button" id="dexSetPrev" disabled>← Karten</button><span>Set-Karten</span><button type="button" id="dexSetNext" disabled>Weitere Karten →</button></div>
+</div></section>
  <section id="page-collection" class="page" hidden><div class="panel"><h2>Meine Sammlung</h2><p>Nur für dich sichtbar. Diese Karten verändern das Verkaufslager nicht.</p>
  <form id="cloud13CollectionForm" class="cloud13-form"><input name="name" maxlength="300" required placeholder="Kartenname">
  <input name="set_name" maxlength="200" placeholder="Set"><input name="card_number" maxlength="60" placeholder="Kartennummer">
@@ -462,27 +498,6 @@ function cloud13Init(){
  const reports=$('page-more').querySelector('.panel:nth-child(2)');
  if(reports)reports.id='cloud13AdminReports';
  else{const panel=document.createElement('div');panel.id='cloud13AdminReports';$('page-more').append(panel);}
- let query='',lang='de',page=0,nonce=0;
- const search=async(reset)=>{
-  const current=++nonce;if(reset){page=0;$('cloud13DexResults').replaceChildren();$('cloud13Selected').hidden=true;cloud13Selected=null;}
-  const wanted=page+1;$('cloud13DexStatus').textContent='Karten werden geladen …';
-  try{
-   const cards=await window.TrummCatalog11.searchPokemonCards({query,language:lang,page:wanted,limit:20});
-   if(current!==nonce)return;
-   page=wanted;
-   for(const card of cards){
-    const item=document.createElement('button');item.type='button';item.className='catalog-item';
-    item.dataset.cloud13Card=card.id;item.dataset.cloud13Lang=lang;
-    const img=cloud13Image(card.imageCandidate);if(img){const photo=document.createElement('img');photo.src=img;photo.alt='';photo.loading='lazy';item.append(photo);}
-    const name=document.createElement('span');name.textContent=card.name+' · #'+card.localId;item.append(name);
-    $('cloud13DexResults').append(item);
-   }
-   $('cloud13DexStatus').textContent='Seite '+page+' · '+cards.length+' Treffer';
-   $('cloud13DexMore').hidden=cards.length<20||page>=100;
-  }catch(error){$('cloud13DexStatus').textContent=errorText(error);}
- };
- $('cloud13DexSearch').addEventListener('submit',e=>{e.preventDefault();const fd=new FormData(e.currentTarget);query=String(fd.get('search')||'').trim();lang=String(fd.get('lang')||'de');void search(true);});
- $('cloud13DexMore').addEventListener('click',()=>void search(false));
  pages.addEventListener('click',async e=>{
   const acquired=e.target.closest('[data-cloud13-acquire]');
   if(acquired){
@@ -502,23 +517,6 @@ function cloud13Init(){
     notice('Karte in deine persönliche Sammlung übernommen. Das Verkaufslager bleibt unverändert.','success');
    }catch(error){notice(errorText(error),'error');}
    finally{acquired.disabled=false;}
-   return;
-  }
-  const candidate=e.target.closest('[data-cloud13-card]');
-  if(candidate){try{await cloud13SelectCard(candidate.dataset.cloud13Card,candidate.dataset.cloud13Lang);$('cloud13Selected').scrollIntoView({block:'nearest'});}catch(error){notice(errorText(error),'error');}return;}
-  const importButton=e.target.closest('[data-cloud13-import]');
-  if(importButton&&cloud13Selected){
-   const type=importButton.dataset.cloud13Import;
-   if(type==='stock'){
-    if(cloud13Role!=='admin')return notice('Nur Administratoren können Lagerartikel anlegen.','error');
-    resetArticle();const form=$('articleForm');
-    for(const [key,value] of Object.entries(cloud13Selected)){const el=f(form,key);if(el)el.value=value;}
-    showPage('article');notice('Kartendaten übernommen. Bitte Artikel prüfen und speichern; danach bei Bedarf Einkauf buchen.','success');
-   }else if(['collection','wishlist'].includes(type)){
-    const form=$(type==='collection'?'cloud13CollectionForm':'cloud13WishlistForm');
-    form.reset();for(const [key,value] of Object.entries(cloud13Selected)){const el=f(form,key);if(el)el.value=value;}
-    showPage(type);notice('Kartendaten übernommen – Menge ergänzen und speichern.','success');
-   }
    return;
   }
   const remove=e.target.closest('[data-personal-delete]');
@@ -546,6 +544,7 @@ function bind(){
  $('closeImageViewer').addEventListener('click',()=>$('imageViewer').close());
  $('imageViewer').addEventListener('click',e=>{if(e.target===$('imageViewer'))$('imageViewer').close();});
  marketUI11=window.TrummMarketUI11?.bind();window.TrummMarketInstance11=marketUI11;
+ window.TrummCardDex12?.bind({onUseCard:cloud13UseCard});
  catalogPicker11=window.TrummCatalogUI11?.bind();
  setPicker11=window.TrummSetUI11?.bind({selectCard:id=>catalogPicker11.selectCard(id)});
  financeUI11=window.TrummFinanceUI11?.bind(()=>({sales:state.sales,lots:state.lots,products:state.products}));
