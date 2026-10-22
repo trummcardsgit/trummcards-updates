@@ -639,6 +639,7 @@ function cloud13ApplyRole(){
  // Collection and wishlist are personal and available to every activated PWA user.
  for(const page of ['carddex','collection','wishlist','game','more'])document.querySelectorAll('[data-go="'+page+'"]').forEach(b=>b.hidden=false);
  $('cloud13AdminReports').hidden=isDex;
+ $('bottomNav').classList.toggle('tc-memory-dex-nav',isDex);
  cloud13OrderNavigation(isDex);
  $('welcomeText').textContent=isDex?'DEIN KARTENDEX':'TRUMMCARDS CLOUD';
 }
