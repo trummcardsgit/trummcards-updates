@@ -617,6 +617,18 @@ async function cloud13UseCard({id,language='de',target}={}){
   }
  }catch(error){notice(errorText(error),'error');}
 }
+function cloud13OrderNavigation(isDex){
+ const nav=$('bottomNav');
+ const order=isDex
+  ? ['carddex','collection','wishlist','more']
+  : ['home','purchase','sale','sales','carddex','photos','more','collection','wishlist'];
+ const buttons=Array.from(nav.children);
+ // Move the existing buttons instead of recreating them; event handling and active state stay intact.
+ for(const page of order){
+  const button=buttons.find(element=>element.dataset.go===page);
+  if(button)nav.appendChild(button);
+ }
+}
 function cloud13ApplyRole(){
  const isDex=cloud13Role==='dex';
  const hide=['home','article','purchase','sale','sales','photos','finance','users'];
@@ -626,12 +638,15 @@ function cloud13ApplyRole(){
  // Collection and wishlist are personal and available to every activated PWA user.
  for(const page of ['carddex','collection','wishlist','more'])document.querySelectorAll('[data-go="'+page+'"]').forEach(b=>b.hidden=false);
  $('cloud13AdminReports').hidden=isDex;
+ cloud13OrderNavigation(isDex);
  $('welcomeText').textContent=isDex?'DEIN KARTENDEX':'TRUMMCARDS CLOUD';
 }
 function cloud13Init(){
  const nav=$('bottomNav');
- for(const [page,label] of [['collection','♡ Sammlung'],['wishlist','☆ Wunschliste']]){
-  const b=document.createElement('button');b.type='button';b.dataset.go=page;b.textContent=label;nav.append(b);
+ for(const [page,label,symbol] of [['collection','Sammlung','▥'],['wishlist','Wunschliste','♡']]){
+  const b=document.createElement('button');b.type='button';b.dataset.go=page;
+  const icon=document.createElement('span');icon.textContent=symbol;
+  b.append(icon,document.createTextNode(label));nav.append(b);
  }
  const pages=document.createElement('div');pages.id='cloud13Pages';
  pages.innerHTML=`
