@@ -4,36 +4,75 @@ on:
     branches: [feature/cloud-1.3-access-collection-wishlist]
     paths:
       - 'cloud/mobile-production/**'
+      - 'cloud/supabase/migrations/2026102200*.sql'
       - 'cloud/release/build-cloud-13-test.mjs'
       - '.github/workflows/cloud-13-test-build.yml'
   workflow_dispatch:
+concurrency:
+  group: trummcards-cloud-13-pwa-test
+  cancel-in-progress: true
 permissions:
-  contents: read
+  contents: write
+  pages: write
 jobs:
   test-pwa:
     if: github.repository == 'trummcardsgit/trummcards-updates' && github.ref == 'refs/heads/feature/cloud-1.3-access-collection-wishlist'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Verify source syntax
+      - name: Verify source and integration invariants
         run: |
           node --check cloud/mobile-production/web/app.js
           node --check cloud/release/build-cloud-13-test.mjs
+          node --test cloud/mobile-production/tests/cloud13.test.mjs
       - name: Generate isolated TEST PWA
         run: node cloud/release/build-cloud-13-test.mjs
-      - name: Verify TEST app syntax and deny production references
+      - name: Validate TEST browser scripts and data isolation
+        shell: bash
         run: |
-          node --check cloud/test-13-build/app.js
-          node --check cloud/test-13-build/catalog11.js
+          set -euo pipefail
+          for f in cloud/test-13-build/*.js; do node --check "$f"; done
           grep -F 'cpycfxolqpidfjbhhsmr' cloud/test-13-build/app.js
+          grep -F 'const WRITES_ENABLED=true;' cloud/test-13-build/app.js
+          grep -F 'trummcards-mobile-test13-session-v1' cloud/test-13-build/app.js
+          grep -F 'tc_acquire_wishlist_card' cloud/test-13-build/app.js
           ! grep -R -F 'hgdexyvtgfffcasfpjyu' cloud/test-13-build
-          grep -F 'tc_pwa_access_role' cloud/test-13-build/app.js
-      - name: Retain isolated TEST PWA
+          ! grep -R -F 'sb_secret_' cloud/test-13-build
+      - name: Retain TEST PWA package
         uses: actions/upload-artifact@v4
         with:
           name: TrummCards-Cloud-13-TEST-PWA
           path: cloud/test-13-build/
+          if-no-files-found: error
           retention-days: 14
+      - name: Deploy ONLY isolated test-13 folder to GitHub Pages
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin +refs/heads/gh-pages:refs/remotes/origin/gh-pages
+          pages_dir="$RUNNER_TEMP/trummcards-test13-pages"
+          git worktree add --detach "$pages_dir" refs/remotes/origin/gh-pages
+          mkdir -p "$pages_dir/test-13"
+          cp -R cloud/test-13-build/. "$pages_dir/test-13/"
+          git -C "$pages_dir" add -- test-13
+          bad="$(git -C "$pages_dir" diff --cached --name-only | grep -v '^test-13/' || true)"
+          if [ -n "$bad" ]; then
+            echo "Refusing changes outside isolated TEST folder: $bad"; exit 1
+          fi
+          if git -C "$pages_dir" diff --cached --quiet; then
+            echo "No changes to TEST 1.3 PWA."
+          else
+            git -C "$pages_dir" config user.name "github-actions[bot]"
+            git -C "$pages_dir" config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git -C "$pages_dir" commit -m "TEST ONLY: Cloud 1.3 PWA under test-13/"
+            git -C "$pages_dir" push origin HEAD:gh-pages
+          fi
+      - name: Trigger GitHub Pages rebuild
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api --method POST "repos/$GITHUB_REPOSITORY/pages/builds"
