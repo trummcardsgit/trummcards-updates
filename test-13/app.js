@@ -11,7 +11,7 @@ const NO_WRITES='TEST-Version: Echtdaten und Buchungen bleiben bis zur Releasefr
 let ROOT='',KEY='',session=null,authCheckPromise=null,refreshPromise=null,loading=false,busy=false,activePage='home',lastPurchaseEntry='unit',pendingImage=null,imageObjects=[];
 let state={products:[],inventory:[],lots:[],sales:[],images:[],productImages:[],shipments:[],feeProfiles:[],cashEntries:[]};
 let articleImageFile=null,articleImagePreviewUrl=null,thumbnailObserver=null;
-let catalogPicker11=null,setPicker11=null,financeUI11=null,shippingUI11=null,marketUI11=null,feesUI11=null,cashUI11=null,cardDexUI12=null,vintedUI12=null;
+let catalogPicker11=null,setPicker11=null,financeUI11=null,shippingUI11=null,marketUI11=null,feesUI11=null,cashUI11=null,cardDexUI12=null,vintedUI12=null,memoryUI13=null;
 const thumbnailCache=new Map(),thumbnailLoading=new Map();
 const API_HEADERS={'Content-Type':'application/json'};
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&quot;',"'":'&#39;'}[c]));
@@ -26,7 +26,7 @@ const errorText=e=>{let s=String(e?.message||e||'Unbekannter Fehler');if(e?.code
 function notice(message,type='info'){const el=$('toast');el.hidden=false;el.className='toast '+type;el.textContent=message;window.scrollTo({top:0,behavior:'smooth'});}
 function clearNotice(){$('toast').hidden=true;}
 function connected(label,kind='idle'){$('connLabel').textContent=label;$('connDot').className='dot '+kind;}
-function showLogin(){cloud13QuoteEpoch++;cloud13Role=null;cloud13Selected=null;session=null;$('loginScreen').hidden=false;$('appScreen').hidden=true;$('bottomNav').hidden=true;connected('Anmeldung');}
+function showLogin(){memoryUI13?.onPageChange(false);cloud13QuoteEpoch++;cloud13Role=null;cloud13Selected=null;session=null;$('loginScreen').hidden=false;$('appScreen').hidden=true;$('bottomNav').hidden=true;connected('Anmeldung');}
 function showApp(){$('loginScreen').hidden=true;$('appScreen').hidden=false;$('bottomNav').hidden=false;connected('Online','online');cloud13ApplyRole();}
 function persistSession(data){session={access_token:data.access_token,refresh_token:data.refresh_token,expires_at:data.expires_at||Math.floor(Date.now()/1000)+(data.expires_in||3600),user:data.user||session?.user};localStorage.setItem(STORE,JSON.stringify(session));}
 function clearSession(){session=null;localStorage.removeItem(STORE);}
@@ -43,15 +43,16 @@ async function checkAccount(){const u=await apiUser();if(!u?.id)throw Error('Anm
 async function login(event){event.preventDefault();const form=event.currentTarget;const btn=$('signInBtn');btn.disabled=true;clearNotice();try{const email=val(form,'email'),password=val(form,'password');const data=await raw(apiBase()+'/auth/v1/token?grant_type=password',{method:'POST',headers:{...API_HEADERS,apikey:KEY},body:JSON.stringify({email,password})});persistSession(data);const u=await checkAccount();f(form,'password').value='';$('accountEmail').textContent=u.email||'TrummCards-Konto';showApp();await refreshAll();navigate(cloud13Role==='dex'?'carddex':'home');notice('Angemeldet – Cloud-Daten synchronisiert.','success');}catch(e){notice(errorText(e),'error');if(session){await signOut(false);}}finally{btn.disabled=false;}}
 async function signOut(goLogin=true){cloud13QuoteEpoch++;cloud13Role=null;cloud13Items=[];cloud13Viewers=[];cloud13Selected=null;if(session){try{await authorizedRequest('/auth/v1/logout',{method:'POST'});}catch{}}clearSession();state={products:[],inventory:[],lots:[],sales:[],images:[],productImages:[],shipments:[],feeProfiles:[],cashEntries:[]};clearThumbnailCache();imageObjects.forEach(u=>URL.revokeObjectURL(u));imageObjects=[];showLogin();if(goLogin)notice('Du wurdest abgemeldet.','success');}
 function showPage(name){
- if(cloud13Role==='dex'&&!['carddex','more','collection','wishlist'].includes(name))name='carddex';
+ if(cloud13Role==='dex'&&!['carddex','more','collection','wishlist','game'].includes(name))name='carddex';
  if(cloud13Role!=='admin'&&name==='users')name='carddex';
- const allowed=['home','article','purchase','sale','sales','photos','finance','carddex','more','collection','wishlist','users'];
+ const allowed=['home','article','purchase','sale','sales','photos','finance','carddex','more','collection','wishlist','game','users'];
  if(!allowed.includes(name))name=cloud13Role==='dex'?'carddex':'home';
  activePage=name;
  for(const id of allowed){const el=$('page-'+id);if(el)el.hidden=id!==name;}
  for(const btn of document.querySelectorAll('[data-go]'))btn.classList.toggle('active',btn.dataset.go===name);
- const titles={home:'Übersicht',article:'Artikel',purchase:'Einkauf',sale:'Verkauf',sales:'Buchungen',photos:'Artikelbilder',finance:'Finanzen',carddex:'KartenDex',more:'Einstellungen',collection:'Meine Sammlung',wishlist:'Meine Wunschliste',users:'Benutzerberechtigungen'};
+ const titles={home:'Übersicht',article:'Artikel',purchase:'Einkauf',sale:'Verkauf',sales:'Buchungen',photos:'Artikelbilder',finance:'Finanzen',carddex:'KartenDex',more:'Einstellungen',collection:'Meine Sammlung',wishlist:'Meine Wunschliste',game:'Spiel',users:'Benutzerberechtigungen'};
  $('screenTitle').textContent=titles[name];
+ memoryUI13?.onPageChange(name==='game');
  window.scrollTo({top:0,behavior:'instant'});
  if(name==='photos')renderPhotos().catch(e=>notice(errorText(e),'error'));
  if(name==='finance')financeUI11?.render();
@@ -620,8 +621,8 @@ async function cloud13UseCard({id,language='de',target}={}){
 function cloud13OrderNavigation(isDex){
  const nav=$('bottomNav');
  const order=isDex
-  ? ['carddex','collection','wishlist','more']
-  : ['home','purchase','sale','sales','carddex','photos','more','collection','wishlist'];
+  ? ['carddex','collection','wishlist','game','more']
+  : ['home','purchase','sale','sales','carddex','photos','game','more','collection','wishlist'];
  const buttons=Array.from(nav.children);
  // Move the existing buttons instead of recreating them; event handling and active state stay intact.
  for(const page of order){
@@ -636,14 +637,15 @@ function cloud13ApplyRole(){
  $('cloud13UserAccess').hidden=isDex;
  $('dexToArticle').hidden=isDex;
  // Collection and wishlist are personal and available to every activated PWA user.
- for(const page of ['carddex','collection','wishlist','more'])document.querySelectorAll('[data-go="'+page+'"]').forEach(b=>b.hidden=false);
+ for(const page of ['carddex','collection','wishlist','game','more'])document.querySelectorAll('[data-go="'+page+'"]').forEach(b=>b.hidden=false);
  $('cloud13AdminReports').hidden=isDex;
+ $('bottomNav').classList.toggle('tc-memory-dex-nav',isDex);
  cloud13OrderNavigation(isDex);
  $('welcomeText').textContent=isDex?'DEIN KARTENDEX':'TRUMMCARDS CLOUD';
 }
 function cloud13Init(){
  const nav=$('bottomNav');
- for(const [page,label,symbol] of [['collection','Sammlung','▥'],['wishlist','Wunschliste','♡']]){
+ for(const [page,label,symbol] of [['collection','Sammlung','▥'],['wishlist','Wunschliste','♡'],['game','Spiel','🎮']]){
   const b=document.createElement('button');b.type='button';b.dataset.go=page;
   const icon=document.createElement('span');icon.textContent=symbol;
   b.append(icon,document.createTextNode(label));nav.append(b);
@@ -667,12 +669,37 @@ function cloud13Init(){
  <button type="button" class="secondary" data-go="carddex">Karten im KartenDex auswählen</button></div>
  <div id="cloud13WishlistRows" class="stack"></div></section>
  <p id="cloud13MarketStatus" role="status" class="subtle cloud13-market-note"></p>
+ <section id="page-game" class="page" hidden>
+ <div class="panel tc-memory-shell">
+ <div class="micro-label">TRUMMCARDS ARCADE · EST. 2026</div>
+ <h2>Pokémon-Karten-Memory</h2>
+ <p class="subtle">Drehe zwei Karten um und finde gleiche Pokémon. Spiele auf Zeit und knacke deine Bestzeit!</p>
+ <div class="tc-memory-controls">
+ <label for="memoryDifficulty">Schwierigkeit
+ <select id="memoryDifficulty" aria-label="Schwierigkeit">
+ <option value="leicht">Leicht · 6 Paare</option>
+ <option value="mittel">Mittel · 8 Paare</option>
+ <option value="schwer">Schwer · 12 Paare</option>
+ </select></label>
+ <button id="memoryNew" type="button" class="primary">↻ Neues Spiel</button>
+ </div>
+ <div class="tc-memory-stats" aria-label="Spielstand">
+ <div><small>Zeit</small><strong id="memoryTime">00:00</strong></div>
+ <div><small>Züge</small><strong id="memoryMoves">0</strong></div>
+ <div><small>Paare</small><strong id="memoryPairs">0 / 6</strong></div>
+ <div><small>Bestzeit</small><strong id="memoryBest">–</strong></div>
+ </div>
+ <p id="memoryStatus" role="status" aria-live="polite" class="tc-memory-status">Wähle zwei Karten aus.</p>
+ <div id="memoryBoard" class="tc-memory-board" aria-label="Pokémon Memory-Spielfeld"></div>
+ <p class="tiny tc-memory-disclaimer">Das Minispiel hat keinen Einfluss auf Lager, Sammlung, Wunschliste oder Finanzen. Kartenbilder kommen aus dem öffentlichen TCGdex-Katalog; falls ein Bild fehlt, ist die Karte weiterhin spielbar. Bestzeiten werden nur auf diesem Gerät gespeichert.</p>
+ </div></section>
  <section id="page-users" class="page" hidden><div class="panel"><h2>Benutzer verwalten</h2>
  <p>Benutzer zuerst in Supabase Authentication einladen, dann hier KartenDex-Zugriff vergeben.</p>
  <form id="cloud13UserForm" class="cloud13-form"><input type="email" name="email" required placeholder="E-Mail-Adresse">
  <select name="enabled"><option value="true">Freigeben</option><option value="false">Entziehen</option></select>
  <button type="submit">Berechtigung speichern</button></form><div id="cloud13UserRows"></div></div></section>`;
  $('page-more').after(pages);
+ memoryUI13=window.TrummMemory13?.bind({getUserId:()=>session?.user?.id||''});
  const access=document.createElement('button');access.id='cloud13UserAccess';access.type='button';access.dataset.go='users';access.textContent='Benutzerberechtigungen';access.className='secondary full';$('page-more').append(access);
  const reports=$('page-more').querySelector('.panel:nth-child(2)');
  if(reports)reports.id='cloud13AdminReports';
