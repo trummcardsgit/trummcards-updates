@@ -14,6 +14,7 @@
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="stylesheet" href="./styles.css?v=0.9.0">
 <script src="./catalog11.js?v=0.9.0" defer></script>
+<script src="./image-link12.js?v=0.9.0" defer></script>
 <script src="./catalog11-ui.js?v=0.9.0" defer></script>
 <script src="./sets11-ui.js?v=0.9.0" defer></script>
 <script src="./market11-ui.js?v=0.9.0" defer></script>
@@ -25,6 +26,11 @@
 <script src="./cash11-ui.js?v=0.9.0" defer></script>
 <script src="./shipping11.js?v=0.9.0" defer></script>
 <script src="./shipping11-ui.js?v=0.9.0" defer></script>
+<script src="./carddex12.js?v=0.9.0" defer></script>
+
+<script src="./vinted12.js?v=0.9.0" defer></script>
+<script src="./personal-market13.js?v=0.9.0" defer></script>
+<script src="./memory13.js?v=0.9.0" defer></script>
 <script src="./app.js?v=0.9.0" defer></script>
 </head>
 <body>
@@ -40,7 +46,7 @@
       <div class="panel auth-panel">
         <div class="micro-label">TRUMMCARDS CLOUD</div>
         <h1>Willkommen zurück</h1>
-        <p class="subtle">Melde dich mit deinem TrummCards-Produktivkonto an. Lagerdaten werden später zwischen Windows und PWA synchronisiert. Aktuell sind Buchungen zum Schutz deiner Daten gesperrt.</p>
+        <p class="subtle">Melde dich mit deinem bestehenden TrummCards-Konto an. Windows, iPhone und Android verwenden dieselbe Cloud-Lagerverwaltung mit synchronisiertem Bestand.</p>
         <form id="loginForm" autocomplete="on">
           <label for="email">E-Mail-Adresse</label><input type="email" id="email" name="email" autocomplete="username" inputmode="email" required placeholder="name@beispiel.at">
           <label for="password">Passwort</label><input type="password" id="password" name="password" autocomplete="current-password" required placeholder="Dein Supabase-Passwort">
@@ -51,7 +57,7 @@
       </div>
     </section>
     <div id="appScreen" hidden>
-      <div class="test-note production-preview"><span>PRODUKTIONSVORSCHAU 0.9.0</span> Die PWA verbindet sich ausschließlich mit der neuen leeren Datenbank <b>TrummCards Production</b>. Artikelanlage, Ein- und Verkäufe sowie Bilduploads bleiben bis zur Freigabe gesperrt.</div>
+      <div class="test-note production-preview"><span>TRUMMCARDS CLOUD 1.2.5</span> Gemeinsame Web-App für Windows, iPhone und Android. Alle Artikel, Bilder, Einkäufe, Verkäufe und Buchungen bleiben in <b>TrummCards Production</b> gespeichert.</div>
       <div class="topactions"><div><span class="eyebrow" id="welcomeText">DEINE SAMMLUNG</span><h1 id="screenTitle">Übersicht</h1></div><button class="icon-btn" id="refreshBtn" aria-label="Jetzt synchronisieren" title="Synchronisieren">↻</button></div>
       <div id="pendingBanner" class="pending" hidden></div>
 
@@ -142,7 +148,7 @@
       </section>
 
       <section id="page-purchase" class="page" hidden>
-        <div class="panel booking-panel"><div class="micro-label">EINGANG · PRODUCTION · VORSCHAU 0.9.0</div><h2>Einkauf erfassen</h2>
+        <div class="panel booking-panel"><div class="micro-label">EINGANG · PRODUCTION · CLOUD 1.2.5</div><h2>Einkauf erfassen</h2>
           <p class="subtle">Erfasse deinen Einkauf. Einzel- und Gesamtpreis werden automatisch berechnet.</p>
           <form id="purchaseForm" class="booking-form">
             <fieldset class="booking-group">
@@ -173,7 +179,7 @@
       </section>
 
       <section id="page-sale" class="page" hidden>
-        <div class="panel booking-panel"><div class="micro-label">VERKAUF · PRODUCTION · VORSCHAU 0.9.0</div><h2>Verkauf erfassen</h2>
+        <div class="panel booking-panel"><div class="micro-label">VERKAUF · PRODUCTION · CLOUD 1.2.5</div><h2>Verkauf erfassen</h2>
           <p class="subtle">Der Lagerbestand und FIFO-Einstand werden nach der Buchung automatisch aktualisiert.</p>
           <form id="saleForm" class="booking-form">
             <fieldset class="booking-group">
@@ -296,6 +302,41 @@
           <button type="button" class="secondary full" data-go="home">Zum Lager</button>
         </div>
       </section>
+      <section id="page-carddex" class="page" hidden><div class="panel dex-panel">
+<div class="dex-head"><div><span class="dex-eyebrow">POKÉMON KARTENKATALOG · TCGDEX</span><h2>KartenDex</h2><p>Karten und komplette Sets nachschlagen – unabhängig vom Lager, ohne einen Artikel anzulegen.</p></div></div>
+
+<form id="dexSearchForm" class="dex-form">
+ <label>Pokémon / Kartenname<input id="dexQuery" type="search" maxlength="100" placeholder="z. B. Glurak-GX"></label>
+ <label>Set-Name<input id="dexSearchSet" type="search" maxlength="100" placeholder="z. B. Verborgenes Schicksal"></label>
+ <label>Kartennummer<input id="dexSearchNumber" type="text" inputmode="text" maxlength="30" placeholder="z. B. 9 oder 009/147"></label>
+ <label>Sprache<select id="dexLanguage"><option value="de">Deutsch</option><option value="en">Englisch</option><option value="ja">Japanisch</option><option value="it">Italienisch</option></select></label>
+ <button type="submit" class="dex-action">Karten suchen</button>
+</form>
+<p id="dexSearchStatus" role="status" class="dex-status">Kartenname eingeben oder unten ein Set auswählen.</p>
+<div id="dexResults" class="dex-grid"></div>
+<div class="dex-pager"><button type="button" id="dexPrev" disabled>← Vorherige</button><span id="dexPageLabel">Noch keine Suche</span><button type="button" id="dexNext" disabled>Weitere 20 →</button></div>
+<div id="dexDetail" class="dex-detail" hidden>
+ <img id="dexDetailImage" hidden alt="Kartenbild aus TCGdex">
+ <div class="dex-detail-text"><h3 id="dexDetailTitle"></h3><div id="dexDetailMeta"></div>
+ <div class="dex-import-actions">
+<button type="button" class="dex-action" id="dexToCollection">Zur persönlichen Sammlung</button>
+<button type="button" class="dex-action" id="dexToWishlist">Zur Wunschliste</button>
+<button type="button" class="dex-action" id="dexToArticle">Ins Verkaufslager übernehmen</button></div>
+ <p class="dex-status">Katalogbilder sind externe Vorschaubilder. Für Verkaufsinserate eigene Fotos verwenden.</p></div>
+</div>
+<hr class="dex-rule">
+<h3>Pokémon-Sets durchsuchen</h3>
+<form id="dexSetForm" class="dex-form">
+ <label>Set-Name (optional)<input id="dexSetQuery" type="search" maxlength="100" placeholder="z. B. 151, Basis-Set"></label>
+ <button type="submit" class="dex-action">Sets anzeigen</button>
+</form>
+<p id="dexSetStatus" role="status" class="dex-status"></p>
+<div id="dexSets" class="dex-set-grid"></div>
+<button type="button" id="dexMoreSets" hidden>Weitere Sets laden</button>
+<p id="dexSetCardsStatus" role="status" class="dex-status"></p>
+<div id="dexSetCards" class="dex-grid"></div>
+<div class="dex-pager"><button type="button" id="dexSetPrev" disabled>← Karten</button><span>Set-Karten</span><button type="button" id="dexSetNext" disabled>Weitere Karten →</button></div>
+</div></section>
       <section id="page-more" class="page" hidden>
         <div class="panel"><div class="micro-label">KONTO & SYNCHRONISIERUNG</div><h2>Cloud PRODUCTION</h2>
           <div class="setting-row"><span>Angemeldet als</span><b id="accountEmail">–</b></div>
@@ -305,20 +346,38 @@
           <button class="secondary full" type="button" id="moreRefresh">Jetzt synchronisieren</button>
           <button class="danger full" type="button" id="signOutBtn">Abmelden</button>
         </div>
-        <div class="panel"><h2>Auswertungen</h2><button class="secondary full" type="button" data-go="finance">Finanzcenter & CSV-Export öffnen</button></div>
+        <div class="panel"><h2>Buchungen & Auswertungen</h2><button class="secondary full" type="button" data-go="sales">Verkäufe, Einkäufe & Versand ansehen</button><button class="secondary full" type="button" data-go="finance">Finanzcenter & CSV-Export öffnen</button></div>
         <div class="panel"><h2>Zum Home-Bildschirm</h2><p class="subtle"><b>iPhone:</b> In Safari auf „Teilen“ tippen und „Zum Home-Bildschirm“ wählen.<br><b>Android:</b> In Chrome im Menü auf „App installieren“ oder „Zum Startbildschirm hinzufügen“ tippen.</p></div>
       </section>
     </div>
   </main>
+  
+<dialog id="vintedDialog" class="vinted-dialog" aria-label="Vinted-Inserat vorbereiten">
+  <div class="vinted-dialog-head"><div><span class="dex-eyebrow">TRUMMCARDS · INSERATSVORLAGE</span><h2>Auf Vinted inserieren</h2></div><button id="vintedClose" type="button" aria-label="Schließen">✕</button></div>
+  <p class="dex-status">Erstelle den Inseratstext aus deinen Kartendaten. Es wird nichts automatisch auf Vinted hochgeladen.</p>
+  <label>Artikel aus deinem Lager<select id="vintedProduct"></select></label>
+  <div class="vinted-preview"><img id="vintedOwnImage" alt="Eigenes Kartenfoto" hidden><p>Verwende auf Vinted eigene Fotos deiner tatsächlichen Karte, keine fremden Katalogbilder.</p></div>
+  <label>Verkaufsüberschrift<input id="vintedTitle" type="text" maxlength="100" autocomplete="off"></label>
+  <button id="vintedCopyTitle" type="button" class="dex-action">Überschrift kopieren</button>
+  <label>Verkaufspreis (€) – optional, selbst festlegen<input id="vintedPrice" type="text" inputmode="decimal" placeholder="z. B. 12,90"></label>
+  <button id="vintedCopyPrice" type="button" class="dex-action">Preis kopieren</button>
+  <label>Beschreibung<textarea id="vintedDescription" rows="8"></textarea></label>
+  <button id="vintedCopyDescription" type="button" class="dex-action">Beschreibung kopieren</button>
+  <p id="vintedStatus" role="status" class="dex-status"></p>
+  <a class="vinted-link" href="https://www.vinted.at/" target="_blank" rel="noopener noreferrer">Vinted öffnen ↗</a>
+</dialog>
+
   <dialog id="imageViewer" class="image-dialog"><button id="closeImageViewer" class="image-dialog-close" type="button" aria-label="Bild schließen">✕</button><img id="viewerImage" alt="Großes Artikelbild"><p id="viewerCaption"></p></dialog>
   <nav id="bottomNav" class="bottom-nav" aria-label="Navigation" hidden>
     <button data-go="home" class="active" type="button"><span>▦</span>Lager</button>
     <button data-go="purchase" type="button"><span>⊕</span>Einkauf</button>
     <button data-go="sale" type="button"><span>↗</span>Verkauf</button>
+    <button data-go="sales" class="desktop-bookings-link" type="button" aria-label="Buchungen anzeigen"><span>▤</span>Buchungen</button>
+    <button data-go="carddex" type="button"><span>◈</span>KartenDex</button>
     <button data-go="photos" type="button"><span>▧</span>Bilder</button>
     <button data-go="more" type="button"><span>☰</span>Mehr</button>
   </nav>
-  <footer>TRUMMCARDS · EST. 2026 <span>CLOUD PRODUCTION · RELEASE VORSCHAU</span></footer>
+  <footer>TRUMMCARDS · EST. 2026 <span>CLOUD PRODUCTION · RELEASE 1.2.5</span></footer>
 </div>
 </body>
 </html>
