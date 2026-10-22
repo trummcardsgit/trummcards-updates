@@ -3,6 +3,10 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 const read=p=>fs.readFileSync(new URL(p,import.meta.url),'utf8');
 const app=read('../web/app.js');
+const dex=read('../web/carddex12.js');
+const catalog=read('../web/catalog11.js');
+const html=read('../web/index.html');
+const css=read('../web/styles.css');
 const baseline=read('../../supabase/migrations/20261022000100_access_collection_wishlist.sql');
 const grants=read('../../supabase/migrations/20261022000200_personal_lists_for_dex.sql');
 const acquire=read('../../supabase/migrations/20261022000300_wishlist_to_collection.sql');
@@ -11,7 +15,7 @@ const builder=read('../../release/build-cloud-13-test.mjs');
 test('PWA JavaScript parses and keeps distinct admin and Dex navigation',()=>{
  assert.doesNotThrow(()=>new Function(app));
  assert.match(app,/cloud13Role==='dex'\s*&&\s*!\['dex','more','collection','wishlist'\]/);
- assert.match(app,/cloud13Role==='admin'\?\[\['stock'/);
+ assert.match(app,/if\(target==='stock'&&cloud13Role!=='admin'\)/);
  assert.match(app,/if\(cloud13Role!=='admin'\)/);
 });
 test('Dex accesses private list, not inventory synchronisation',()=>{
@@ -34,10 +38,41 @@ test('Transfer is server-side, signed-in-only and atomic on wishlist row',()=>{
  assert.doesNotMatch(acquire,/insert into public\.tc_sales/i);
 });
 test('Import to sale stock is a draft and cannot directly book a purchase',()=>{
- assert.match(app,/resetArticle\(\);const form=\$\('articleForm'\)/);
+ assert.match(app,/resetArticle\(\);\s*const form=\$\('articleForm'\)/);
  assert.match(app,/showPage\('article'\)/);
- assert.match(app,/Bitte Artikel prüfen und speichern/);
+ assert.match(app,/Artikel prüfen, speichern/);
 });
+
+test('KartenDex retains original production 1.2.6 layout, search, set browser and paging',()=>{
+ assert.doesNotThrow(()=>new Function(dex));
+ assert.doesNotThrow(()=>new Function(catalog));
+ for(const id of ['dexSearchForm','dexQuery','dexSearchSet','dexSearchNumber','dexLanguage',
+  'dexResults','dexPrev','dexNext','dexDetail','dexSetForm','dexSets',
+  'dexSetCards','dexSetPrev','dexSetNext','dexMoreSets','dexDetailImage']){
+  assert.match(app,new RegExp('id="'+id+'"'),id+' is required');
+ }
+ assert.match(dex,/card\.setName\|\|'Set wird geladen/);
+ for(const cls of ['dex-card-name','dex-card-set','dex-card-number','dex-grid','dex-detail']){
+  assert.match(dex+css,new RegExp(cls));
+ }
+ assert.match(catalog,/searchPrintedFraction/);
+ assert.match(catalog,/cardNumber/);
+ assert.match(css,/\.dex-card img\{height:140px/);
+ assert.match(html,/carddex12\.js\?v=0\.9\.0/);
+ assert.doesNotMatch(app,/cloud13DexSearch/);
+});
+test('Original detail panel supports collection, wishlist and admin-only sale stock actions',()=>{
+ for(const target of ['dexToArticle','dexToCollection','dexToWishlist']){
+  assert.match(app,new RegExp('id="'+target+'"'));
+  assert.match(dex,new RegExp("'+target+'"));
+ }
+ assert.match(dex,/target:'collection'/);
+ assert.match(dex,/target:'wishlist'/);
+ assert.match(dex,/target:'stock'/);
+ assert.match(app,/\$\('dexToArticle'\)\.hidden=isDex/);
+ assert.match(app,/window\.TrummCardDex12\?\.bind\(\{onUseCard:cloud13UseCard\}\)/);
+});
+
 test('Release builder isolates TEST from PROD',()=>{
  assert.match(builder,/const target=path\.resolve\('cloud\/test-13-build'\)/);
  assert.match(builder,/content=content\.replaceAll\(production,test\)\.replaceAll\(prodKey,testKey\)/);
