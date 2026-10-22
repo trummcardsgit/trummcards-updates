@@ -22,17 +22,18 @@ async function call(endpoint,opts={}){
 }
 async function establishRecovery(params){
  const type=params.get('type');
- if(type!=='recovery'){inform('Dieser Link ist kein Passwort-Wiederherstellungslink. Bitte fordere eine neue E-Mail an.',true);return;}
+ if(!['recovery','invite'].includes(type)){inform('Dieser Link ist weder ein Einladungs- noch ein Passwort-Wiederherstellungslink. Bitte fordere bei Bedarf einen neuen Link an.',true);return;}
  try{
   let token=params.get('access_token');
   if(!token&&params.get('token_hash')){
-    const result=await call('/auth/v1/verify',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token_hash:params.get('token_hash'),type:'recovery'})});
+    const result=await call('/auth/v1/verify',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token_hash:params.get('token_hash'),type})});
     token=result.access_token;
   }
   if(!token)throw Error('Der Wiederherstellungslink enthält keinen gültigen Zugriffstoken. Bitte fordere einen neuen Link an.');
   const user=await call('/auth/v1/user',{headers:{Authorization:'Bearer '+token}});
   if(!user?.id)throw Error('Das Benutzerkonto konnte nicht verifiziert werden.');
   accessToken=token;show('updatePanel');clear();
+  if(type==='invite'){$('updateTitle').textContent='Passwort für deinen neuen TrummCards-Zugang festlegen';$('updateIntro').textContent='Einladung bestätigt. Lege jetzt dein eigenes Passwort fest.';}
   $('newPassword').focus();
  }catch(err){accessToken=null;show('requestPanel');inform(errText(err)+' Falls der Link abgelaufen ist, fordere bitte eine neue E-Mail an.',true);}
 }
@@ -72,7 +73,7 @@ function start(){
  if(h.has('error')||h.has('error_code')||q.has('error')){
   const reason=h.get('error_description')||q.get('error_description');
   inform(reason?decodeURIComponent(reason.replace(/\+/g,' ')):'Dieser Link ist abgelaufen oder ungültig. Bitte fordere eine neue E-Mail an.',true);
- }else if(h.has('access_token')||h.get('type')==='recovery'||q.get('type')==='recovery'){
+ }else if(h.has('access_token')||['recovery','invite'].includes(h.get('type'))||['recovery','invite'].includes(q.get('type'))){
   establishRecovery(h.has('access_token')?h:q);
  }else{show('requestPanel');}
 }
