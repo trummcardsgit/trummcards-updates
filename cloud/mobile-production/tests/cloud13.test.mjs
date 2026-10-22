@@ -14,14 +14,14 @@ const builder=read('../../release/build-cloud-13-test.mjs');
 
 test('PWA JavaScript parses and keeps distinct admin and Dex navigation',()=>{
  assert.doesNotThrow(()=>new Function(app));
- assert.match(app,/cloud13Role==='dex'\s*&&\s*!\['carddex','more','collection','wishlist'\]/);
+ assert.match(app,/cloud13Role==='dex'\s*&&\s*!\['carddex','more','collection','wishlist','game'\]/);
  assert.match(app,/if\(target==='stock'&&cloud13Role!=='admin'\)/);
  assert.match(app,/if\(cloud13Role!=='admin'\)/);
 });
 test('Dex-specific navigation places KartenDex, Sammlung, Wunschliste, then Mehr; admin stays unchanged',()=>{
  assert.match(app,/function cloud13OrderNavigation\(isDex\)/);
- assert.match(app,/\['carddex','collection','wishlist','more'\]/);
- assert.match(app,/\['home','purchase','sale','sales','carddex','photos','more','collection','wishlist'\]/);
+ assert.match(app,/\['carddex','collection','wishlist','game','more'\]/);
+ assert.match(app,/\['home','purchase','sale','sales','carddex','photos','game','more','collection','wishlist'\]/);
  assert.match(app,/const buttons=Array\.from\(nav\.children\)/);
  assert.match(app,/nav\.appendChild\(button\)/);
  assert.match(app,/cloud13OrderNavigation\(isDex\)/);
@@ -209,6 +209,60 @@ test('Invited users can set their first password through safe TEST callback rout
  assert.match(resetPage,/id="updateTitle"/);
  assert.match(resetPage,/id="updateIntro"/);
  assert.match(reset,/redirect_to=/);
+});
+
+
+test('Memory game uses a dedicated route for both roles and keeps stock data untouched',()=>{
+ const memory=read('../web/memory13.js');
+ assert.doesNotThrow(()=>new Function(memory));
+ assert.match(html,/memory13\.js\?v=0\.9\.0/);
+ assert.match(app,/id="page-game"/);
+ assert.match(app,/memoryUI13=window\.TrummMemory13\?\.bind/);
+ assert.match(app,/memoryUI13\?\.onPageChange\(name==='game'\)/);
+ assert.match(app,/cloud13OrderNavigation\(isDex\)/);
+ for(const id of ['memoryBoard','memoryDifficulty','memoryNew','memoryTime','memoryMoves','memoryPairs','memoryBest','memoryStatus'])
+  assert.match(app,new RegExp('id="'+id+'"'));
+ assert.match(css,/\.tc-memory-board/);
+ assert.match(css,/\.tc-memory-card\.is-open/);
+ assert.match(css,/\.tc-memory-dex-nav/);
+ assert.doesNotMatch(memory,/tc_products|tc_personal_cards|tc_purchase|tc_sales|Supabase|fetch\s*\('/);
+ assert.match(memory,/getPokemonCard/);
+ assert.match(memory,/localStorage\.setItem/);
+ assert.match(memory,/getUserId/);
+});
+test('Memory engine creates unique pairs and enforces two-card turn rules',()=>{
+ const context={};
+ new Function('window',read('../web/memory13.js'))(context);
+ const m=context.TrummMemory13;
+ for(const [difficulty,pairs] of Object.entries({leicht:6,mittel:8,schwer:12})){
+  const state=m.createState(difficulty,()=>0.31);
+  assert.equal(state.cards.length,pairs*2);
+  assert.equal(new Set(state.cards.map(c=>c.key)).size,pairs);
+  assert.ok([...new Set(state.cards.map(c=>c.key))].every(key=>state.cards.filter(c=>c.key===key).length===2));
+  assert.equal(state.moves,0);
+  assert.equal(state.completed,false);
+  const first=0,second=state.cards.findIndex((c,i)=>i!==first&&c.key!==state.cards[first].key);
+  assert.equal(m.choose(state,first),'first');
+  assert.equal(m.choose(state,first),'ignored');
+  assert.equal(m.choose(state,second),'mismatch');
+  assert.equal(state.moves,1);
+  assert.equal(m.choose(state,2),'ignored','Locked board must ignore taps');
+  assert.equal(m.hideMismatch(state),true);
+  assert.equal(state.cards[first].shown,false);
+  assert.equal(state.cards[second].shown,false);
+  while(!state.completed){
+   const remaining=state.cards.filter(x=>!x.matched);
+   const key=remaining[0].key;
+   const positions=state.cards.flatMap((c,i)=>c.key===key&&!c.matched?[i]:[]);
+   assert.equal(positions.length,2);
+   assert.equal(m.choose(state,positions[0]),'first');
+   const result=m.choose(state,positions[1]);
+   assert.ok(result==='matched'||result==='won');
+  }
+  assert.equal(state.matched,pairs);
+  assert.equal(state.cards.every(x=>x.matched),true);
+  assert.equal(m.choose(state,0),'ignored');
+ }
 });
 
 test('Release builder isolates TEST from PROD',()=>{
