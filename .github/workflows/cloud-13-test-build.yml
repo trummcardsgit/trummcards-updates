@@ -1,0 +1,39 @@
+name: Cloud 1.3 TEST PWA validation
+on:
+  push:
+    branches: [feature/cloud-1.3-access-collection-wishlist]
+    paths:
+      - 'cloud/mobile-production/**'
+      - 'cloud/release/build-cloud-13-test.mjs'
+      - '.github/workflows/cloud-13-test-build.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  test-pwa:
+    if: github.repository == 'trummcardsgit/trummcards-updates' && github.ref == 'refs/heads/feature/cloud-1.3-access-collection-wishlist'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify source syntax
+        run: |
+          node --check cloud/mobile-production/web/app.js
+          node --check cloud/release/build-cloud-13-test.mjs
+      - name: Generate isolated TEST PWA
+        run: node cloud/release/build-cloud-13-test.mjs
+      - name: Verify TEST app syntax and deny production references
+        run: |
+          node --check cloud/test-13-build/app.js
+          node --check cloud/test-13-build/catalog11.js
+          grep -F 'cpycfxolqpidfjbhhsmr' cloud/test-13-build/app.js
+          ! grep -R -F 'hgdexyvtgfffcasfpjyu' cloud/test-13-build
+          grep -F 'tc_pwa_access_role' cloud/test-13-build/app.js
+      - name: Retain isolated TEST PWA
+        uses: actions/upload-artifact@v4
+        with:
+          name: TrummCards-Cloud-13-TEST-PWA
+          path: cloud/test-13-build/
+          retention-days: 14
