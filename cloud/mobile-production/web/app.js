@@ -476,7 +476,7 @@ function cloud13RenderQuotes(){
   const node=document.querySelector('[data-cloud13-price="'+item.id+'"]');
   if(node)node.textContent=cloud13QuoteStatus(item);
   const selector=document.querySelector('[data-cloud13-variant="'+item.id+'"]');
-  if(selector)selector.hidden=cloud13ItemQuote(item).rows.length<2;
+  if(selector)selector.hidden=!cloud13ItemQuote(item).rows.some(r=>r.label==='Normal (ohne Holo)'||r.label==='Holo');
  }
  const totals=window.TrummPersonalMarket13.summarize(cloud13Items,cloud13ItemQuote);
  for(const type of ['collection','wishlist']){
