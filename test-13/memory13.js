@@ -136,11 +136,18 @@ function bind({getUserId=()=>''}={}){
   stats();
  }
  function preloadUrl(url){
-  // An eager, detached Image preloads even when a face-down card is not visible.
+  // Images from both providers are used as external references; never copied or stored.
+  // A timeout prevents one unavailable CDN from delaying the whole game.
   return new Promise(resolve=>{
    const img=new Image();let settled=false;
-   const finish=ok=>{if(settled)return;settled=true;img.onload=null;img.onerror=null;resolve(ok);};
-   img.onload=()=>finish(true);img.onerror=()=>finish(false);img.src=url;
+   const timeout=setTimeout(()=>finish(false),4500);
+   function finish(ok){
+    if(settled)return;settled=true;clearTimeout(timeout);
+    img.onload=null;img.onerror=null;resolve(ok);
+   }
+   img.onload=()=>finish(true);
+   img.onerror=()=>finish(false);
+   img.src=url;
   });
  }
  async function getImage(key){
@@ -156,9 +163,26 @@ function bind({getUserId=()=>''}={}){
     }catch{}
    }
    root=safeRoot(root);
-   const url=root?root+'/low.webp':'';
-   const ok=url?await preloadUrl(url):false;
-   const info={url:ok?url:''};
+   const baseNumber=/^base1-([1-9][0-9]?)$/.exec(key)?.[1];
+   const candidates=[
+    root?root+'/low.webp':'',
+    baseNumber?'https://images.pokemontcg.io/base1/'+Number(baseNumber)+'.png':'',
+    root?root+'/high.webp':''
+   ].filter(Boolean);
+   // TCGdex has documented missing CDN assets. The original PokemonTCG image
+   // dataset supplies an independently hosted card scan for every Base Set card.
+   let url='';
+   if(candidates.length){
+    try{
+     url=await Promise.any(candidates.map(candidate=>
+      preloadUrl(candidate).then(ok=>{
+       if(!ok)throw Error('Bild nicht verfügbar');
+       return candidate;
+      })
+     ));
+    }catch{}
+   }
+   const info={url};
    cardInfo.set(key,info);
    return info;
   })().finally(()=>imageLoading.delete(key));
@@ -191,9 +215,12 @@ function bind({getUserId=()=>''}={}){
   imagesPending=false;
   board.removeAttribute('aria-busy');
   state.cards.forEach((_,index)=>paintCard(index));
-  status.textContent=finished===count
-   ? 'Finde die gleichen Pokémon-Karten. Die Zeit startet mit deiner ersten Karte.'
-   : 'Du kannst jetzt spielen. Fehlende Kartenbilder werden bei Verfügbarkeit nachgeladen.';
+  const loaded=keys.filter(key=>Boolean(cardInfo.get(key)?.url)).length;
+  status.textContent=loaded===count
+   ? 'Alle '+count+' Pokémon-Kartenbilder bereit. Die Zeit startet mit deiner ersten Karte.'
+   : loaded
+    ? loaded+' von '+count+' Kartenbildern bereit. Du kannst spielen; weitere Bilder werden nachgeladen.'
+    : 'Bilder konnten nicht geladen werden. Prüfe die Internetverbindung; mit den Kartennamen kannst du trotzdem spielen.';
  }
  function newGame(){
   round++;if(turnBack!==null){clearTimeout(turnBack);turnBack=null;}
