@@ -419,6 +419,56 @@ async function manageInventoryStock(id,archive=false){if(!WRITES_ENABLED){notice
 let cloud13Role=null,cloud13Items=[],cloud13Viewers=[],cloud13Selected=null;
 const cloud13Lang={de:'Deutsch',en:'Englisch',ja:'Japanisch',it:'Italienisch'};
 const cloud13Image=u=>/^https:\/\/assets\.tcgdex\.net\/[A-Za-z0-9/._-]+$/.test(u||'')?u+'/low.webp':'';
+const cloud13EmptyImage=()=>window.TrummCardDex12?.noImageDataUri||'';
+async function cloud13CatalogImage(card,language){
+ const candidate=cloud13Image(card?.imageCandidate)?card.imageCandidate:'';
+ if(!card?.id)return candidate;
+ const resolver=window.TrummImageLink12?.resolve;
+ if(typeof resolver!=='function')return candidate;
+ try{
+  const recovered=await resolver({catalog:window.TrummCatalog11,id:card.id,
+    language,imageCandidate:candidate});
+  return cloud13Image(recovered?.root)?recovered.root:'';
+ }catch(error){console.info('Sammlungsbild konnte nicht geprüft werden:',errorText(error));return candidate;}
+}
+function cloud13PaintImage(img,record){
+ const placeholder=cloud13EmptyImage(),root=record.catalog_image_url;
+ let startedRecovery=false;
+ const noImage=()=>{img.onerror=null;img.src=placeholder;img.alt='Kein Bild verfügbar';};
+ async function recover(){
+  if(startedRecovery)return noImage();
+  startedRecovery=true;
+  if(!record.catalog_card_id)return noImage();
+  const fallback=await cloud13CatalogImage({id:record.catalog_card_id,imageCandidate:''},record.language);
+  if(!img.isConnected)return;
+  if(fallback&&fallback!==root){
+   img.onerror=noImage;
+   img.src=cloud13Image(fallback);
+   return;
+  }
+  noImage();
+ }
+ img.onerror=()=>{void recover();};
+ img.loading='lazy';
+ img.alt='Kartenbild von '+(record.name||'Pokémon-Karte');
+ if(cloud13Image(root))img.src=cloud13Image(root);
+ else if(record.catalog_card_id)void recover();
+ else noImage();
+}
+function cloud13Preview(form){
+ const area=form.querySelector('.cloud13-import-preview');
+ const root=String(f(form,'catalog_image_url')?.value||'');
+ const cardId=String(f(form,'catalog_card_id')?.value||'');
+ area.hidden=!cardId;
+ if(!cardId)return;
+ area.querySelector('strong').textContent=String(f(form,'name')?.value||'');
+ area.querySelector('small').textContent='Set: '+String(f(form,'set_name')?.value||'')+
+   ' · Nr.: '+String(f(form,'card_number')?.value||'');
+ cloud13PaintImage(area.querySelector('img'),{
+  name:String(f(form,'name')?.value||''),catalog_card_id:cardId,
+  catalog_image_url:root,language:String(f(form,'language')?.value||'Deutsch')
+ });
+}
 async function cloud13Refresh(){
  if(!['admin','dex'].includes(cloud13Role))return;
  cloud13Items=await tableGet('tc_personal_cards','select=*&order=created_at.desc&limit=1000');
@@ -429,11 +479,24 @@ async function cloud13Refresh(){
   const entries=cloud13Items.filter(i=>i.list_type===type);
   for(const item of entries){
    const card=document.createElement('div');card.className='panel cloud13-card';
-   const img=cloud13Image(item.catalog_image_url);
-   if(img){const photo=document.createElement('img');photo.src=img;photo.alt='';photo.loading='lazy';photo.className='cloud13-card-photo';card.append(photo);}
+   const picture=document.createElement('button');picture.type='button';
+   picture.className='cloud13-image-button';picture.title='Kartenbild vergrößern';
+   picture.setAttribute('aria-label','Kartenbild von '+item.name+' vergrößern');
+   const photo=document.createElement('img');photo.className='cloud13-card-photo';
+   cloud13PaintImage(photo,item);picture.append(photo);card.append(picture);
+   picture.addEventListener('click',()=>{
+    if(!photo.src||photo.src===cloud13EmptyImage())return notice('Für diese Karte ist kein Bild verfügbar.','info');
+    $('viewerImage').src=photo.currentSrc||photo.src;
+    $('viewerImage').alt='Kartenbild von '+item.name;
+    $('viewerCaption').textContent=item.name+' · '+(item.set_name||'Set unbekannt')+' · Nr. '+(item.card_number||'–');
+    $('imageViewer').showModal();
+   });
    const details=document.createElement('div');
    const title=document.createElement('strong');title.textContent=item.name;
-   const meta=document.createElement('p');meta.textContent=[item.set_name,item.card_number,item.language,Number(item.quantity)+' Stk.',item.amount_eur==null?'':euro(item.amount_eur),item.note].filter(Boolean).join(' · ');
+   const meta=document.createElement('p');
+   meta.textContent='Set: '+(item.set_name||'Nicht angegeben')+' · Kartennummer: '+(item.card_number||'Nicht angegeben')+
+      ' · '+item.language+' · '+Number(item.quantity)+' Stk.'+
+      (item.amount_eur==null?'':' · '+euro(item.amount_eur))+(item.note?' · '+item.note:'');
    const remove=document.createElement('button');remove.type='button';remove.dataset.personalDelete=item.id;remove.textContent='Entfernen';
    details.append(title,meta);
    if(type==='wishlist'){
@@ -457,9 +520,14 @@ async function cloud13LoadItem(type,form){
   priority:raw.priority?Number(raw.priority):null,amount_eur:raw.amount_eur===''||raw.amount_eur===undefined?null:Number(raw.amount_eur),
   catalog_card_id:String(raw.catalog_card_id||''),catalog_image_url:String(raw.catalog_image_url||'')};
  if(!item.name||!Number.isSafeInteger(item.quantity)||item.quantity<1||item.quantity>10000)throw Error('Ungültige Kartenangaben.');
+ // Confirm/recover the catalog image before saving, just like Lager's image-link resolver.
+ if(item.catalog_card_id){
+  const resolved=await cloud13CatalogImage({id:item.catalog_card_id,imageCandidate:item.catalog_image_url},item.language);
+  item.catalog_image_url=resolved;
+ }
  await authorizedRequest('/rest/v1/tc_personal_cards',{method:'POST',headers:{...API_HEADERS,Prefer:'return=minimal'},body:JSON.stringify(item)});
  await cloud13Refresh();
- form.reset();
+ form.reset();cloud13Preview(form);
  return item;
 }
 async function cloud13UseCard({id,language='de',target}={}){
@@ -468,9 +536,10 @@ async function cloud13UseCard({id,language='de',target}={}){
  if(!['stock','collection','wishlist'].includes(target))return;
  try{
   const card=await window.TrummCatalog11.getPokemonCard({id,language});
+  const imageRoot=await cloud13CatalogImage(card,language);
   const values={name:card.name,set_name:card.setName,card_number:card.localId,
    language:cloud13Lang[language]||'Deutsch',catalog_card_id:card.id,
-   catalog_image_url:cloud13Image(card.imageCandidate)?card.imageCandidate:'',rarity:card.rarity||''};
+   catalog_image_url:imageRoot,rarity:card.rarity||''};
   if(target==='stock'){
    resetArticle();
    const form=$('articleForm');
@@ -481,8 +550,9 @@ async function cloud13UseCard({id,language='de',target}={}){
    const form=$(target==='collection'?'cloud13CollectionForm':'cloud13WishlistForm');
    form.reset();
    for(const [key,value] of Object.entries(values)){const input=f(form,key);if(input)input.value=value||'';}
+   cloud13Preview(form);
    showPage(target);
-   notice('Karte aus dem KartenDex übernommen. Menge ergänzen und in deiner persönlichen Liste speichern.','success');
+   notice('Name, Set, Kartennummer und Kartenbild aus dem KartenDex übernommen. Menge prüfen und speichern.','success');
   }
  }catch(error){notice(errorText(error),'error');}
 }
@@ -512,6 +582,8 @@ function cloud13Init(){
  <input name="amount_eur" type="number" min="0" step="0.01" placeholder="Geschätzter Einzelwert EUR">
  <input name="note" maxlength="2000" placeholder="Notiz">
  <input name="catalog_card_id" type="hidden"><input name="catalog_image_url" type="hidden">
+ <div class="cloud13-import-preview" hidden><img alt="Kartenbild aus dem KartenDex"><div><strong></strong><small></small><span>Bildvorschau aus dem Pokémon-Katalog</span></div></div>
+ <button type="button" class="secondary" data-go="carddex">Karte im KartenDex auswählen</button>
  <button type="submit">Zur Sammlung hinzufügen</button></form></div>
  <div id="cloud13CollectionRows" class="stack"></div></section>
  <section id="page-wishlist" class="page" hidden><div class="panel"><h2>Meine Wunschliste</h2>
@@ -522,6 +594,8 @@ function cloud13Init(){
  <select name="priority"><option value="1">Hoch</option><option value="2">Mittel</option><option value="3">Niedrig</option></select>
  <input name="note" maxlength="2000" placeholder="Notiz">
  <input name="catalog_card_id" type="hidden"><input name="catalog_image_url" type="hidden">
+ <div class="cloud13-import-preview" hidden><img alt="Kartenbild aus dem KartenDex"><div><strong></strong><small></small><span>Bildvorschau aus dem Pokémon-Katalog</span></div></div>
+ <button type="button" class="secondary" data-go="carddex">Karte im KartenDex auswählen</button>
  <button type="submit">Zur Wunschliste hinzufügen</button></form></div>
  <div id="cloud13WishlistRows" class="stack"></div></section>
  <section id="page-users" class="page" hidden><div class="panel"><h2>Benutzer verwalten</h2>
@@ -558,6 +632,14 @@ function cloud13Init(){
   const remove=e.target.closest('[data-personal-delete]');
   if(remove&&confirm('Diese Karte aus deiner persönlichen Liste entfernen?')){
    try{await authorizedRequest('/rest/v1/tc_personal_cards?id=eq.'+encodeURIComponent(remove.dataset.personalDelete),{method:'DELETE',headers:{Prefer:'return=minimal'}});await cloud13Refresh();}catch(error){notice(errorText(error),'error');}
+  }
+ });
+ for(const id of ['cloud13CollectionForm','cloud13WishlistForm'])$(id).addEventListener('input',event=>{
+  if(!['name','set_name','card_number','language'].includes(event.target?.name))return;
+  const form=event.currentTarget;
+  if(f(form,'catalog_card_id').value){
+   f(form,'catalog_card_id').value='';f(form,'catalog_image_url').value='';
+   cloud13Preview(form);
   }
  });
  for(const [type,id] of [['collection','cloud13CollectionForm'],['wishlist','cloud13WishlistForm']])$(id).addEventListener('submit',async event=>{
