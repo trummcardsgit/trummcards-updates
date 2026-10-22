@@ -7,7 +7,7 @@ const prodKey='sb_publishable_JDdbnEq3muaOhp3LsNhBkQ_eJZ0uYEf';
 const testKey='sb_publishable_oS2Ri8VlhEqv1XDBwkUahQ_zVEEtyHG';
 const source=path.resolve('cloud/mobile-production/web');
 const target=path.resolve('cloud/test-13-build');
-const marker='1.3.0-test.1';
+const marker='1.3.0-test.2';
 if(!fs.existsSync(source)||!fs.existsSync(path.join(source,'app.js')))throw Error('Missing PWA source');
 if(fs.existsSync(target))fs.rmSync(target,{recursive:true,force:true});
 fs.cpSync(source,target,{recursive:true});
@@ -18,7 +18,7 @@ for(const name of fs.readdirSync(target)){
  content=content.replaceAll(production,test).replaceAll(prodKey,testKey)
  .replaceAll('trummcards-mobile-production-session-v1','trummcards-mobile-test13-session-v1')
  .replaceAll('trummcards-mobile-production-pending-v1','trummcards-mobile-test13-pending-v1')
- .replaceAll('trummcards-mobile-production-shell-v1','trummcards-mobile-test13-shell-v1')
+ .replaceAll('trummcards-mobile-production-shell-','trummcards-mobile-test13-shell-')
  .replaceAll('PRODUCTION','TEST 1.3').replaceAll('Production','TEST 1.3')
  .replaceAll('Produktionsvorschau','TEST-Version').replaceAll('0.9.0',marker);
  if(name==='app.js'){
