@@ -331,3 +331,19 @@ main{width:min(100%,1000px);padding:21px 18px 24px;margin:0 auto;flex:1}.login-s
 .cash-entry span{overflow-wrap:anywhere}
 .cash-entry .actions{display:flex;gap:8px;flex-wrap:wrap}
 @media(max-width:570px){.cash-grid{grid-template-columns:1fr}.cash-panel{padding:11px}.cash-summary-row>button{width:100%}}
+
+
+/* Cloud 1.3: Dex / personal lists in a compact mobile layout */
+#cloud13Pages .cloud13-form{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-top:12px}
+#cloud13Pages .cloud13-form input,#cloud13Pages .cloud13-form select{width:100%;min-width:0;padding:11px;border:1px solid #5b7497;border-radius:10px;background:#101f33;color:#f2ebd7}
+#cloud13Pages .cloud13-form button{padding:12px;border-radius:10px;border:1px solid #d8ac66;background:#d8ac66;color:#18263a;font-weight:700}
+#cloud13Pages .cloud13-card{display:flex;align-items:center;gap:14px;min-width:0;margin-bottom:10px}
+#cloud13Pages .cloud13-card>div{min-width:0;overflow-wrap:anywhere}
+#cloud13Pages .cloud13-card-photo{width:58px;height:80px;object-fit:contain;flex-shrink:0}
+#cloud13Pages .cloud13-selected-image{display:block;width:120px;max-width:50%;height:auto;margin:12px auto}
+#cloud13Pages .cloud13-choices{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+#cloud13Pages .cloud13-choices button{padding:10px 12px;border-radius:9px;border:1px solid #d8ac66;background:#19334e;color:#fff}
+#cloud13Pages [hidden]{display:none!important}
+#bottomNav{flex-wrap:wrap}
+#bottomNav button[hidden]{display:none!important}
+@media(max-width:570px){#bottomNav{display:flex;flex-wrap:nowrap;overflow-x:auto;justify-content:flex-start;scrollbar-width:thin}#bottomNav button{flex:0 0 auto;min-width:62px;font-size:11px;padding:9px 6px}#cloud13Pages .cloud13-form{grid-template-columns:1fr}}
