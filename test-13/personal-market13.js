@@ -11,11 +11,13 @@ function select(item,detail,now=Date.now()){
  const rows=quote.rows.filter(r=>Number.isFinite(r.value)&&r.value>0);
  if(!rows.length)return not('Kein verlässlicher EUR-Richtwert',rows);
  const variant=String(item?.card_variant||'').toLowerCase().trim();
+ const specific=rows.some(r=>r.label==='Normal (ohne Holo)'||r.label==='Holo');
  let chosen=null;
- if(rows.length===1)chosen=rows[0];
- else if(variant==='holo')chosen=rows.find(r=>r.label==='Holo');
- else if(variant==='normal'||variant==='standard')chosen=rows.find(r=>r.label==='Normal (ohne Holo)');
- if(!chosen)return not('Ausführung auswählen: Normal oder Holo',rows);
+ if(specific){
+  if(variant==='holo')chosen=rows.find(r=>r.label==='Holo');
+  else if(variant==='normal'||variant==='standard')chosen=rows.find(r=>r.label==='Normal (ohne Holo)');
+ }else if(rows.length===1)chosen=rows[0];
+ if(!chosen)return not(!variant?'Ausführung auswählen: Normal oder Holo':'Kein Marktpreis für die gewählte Ausführung',rows);
  const updatedAt=quote.updatedAt||null;
  const ms=Date.parse(updatedAt||'');
  const age=Number.isFinite(ms)?Math.max(0,now-ms)/DAY:Infinity;

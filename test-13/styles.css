@@ -552,3 +552,8 @@ main{width:min(100%,1000px);padding:21px 18px 24px;margin:0 auto;flex:1}.login-s
 #cloud13Pages .cloud13-variant[hidden]{display:none!important}
 #cloud13Pages .cloud13-market-note{font-size:12px;line-height:1.5;padding:9px 12px;color:#c6d1df}
 @media(max-width:600px){#cloud13Pages .cloud13-dashboard{padding:15px}#cloud13Pages .cloud13-metric{padding:17px}#cloud13Pages .cloud13-dashboard>button{width:100%;margin:6px 0}}
+
+/* Market source note is visible only within personal pages. */
+#cloud13Pages>.cloud13-market-note{display:none}
+#cloud13Pages:has(#page-collection:not([hidden]))>.cloud13-market-note,
+#cloud13Pages:has(#page-wishlist:not([hidden]))>.cloud13-market-note{display:block}
