@@ -7,7 +7,7 @@ const prodKey='sb_publishable_JDdbnEq3muaOhp3LsNhBkQ_eJZ0uYEf';
 const testKey='sb_publishable_oS2Ri8VlhEqv1XDBwkUahQ_zVEEtyHG';
 const source=path.resolve('cloud/mobile-production/web');
 const target=path.resolve('cloud/test-13-build');
-const marker='1.3.0-test.6';
+const marker='1.3.0-test.7';
 if(!fs.existsSync(source)||!fs.existsSync(path.join(source,'app.js')))throw Error('Missing PWA source');
 if(fs.existsSync(target))fs.rmSync(target,{recursive:true,force:true});
 fs.cpSync(source,target,{recursive:true});
