@@ -132,6 +132,10 @@ test('Cardmarket valuation ignores unknown, ambiguous, undated and stale card pr
  assert.equal(market.select(holo,{pricing:{...detail.pricing,updatedAt:new Date(now-31*86400000).toISOString()}},now).value,null);
  assert.equal(market.select(holo,{pricing:{...detail.pricing,updatedAt:null}},now).value,null);
  assert.equal(market.select(holo,null,now).value,null);
+ const oneQuote={pricing:{updatedAt:recent,rows:[{label:'Normal (ohne Holo)',value:10}]}};
+ assert.equal(market.select(unset,oneQuote,now).value,null);
+ assert.equal(market.select(holo,oneQuote,now).value,null);
+ assert.equal(market.select(normal,oneQuote,now).value,10);
  const items=[{list_type:'collection',quantity:2,card_variant:'Holo'},
   {list_type:'wishlist',quantity:3,card_variant:'Normal'},
   {list_type:'wishlist',quantity:1,card_variant:''}];
