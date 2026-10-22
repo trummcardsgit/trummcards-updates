@@ -297,5 +297,5 @@ function bind({onUseCard}={}){
  setPaging();clearDetail();clearSetCards();
  return Object.freeze({clearDetail});
 }
-window.TrummCardDex12=Object.freeze({bind,cardmarketValues,filteredMarketQuote});
+window.TrummCardDex12=Object.freeze({bind,cardmarketValues,filteredMarketQuote,noImageDataUri:NO_IMAGE_DATA_URI});
 })();
