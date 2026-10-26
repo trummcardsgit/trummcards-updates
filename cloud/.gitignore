@@ -1,0 +1,15 @@
+# Absolutely no real TrummCards backups, exports, import plans, photos, or credentials.
+*Backup*.json
+*backup*.json
+*import-plan*.json
+.env
+.env.*
+*.pem
+*.key
+*.p12
+private/
+local-data/
+*.sqlite
+*.db
+
+!examples/demo-backup.json
