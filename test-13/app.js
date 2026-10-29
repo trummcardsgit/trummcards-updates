@@ -56,6 +56,7 @@ function showPage(name){
  window.scrollTo({top:0,behavior:'instant'});
  if(name==='photos')renderPhotos().catch(e=>notice(errorText(e),'error'));
  if(name==='finance')financeUI11?.render();
+ if(name==='users'&&cloud13Role==='admin')void cloud13LoadUsers();
 }
 function navigate(name){if(name==='article'&&activePage!=='article')resetArticle();showPage(name);}
 function productById(id){return state.products.find(p=>p.id===id);}
@@ -583,6 +584,52 @@ async function cloud13Refresh(){
  const users=$('cloud13UserRows');users.replaceChildren();
  for(const viewer of cloud13Viewers){const label=document.createElement('p');label.textContent=viewer.email;users.append(label);}
 }
+async function cloud13AdminUsers(action,payload={}){
+ if(cloud13Role!=='admin')throw Error('Nur Administratoren können Benutzer verwalten.');
+ return authorizedRequest('/functions/v1/tc-admin-users',{
+  method:'POST',headers:API_HEADERS,
+  body:JSON.stringify({action,...payload})
+ });
+}
+async function cloud13LoadUsers(){
+ if(cloud13Role!=='admin')return;
+ const area=$('cloud13UserRows'),status=$('cloud13UserStatus');
+ area.replaceChildren();status.textContent='Benutzer werden geladen …';
+ try{
+  const result=await cloud13AdminUsers('list');
+  const users=Array.isArray(result.users)?result.users:[];
+  status.textContent=users.length+' Benutzer gefunden.';
+  for(const user of users){
+   const row=document.createElement('div');row.className='panel';
+   const email=document.createElement('strong');email.textContent=user.email||'Unbekannter Benutzer';
+   const detail=document.createElement('p');detail.className='subtle';
+   detail.textContent=user.id===session?.user?.id?'Dein eigenes Konto':user.active===false?'Gesperrt':'Aktiv';
+   const choose=document.createElement('select');choose.setAttribute('aria-label','Berechtigung für '+user.email);
+   for(const [value,label] of [['dex','KartenDex-Benutzer'],['admin','Admin']]){
+    const opt=document.createElement('option');opt.value=value;opt.textContent=label;choose.append(opt);
+   }
+   choose.value=user.role==='admin'?'admin':'dex';
+   const save=document.createElement('button');save.type='button';save.textContent='Rolle speichern';
+   const toggle=document.createElement('button');toggle.type='button';toggle.textContent=user.active===false?'Entsperren':'Sperren';
+   const own=user.id===session?.user?.id;
+   choose.disabled=own;save.disabled=own;toggle.disabled=own;
+   save.addEventListener('click',async()=>{
+    if(!confirm('Rolle dieses Benutzers wirklich ändern?'))return;
+    save.disabled=true;
+    try{await cloud13AdminUsers('set_role',{user_id:user.id,role:choose.value});notice('Rolle geändert.','success');await cloud13LoadUsers();}
+    catch(error){notice(errorText(error),'error');save.disabled=false;}
+   });
+   toggle.addEventListener('click',async()=>{
+    if(!confirm('Zugang dieses Benutzers wirklich '+(user.active===false?'entsperren':'sperren')+'?'))return;
+    toggle.disabled=true;
+    try{await cloud13AdminUsers('set_active',{user_id:user.id,active:user.active===false});notice('Zugang aktualisiert.','success');await cloud13LoadUsers();}
+    catch(error){notice(errorText(error),'error');toggle.disabled=false;}
+   });
+   const actions=document.createElement('div');actions.className='actions inline';actions.append(choose,save,toggle);
+   row.append(email,detail,actions);area.append(row);
+  }
+ }catch(error){status.textContent='Benutzerverwaltung noch nicht verfügbar: '+errorText(error);}
+}
 async function cloud13UseCard({id,language='de',target}={}){
  if(!['admin','dex'].includes(cloud13Role))return notice('Bitte zuerst anmelden.','error');
  if(target==='stock'&&cloud13Role!=='admin')return notice('Nur Administratoren dürfen Artikel ins Verkaufslager übernehmen.','error');
@@ -693,11 +740,17 @@ function cloud13Init(){
  <div id="memoryBoard" class="tc-memory-board" aria-label="Pokémon Memory-Spielfeld"></div>
  <p class="tiny tc-memory-disclaimer">Das Minispiel hat keinen Einfluss auf Lager, Sammlung, Wunschliste oder Finanzen. Kartenbilder werden aus TCGdex oder als Ersatz von Pokémon TCG API geladen. Falls ein Bild fehlt, ist die Karte weiterhin spielbar. Bestzeiten werden nur auf diesem Gerät gespeichert.</p>
  </div></section>
- <section id="page-users" class="page" hidden><div class="panel"><h2>Benutzer verwalten</h2>
- <p>Benutzer zuerst in Supabase Authentication einladen, dann hier KartenDex-Zugriff vergeben.</p>
- <form id="cloud13UserForm" class="cloud13-form"><input type="email" name="email" required placeholder="E-Mail-Adresse">
- <select name="enabled"><option value="true">Freigeben</option><option value="false">Entziehen</option></select>
- <button type="submit">Berechtigung speichern</button></form><div id="cloud13UserRows"></div></div></section>`;
+ <section id="page-users" class="page" hidden><div class="panel">
+ <div class="micro-label">NUR FÜR ADMINISTRATOREN</div><h2>Benutzerverwaltung</h2>
+ <p class="subtle">Neue Benutzer sicher per E-Mail einladen und Berechtigungen verwalten. Jeder Benutzer verwendet ein eigenes Passwort.</p>
+ <form id="cloud13UserForm" class="cloud13-form">
+ <label>E-Mail-Adresse<input type="email" name="email" maxlength="254" required autocomplete="off" placeholder="name@beispiel.at"></label>
+ <label>Rolle<select name="role" required><option value="dex" selected>KartenDex-Benutzer</option><option value="admin">Admin (Vollzugriff)</option></select></label>
+ <button type="submit" class="primary">Benutzer einladen</button></form>
+ <p id="cloud13UserStatus" role="status" class="subtle"></p>
+ <h3>Bestehende Benutzer</h3><div id="cloud13UserRows" class="stack"></div>
+ <p class="tiny">Nur Admins können Rollen ändern oder Zugänge sperren. Änderungen werden serverseitig geprüft.</p>
+ </div></section>`;
  $('page-more').after(pages);
  memoryUI13=window.TrummMemory13?.bind({getUserId:()=>session?.user?.id||''});
  const access=document.createElement('button');access.id='cloud13UserAccess';access.type='button';access.dataset.go='users';access.textContent='Benutzerberechtigungen';access.className='secondary full';$('page-more').append(access);
@@ -747,9 +800,14 @@ function cloud13Init(){
  });
  $('cloud13UserForm').addEventListener('submit',async event=>{
   event.preventDefault();if(cloud13Role!=='admin')return;
-  const data=new FormData(event.currentTarget);
-  try{await rpc('tc_set_dex_viewer',{p_email:String(data.get('email')),p_enable:data.get('enabled')==='true'});await cloud13Refresh();notice('Berechtigung aktualisiert.','success');}
+  const form=event.currentTarget,data=new FormData(form),submit=form.querySelector('[type=submit]');
+  const email=String(data.get('email')||'').trim(),role=String(data.get('role')||'dex');
+  if(!email||!['admin','dex'].includes(role))return;
+  if(role==='admin'&&!confirm('Ein Admin erhält vollständigen Zugriff. Wirklich einladen?'))return;
+  submit.disabled=true;
+  try{await cloud13AdminUsers('invite',{email,role});form.reset();notice('Einladung erfolgreich ausgelöst.','success');await cloud13LoadUsers();}
   catch(error){notice(errorText(error),'error');}
+  finally{submit.disabled=false;}
  });
 }
 
